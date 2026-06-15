@@ -35,15 +35,19 @@
 
         /* Главная зона чата (Правая сторона) */
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
-        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 12px; }
+        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .header-meta { display: flex; align-items: center; gap: 12px; }
         
+        /* Индикатор печати в шапке */
+        .typing-indicator { font-size: 13px; color: #28a745; font-weight: normal; font-style: italic; display: none; }
+
         /* Кнопка «Назад» для mobile */
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         .back-btn:hover { background: #3a3a3a; }
 
         /* Сообщения */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; cursor: pointer; user-select: none; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; }
         #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
         
         /* Галочки */
@@ -125,8 +129,11 @@
     
     <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
         <div id="chat-header">
-            <button class="back-btn" id="btn-back">⬅ Назад</button>
-            <span id="chat-title-text">Чат</span>
+            <div class="header-meta">
+                <button class="back-btn" id="btn-back">⬅ Назад</button>
+                <span id="chat-title-text">Чат</span>
+            </div>
+            <div id="chat-typing-status" class="typing-indicator"></div>
         </div>
         <ul id="messages"></ul>
         <div id="form">
@@ -148,7 +155,6 @@
             <div class="account-property"><span id="lbl-time">Время входа:</span> <small id="info-login-time" style="color: #888;"></small></div>
         </div>
         
-        <!-- ВЫБОР ЯЗЫКА -->
         <div class="lang-select-container">
             <label id="lbl-lang-select" for="lang-select">Язык / Мова / Language</label>
             <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
@@ -162,12 +168,10 @@
     </div>
 </div>
 
-<!-- Контекстное меню -->
 <div class="context-menu" id="global-context-menu"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // СЛОВАРЬ ДЛЯ ЛОКАЛИЗАЦИИ ТРЕХ ЯЗЫКОВ
     const translations = {
         ru: {
             searchPlaceholder: "Введите имя и нажмите Enter...",
@@ -185,11 +189,11 @@
             logoutBtn: "Выйти из профиля 🚪",
             emptyList: "Список пуст.<br>Нажмите на 🔍 вверху",
             selfChatError: "Нельзя создать чат с самим собой!",
-            ctxDeleteMsg: "Удалить сообщение 🗑",
             ctxDeleteChat: "Удалить чат 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
-            meLabel: "Я"
+            meLabel: "Я",
+            typingText: "печатает..."
         },
         uk: {
             searchPlaceholder: "Введіть ім'я та натисніть Enter...",
@@ -207,11 +211,11 @@
             logoutBtn: "Вийти з профілю 🚪",
             emptyList: "Список порожній.<br>Натисніть на 🔍 вгорі",
             selfChatError: "Не можна створити чат із самим собою!",
-            ctxDeleteMsg: "Видалити повідомлення 🗑",
             ctxDeleteChat: "Видалити чат 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
-            meLabel: "Я"
+            meLabel: "Я",
+            typingText: "пише..."
         },
         en: {
             searchPlaceholder: "Type name and press Enter...",
@@ -229,11 +233,11 @@
             logoutBtn: "Log out 🚪",
             emptyList: "List is empty.<br>Click 🔍 above",
             selfChatError: "You can't chat with yourself!",
-            ctxDeleteMsg: "Delete message 🗑",
             ctxDeleteChat: "Delete chat 🗑",
             chatStatusOnline: "● online",
             chatStatusOffline: "offline",
-            meLabel: "Me"
+            meLabel: "Me",
+            typingText: "is typing..."
         }
     };
 
@@ -280,6 +284,7 @@
     const chatPlaceholder = document.getElementById('no-chat-placeholder');
     const chatArea = document.getElementById('chat-area');
     const chatTitleText = document.getElementById('chat-title-text');
+    const typingStatusEl = document.getElementById('chat-typing-status');
     const messagesContainer = document.getElementById('messages');
     const input = document.getElementById('input');
     const button = document.getElementById('button');
@@ -291,12 +296,11 @@
     settingsToggleBtn.onclick = () => { settingsModal.classList.add('active'); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
-    // Функция обновления текстов интерфейса под выбранный язык
     function applyLanguage() {
         const t = translations[currentLang];
         document.getElementById('lang-select').value = currentLang;
         
-        document.getElementById('my-profile-name').textContent = (currentLang === 'en' ? "Me: " : (currentLang === 'uk' ? "Я: " : "Я: ")) + myNick;
+        document.getElementById('my-profile-name').textContent = (currentLang === 'en' ? "Me: " : "Я: ") + myNick;
         document.getElementById('info-nick').textContent = myNick;
         document.getElementById('info-login-time').textContent = sessionTimeString;
         
@@ -329,6 +333,56 @@
 
     socket.emit('store user', myNick);
     socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
+
+    input.oninput = () => {
+        if (currentRoom) {
+            socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+        }
+    };
+
+    let remoteTypingTimer = null;
+    socket.on('chat message', (data) => {
+        if (!data || !data.room) return;
+        const roomKey = String(data.room);
+
+        if (data.text === '[TYPING_SIGNAL]') {
+            if (roomKey === currentRoom && data.user !== myNick) {
+                typingStatusEl.textContent = translations[currentLang].typingText;
+                typingStatusEl.style.display = 'block';
+                
+                clearTimeout(remoteTypingTimer);
+                remoteTypingTimer = setTimeout(() => { typingStatusEl.style.display = 'none'; }, 250);
+            }
+            return;
+        }
+
+        if (data.text === '[READ_SIGNAL]') {
+            if (roomKey === currentRoom && data.user !== myNick) {
+                const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
+                systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
+                if (savedMessages[roomKey]) {
+                    savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
+                    localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+                }
+            }
+            return;
+        }
+
+        if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
+
+        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+        if (roomKey === currentRoom && data.user !== myNick) {
+            setTimeout(sendReadSignal, 300);
+            typingStatusEl.style.display = 'none';
+        }
+
+        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
+            savedMessages[roomKey].push(data);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        }
+
+        if (roomKey === currentRoom) displaySingleMessage(data);
+    });
 
     searchToggleBtn.onclick = function(e) {
         e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
@@ -373,6 +427,7 @@
         currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.textContent = translations[currentLang].dialogWith + user;
+        typingStatusEl.style.display = 'none';
         document.body.classList.add('chat-opened');
         socket.emit('join room', user);
         loadMessagesHistory(); renderChatsList(); sendReadSignal();
@@ -403,61 +458,6 @@
     function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
     button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-    socket.on('chat message', (data) => {
-        if (!data || !data.room) return;
-        const roomKey = String(data.room);
-
-        if (data.text === '[READ_SIGNAL]') {
-            if (roomKey === currentRoom && data.user !== myNick) {
-                const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
-                systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
-                if (savedMessages[roomKey]) {
-                    savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
-                    localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-                }
-            }
-            return;
-        }
-
-        if (typeof data.text === 'string' && data.text.startsWith('[DELETE_SIGNAL:')) {
-            const targetId = data.text.replace('[DELETE_SIGNAL:', '').replace(']', '');
-            if (!deletedMessageIds.includes(targetId)) {
-                deletedMessageIds.push(targetId);
-                localStorage.setItem('burmalda_deleted_ids', JSON.stringify(deletedMessageIds));
-            }
-            const el = document.getElementById(targetId); if (el) el.remove();
-            if (savedMessages[roomKey]) {
-                savedMessages[roomKey] = savedMessages[roomKey].filter(m => m.msgId !== targetId);
-                localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-            }
-            return;
-        }
-
-        if (data.text === '[CLEAR_CHAT_SIGNAL]') {
-            delete savedMessages[roomKey]; localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-            const partnerName = roomKey.replace(myNick, '').replace('_', '');
-            activeChats = activeChats.filter(c => c !== partnerName); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-
-            if (roomKey === currentRoom) {
-                currentActiveChatPartner = null; currentRoom = null;
-                chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; document.body.classList.remove('chat-opened');
-            }
-            renderChatsList(); return;
-        }
-
-        if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
-
-        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
-        if (roomKey === currentRoom && data.user !== myNick) setTimeout(sendReadSignal, 300);
-
-        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
-            savedMessages[roomKey].push(data);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
-
-        if (roomKey === currentRoom) displaySingleMessage(data);
-    });
-
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
         if (currentRoom && savedMessages[currentRoom]) {
@@ -470,8 +470,7 @@
         if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
         
         const item = document.createElement('li');
-        const idToSet = data.msgId || ('msg-' + Date.now());
-        item.id = idToSet;
+        item.id = data.msgId || ('msg-' + Date.now());
         const t = translations[currentLang];
         
         if (data.user === myNick) {
@@ -483,19 +482,8 @@
             item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
         }
         
-        item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showMsgContextMenu(e.clientX, e.clientY, idToSet); };
-        let pressTimer;
-        item.ontouchstart = (e) => { pressTimer = window.setTimeout(() => { showMsgContextMenu(e.touches[0].clientX, e.touches[0].clientY, idToSet); }, 600); };
-        item.ontouchend = () => { clearTimeout(pressTimer); };
-        
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function showMsgContextMenu(x, y, msgId) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="executeDeleteMessage('${msgId}')" class="delete-btn">${translations[currentLang].ctxDeleteMsg}</button>`;
-        contextMenu.style.display = 'block';
     }
 
     function showChatContextMenu(x, y, partnerNick) {
@@ -508,46 +496,22 @@
 
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
 
-    window.executeDeleteMessage = function(msgId) {
-        if (!currentRoom) return;
-        if (!deletedMessageIds.includes(msgId)) {
-            deletedMessageIds.push(msgId);
-            localStorage.setItem('burmalda_deleted_ids', JSON.stringify(deletedMessageIds));
-        }
-        socket.emit('private chat message', { room: currentRoom, text: `[DELETE_SIGNAL:${msgId}]`, user: myNick });
-        const localEl = document.getElementById(msgId); if (localEl) localEl.remove();
-        if (savedMessages[currentRoom]) {
-            savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
-    };
-
-    // ОДИНОЧНОЕ ЛОКАЛЬНОЕ УДАЛЕНИЕ ЧАТА
     window.executeDeleteChat = function(partnerNick) {
         const generatedRoom = [myNick, partnerNick].sort().join('_');
-        
-        if (savedMessages[generatedRoom]) {
-            delete savedMessages[generatedRoom];
-        }
+        if (savedMessages[generatedRoom]) delete savedMessages[generatedRoom];
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
         activeChats = activeChats.filter(c => c !== partnerNick);
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
 
         if (generatedRoom === currentRoom) {
-            currentActiveChatPartner = null;
-            currentRoom = null;
-            chatArea.style.display = 'none';
-            chatPlaceholder.style.display = 'block';
-            document.body.classList.remove('chat-opened');
+            currentActiveChatPartner = null; currentRoom = null;
+            chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; document.body.classList.remove('chat-opened');
         }
-
         renderChatsList();
     };
 
     function logout() { window.location.href = '/'; }
-    
-    // Инициализация локализации при старте
     applyLanguage();
 </script>
 </body>
