@@ -17,7 +17,7 @@
         .search-trigger-btn:hover { color: #fff; }
         .logout-btn:hover { color: #dc3545; }
 
-        /* Поле поиска */
+        /* Поле поиска друзей */
         .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
         .search-container.active { display: block; }
         .search-container input { width: calc(100% - 24px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
@@ -85,18 +85,39 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // МЯГКАЯ ПРОВЕРКА АВТОРИЗАЦИИ
-    const isLoggedIn = localStorage.getItem('chat_logged_in');
-    const myNick = localStorage.getItem('chat_current_user');
+    // 1. ДЕКОДИРОВАНИЕ URL-ТОКЕНА И ПРОВЕРКА АВТОРИЗАЦИИ
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get('auth');
+    let myNick = 'Аноним';
+    let authorized = false;
 
-    if (isLoggedIn !== 'true' || !myNick) {
-        alert('Доступ заблокирован! Пожалуйста, войдите в аккаунт.');
-        window.location.href = '/'; // Перенаправляем на главную страницу входа сервера Render
+    if (authToken) {
+        try {
+            // Расшифровываем Base64 строку токена
+            const decoded = decodeURIComponent(atob(authToken));
+            const parts = decoded.split('_');
+            myNick = parts[0];
+            const loginTime = parseInt(parts[1]);
+            
+            // Если токен существует и создан меньше суток назад (86400000 мс) — пускаем в систему
+            if (Date.now() - loginTime < 86400000 && myNick) {
+                authorized = true;
+            }
+        } catch (e) {
+            console.error("Ошибка разбора авторизационного токена:", e);
+        }
+    }
+
+    // Если токен не прошёл валидацию, перенаправляем на корень сервера Render
+    if (!authorized) {
+        alert('Доступ заблокирован! Пожалуйста, пройдите авторизацию на главной странице.');
+        window.location.href = '/'; 
     } else {
-        // Если авторизован — показываем интерфейс чата
+        // Показываем интерфейс мессенджера
         document.getElementById('main-body').style.display = 'flex';
     }
 
+    // 2. РАБОТА С СЕТЕВЫМИ СОКЕТАМИ И ИНТЕРФЕЙСОМ
     const socket = io();
     document.getElementById('my-profile-name').textContent = "Я: " + myNick;
 
@@ -104,6 +125,7 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
+    // Подгружаем списки чатов и локальную историю из памяти браузера
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
 
@@ -119,13 +141,16 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
+    // Регистрируем наш никнейм на сервере Node.js
     socket.emit('store user', myNick);
 
+    // Слушаем обновление списка пользователей онлайн
     socket.on('online users', (users) => {
         onlineUsers = users;
         renderChatsList();
     });
 
+    // Показ/скрытие инпута поиска (лупа)
     searchToggleBtn.onclick = function(e) {
         e.preventDefault();
         searchFrame.classList.toggle('active');
@@ -134,12 +159,13 @@
         }
     };
 
+    // Добавление нового собеседника по нажатию Enter
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
             if (targetNick === myNick) {
-                alert("Нельзя добавить чат с самим собой!");
+                alert("Нельзя создать чат с самим собой!");
                 return;
             }
 
@@ -154,6 +180,7 @@
         }
     };
 
+    // Отрисовка левой панели с диалогами
     function renderChatsList() {
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
@@ -177,6 +204,7 @@
         });
     }
 
+    // Открытие окна переписки
     function openChatWith(user) {
         currentActiveChatPartner = user;
         currentRoom = [myNick, user].sort().join('_');
@@ -190,6 +218,7 @@
         renderChatsList();
     }
 
+    // Принудительное подключение к комнате, если собеседник написал первый
     socket.on('force join room', (roomName) => {
         const partner = roomName.replace(myNick, '').replace('_', '');
         if (!activeChats.includes(partner)) {
@@ -200,6 +229,7 @@
         socket.emit('join room', partner);
     });
 
+    // Отправка текстового сообщения
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
@@ -211,6 +241,7 @@
     button.onclick = sendMessage;
     input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
+    // Получение входящих сообщений от сокета
     socket.on('chat message', (data) => {
         if (!savedMessages[data.room]) savedMessages[data.room] = [];
         savedMessages[data.room].push(data);
@@ -221,6 +252,7 @@
         }
     });
 
+    // Загрузка локальной истории сообщений конкретной комнаты
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
         if (savedMessages[currentRoom]) {
@@ -228,6 +260,7 @@
         }
     }
 
+    // Добавление сообщения в блок UI
     function displaySingleMessage(data) {
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
@@ -236,12 +269,12 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // Безопасный выход из аккаунта
     function logout() {
-        localStorage.removeItem('chat_logged_in');
-        localStorage.removeItem('chat_current_user');
         window.location.href = '/';
     }
 
+    // Первичный запуск отрисовки
     renderChatsList();
 </script>
 </body>
