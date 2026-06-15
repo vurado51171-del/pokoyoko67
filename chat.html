@@ -27,7 +27,7 @@
         
         /* Список добавленных чатов */
         #chats-list { flex-grow: 1; overflow-y: auto; }
-        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
         .chat-item:hover { background: #262626; }
         .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
         .status-dot { font-size: 11px; color: #888; }
@@ -37,7 +37,7 @@
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
         #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 12px; }
         
-        /* Кнопка «Назад» для мобильной версии (по умолчанию скрыта на ПК) */
+        /* Кнопка «Назад» для mobile */
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         .back-btn:hover { background: #3a3a3a; }
 
@@ -46,25 +46,25 @@
         #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; cursor: pointer; user-select: none; }
         #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
         
-        /* Стиль для галочек прочтения */
+        /* Галочки */
         .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
         .msg-status.read { color: #00d4ff; }
 
-        /* Нижняя панель ввода текста */
+        /* Форма ввода */
         #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
         #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
         #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0; }
         #button:disabled { background: #444; cursor: not-allowed; }
         
-        /* Заглушка, когда чат не выбран */
         .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
 
-        /* Кастомное контекстное меню для удаления */
-        .context-menu { position: fixed; background: #262626; border: 1px solid #444; border-radius: 5px; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .context-menu button { background: none; border: none; color: #dc3545; width: 100%; text-align: left; padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        /* Контекстное меню */
+        .context-menu { position: fixed; background: #262626; border: 1px solid #444; border-radius: 5px; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 160px; }
+        .context-menu button { background: none; border: none; color: #fff; width: 100%; text-align: left; padding: 10px 15px; font-size: 14px; cursor: pointer; outline: none; }
         .context-menu button:hover { background: #333; }
+        .context-menu button.delete-btn { color: #dc3545; font-weight: bold; border-top: 1px solid #333; }
 
-        /* МОДАЛЬНОЕ ОКНО НАСТРОЕК */
+        /* Модалка настроек */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 100%; max-width: 350px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
@@ -72,51 +72,24 @@
         .modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; outline: none; }
         .modal-close:hover { color: #fff; }
         
-        /* Свойства аккаунта в настройках */
         .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
         .account-property strong { color: #fff; }
         .settings-logout-btn { width: 100%; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; font-size: 15px; }
         .settings-logout-btn:hover { background: #bd2130; }
 
-        /* УНИВЕРСАЛЬНЫЙ АДАПТИВ ДЛЯ ТЕЛЕФОНОВ */
         @media (max-width: 768px) {
             #sidebar { width: 100%; display: flex; }
             #chat-main { display: none; width: 100%; }
-            
             body.chat-opened #sidebar { display: none; }
             body.chat-opened #chat-main { display: flex; }
             body.chat-opened .back-btn { display: block; }
-            
             #messages li { max-width: 80%; }
             .no-chat-selected { display: none; }
-            #form { padding: 10px; }
+            #form { padding: 10px; position: relative; z-index: 10; background: #1e1e1e; }
             #button { padding: 12px 18px; margin-left: 6px; }
-            
-            #input {
-                font-size: 16px !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-                display: block !important;
-                -webkit-appearance: none;
-                appearance: none;
-            }
-            #form {
-                position: relative;
-                z-index: 10;
-                background: #1e1e1e;
-            }
-            body.chat-opened #chat-main {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 20;
-            }
-            #input:focus {
-                border-color: #28a745;
-                outline: none;
-            }
+            #input { font-size: 16px !important; opacity: 1 !important; visibility: visible !important; display: block !important; -webkit-appearance: none; appearance: none; }
+            body.chat-opened #chat-main { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; }
+            #input:focus { border-color: #28a745; outline: none; }
         }
     </style>
 </head>
@@ -173,13 +146,11 @@
     </div>
 </div>
 
-<div class="context-menu" id="msg-context-menu">
-    <button id="delete-msg-btn">Удалить сообщение 🗑</button>
-</div>
+<!-- Контекстное меню -->
+<div class="context-menu" id="global-context-menu"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // 1. ДЕКОДИРОВАНИЕ URL-ТОКЕНА И ПРОВЕРКА АВТОРИЗАЦИИ
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('auth');
     let myNick = 'Аноним';
@@ -192,30 +163,21 @@
             const parts = decoded.split('_');
             myNick = parts[0];
             const loginTime = parseInt(parts[1]);
-            
             if (!isNaN(loginTime)) {
                 sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
             }
-            
-            if (Date.now() - loginTime < 86400000 && myNick) {
-                authorized = true;
-            }
-        } catch (e) {
-            console.error("Ошибка разбора авторизационного токена:", e);
-        }
+            if (Date.now() - loginTime < 86400000 && myNick) authorized = true;
+        } catch (e) { console.error(e); }
     }
 
     if (!authorized) {
-        alert('Доступ заблокирован! Пожалуйста, пройдите авторизацию на главной странице.');
-        window.location.href = '/'; 
+        alert('Доступ заблокирован!'); window.location.href = '/'; 
     } else {
         document.getElementById('main-body').style.display = 'flex';
     }
 
-    // 2. РАБОТА С СЕТЕВЫМИ СОКЕТАМИ И ИНТЕРФЕЙСОМ
     const socket = io();
     document.getElementById('my-profile-name').textContent = "Я: " + myNick;
-    
     document.getElementById('info-nick').textContent = myNick;
     document.getElementById('info-login-time').textContent = sessionTimeString;
 
@@ -225,132 +187,83 @@
 
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
+    let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
 
     const searchToggleBtn = document.getElementById('search-toggle-btn');
     const searchFrame = document.getElementById('search-frame');
     const searchInput = document.getElementById('search-input');
     const chatsList = document.getElementById('chats-list');
-    
     const chatPlaceholder = document.getElementById('no-chat-placeholder');
     const chatArea = document.getElementById('chat-area');
     const chatTitleText = document.getElementById('chat-title-text');
     const messagesContainer = document.getElementById('messages');
     const input = document.getElementById('input');
     const button = document.getElementById('button');
+    const contextMenu = document.getElementById('global-context-menu');
 
-    // ЭЛЕМЕНТЫ МЕНЮ УДАЛЕНИЯ
-    const contextMenu = document.getElementById('msg-context-menu');
-    const deleteMsgBtn = document.getElementById('delete-msg-btn');
-    let selectedMsgId = null;
-
-    // ЭЛЕМЕНТЫ ОКНА НАСТРОЕК
     const settingsToggleBtn = document.getElementById('settings-toggle-btn');
     const settingsModal = document.getElementById('settings-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
-
     settingsToggleBtn.onclick = () => { settingsModal.classList.add('active'); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
-    settingsModal.onclick = (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); };
 
     socket.emit('store user', myNick);
-
-    socket.on('online users', (users) => {
-        onlineUsers = Array.isArray(users) ? users : [];
-        renderChatsList();
-    });
+    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
 
     searchToggleBtn.onclick = function(e) {
-        e.preventDefault();
-        searchFrame.classList.toggle('active');
-        if (searchFrame.classList.contains('active')) {
-            searchInput.focus();
-        }
+        e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
     };
 
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
-            if (!targetNick) return;
-            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert("Нельзя создать чат с самим собой!");
-                return;
-            }
-
+            if (!targetNick || targetNick.toLowerCase() === myNick.toLowerCase()) return;
             if (!activeChats.includes(targetNick)) {
-                activeChats.push(targetNick);
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+                activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
             }
-
-            searchInput.value = '';
-            searchFrame.classList.remove('active');
-            openChatWith(targetNick);
+            searchInput.value = ''; searchFrame.classList.remove('active'); openChatWith(targetNick);
         }
     };
 
     function renderChatsList() {
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
-            chatsList.innerHTML = '<div style="padding: 15px; color: #555; font-size: 14px; text-align: center;">Список пуст.<br>Нажмите на 🔍 вверху</div>';
-            return;
+            chatsList.innerHTML = '<div style="padding:15px;color:#555;text-align:center;">Список пуст.</div>'; return;
         }
-
         activeChats.forEach(user => {
             if (!user) return;
-            const item = document.createElement('div');
-            item.className = 'chat-item';
+            const item = document.createElement('div'); item.className = 'chat-item';
             if (currentActiveChatPartner === user) item.classList.add('active');
-            
             const isOnline = onlineUsers.includes(user);
-            item.innerHTML = `
-                <span>${user}</span>
-                <span class="status-dot ${isOnline ? 'online' : ''}">${isOnline ? '● онлайн' : 'офлайн'}</span>
-            `;
-
+            item.innerHTML = `<span>${user}</span><span class="status-dot ${isOnline?'online':''}">${isOnline?'● онлайн':'офлайн'}</span>`;
             item.onclick = () => openChatWith(user);
+            item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showChatContextMenu(e.clientX, e.clientY, user); };
+            let chatTimer;
+            item.ontouchstart = (e) => { chatTimer = window.setTimeout(() => { showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, user); }, 600); };
+            item.ontouchend = () => { clearTimeout(chatTimer); };
             chatsList.appendChild(item);
         });
     }
 
     function openChatWith(user) {
         if (!user) return;
-        currentActiveChatPartner = user;
-        currentRoom = [myNick, user].sort().join('_');
-
-        chatPlaceholder.style.display = 'none';
-        chatArea.style.display = 'flex';
+        currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
+        chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.textContent = `Диалог с: ${user}`;
-
         document.body.classList.add('chat-opened');
-
         socket.emit('join room', user);
-        loadMessagesHistory();
-        renderChatsList();
-        
-        sendReadSignal();
-        
-        setTimeout(() => {
-            input.focus();
-            input.click();
-        }, 300);
+        loadMessagesHistory(); renderChatsList(); sendReadSignal();
+        setTimeout(() => { input.focus(); input.click(); }, 300);
     }
 
-    function closeChatMobile() {
-        document.body.classList.remove('chat-opened');
-        currentActiveChatPartner = null;
-        currentRoom = null;
-        renderChatsList();
-    }
+    function closeChatMobile() { document.body.classList.remove('chat-opened'); currentActiveChatPartner = null; currentRoom = null; renderChatsList(); }
 
     socket.on('force join room', (roomName) => {
         if (!roomName) return;
-        const cleanRoomName = String(roomName);
-        const partner = cleanRoomName.replace(myNick, '').replace('_', '');
+        const partner = String(roomName).replace(myNick, '').replace('_', '');
         if (!partner) return;
-
         if (!activeChats.includes(partner)) {
-            activeChats.push(partner);
-            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-            renderChatsList();
+            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList();
         }
         socket.emit('join room', partner);
     });
@@ -359,38 +272,22 @@
         const text = input.value.trim();
         if (text && currentRoom) {
             const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
-            const msgData = { 
-                room: currentRoom, 
-                text: text, 
-                user: myNick,
-                msgId: generatedId
-            };
-            socket.emit('private chat message', msgData);
+            socket.emit('private chat message', { room: currentRoom, text: text, user: myNick, msgId: generatedId });
             input.value = '';
         }
     }
 
-    function sendReadSignal() {
-        if (currentRoom) {
-            socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick });
-        }
-    }
-
-    button.onclick = sendMessage;
-    input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
+    button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
         const roomKey = String(data.room);
 
-        // Перехватываем сигнал прочтения
         if (data.text === '[READ_SIGNAL]') {
             if (roomKey === currentRoom && data.user !== myNick) {
                 const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
-                systemStatuses.forEach(span => {
-                    span.textContent = '✓✓';
-                    span.classList.add('read');
-                });
+                systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
                 if (savedMessages[roomKey]) {
                     savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
                     localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -399,15 +296,13 @@
             return;
         }
 
-        // Перехватываем скрытый сигнал удаления
         if (typeof data.text === 'string' && data.text.startsWith('[DELETE_SIGNAL:')) {
             const targetId = data.text.replace('[DELETE_SIGNAL:', '').replace(']', '');
-            
-            // Удаляем элемент из DOM (с экрана)
-            const el = document.getElementById(targetId);
-            if (el) el.remove();
-
-            // Удаляем из localStorage у получателя
+            if (!deletedMessageIds.includes(targetId)) {
+                deletedMessageIds.push(targetId);
+                localStorage.setItem('burmalda_deleted_ids', JSON.stringify(deletedMessageIds));
+            }
+            const el = document.getElementById(targetId); if (el) el.remove();
             if (savedMessages[roomKey]) {
                 savedMessages[roomKey] = savedMessages[roomKey].filter(m => m.msgId !== targetId);
                 localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -415,103 +310,128 @@
             return;
         }
 
+        if (data.text === '[CLEAR_CHAT_SIGNAL]') {
+            delete savedMessages[roomKey]; localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+            const partnerName = roomKey.replace(myNick, '').replace('_', '');
+            activeChats = activeChats.filter(c => c !== partnerName); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+
+            if (roomKey === currentRoom) {
+                currentActiveChatPartner = null; currentRoom = null;
+                chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; document.body.classList.remove('chat-opened');
+            }
+            renderChatsList(); return;
+        }
+
+        if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
+
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
-        
-        if (roomKey === currentRoom && data.user !== myNick) {
-            setTimeout(sendReadSignal, 300);
+        if (roomKey === currentRoom && data.user !== myNick) setTimeout(sendReadSignal, 300);
+
+        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
+            savedMessages[roomKey].push(data);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
 
-        savedMessages[roomKey].push(data);
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-
-        if (roomKey === currentRoom) {
-            displaySingleMessage(data);
-        }
+        if (roomKey === currentRoom) displaySingleMessage(data);
     });
 
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
         if (currentRoom && savedMessages[currentRoom]) {
-            savedMessages[currentRoom].forEach(displaySingleMessage);
+            const filtered = savedMessages[currentRoom].filter(m => !deletedMessageIds.includes(m.msgId));
+            filtered.forEach(displaySingleMessage);
         }
     }
 
     function displaySingleMessage(data) {
-        if (!messagesContainer || !data) return;
-        const item = document.createElement('li');
+        if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
         
-        // Обязательно присваиваем ID элементу списка для дальнейшего удаления
+        const item = document.createElement('li');
         const idToSet = data.msgId || ('msg-' + Date.now());
         item.id = idToSet;
         
-        const userDisplay = data.user ? String(data.user) : 'User';
-        const textDisplay = data.text ? String(data.text) : '';
-
         if (data.user === myNick) {
             item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `<strong>Я:</strong> ${textDisplay} <span class="${readClass}">${checkRead}</span>`;
+            item.innerHTML = `<strong>Я:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
         } else {
-            item.innerHTML = `<strong>${userDisplay}:</strong> ${textDisplay}`;
+            item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
         }
         
-        // Вешаем вызов меню удаления (работает на ПК и смартфонах)
-        item.oncontextmenu = (e) => {
-            e.preventDefault();
-            showContextMenu(e.clientX, e.clientY, idToSet);
-        };
-
-        // Для мобилок (долгий тап)
+        item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showMsgContextMenu(e.clientX, e.clientY, idToSet); };
         let pressTimer;
-        item.ontouchstart = (e) => {
-            pressTimer = window.setTimeout(() => {
-                showContextMenu(e.touches[0].clientX, e.touches[0].clientY, idToSet);
-            }, 600);
-        };
+        item.ontouchstart = (e) => { pressTimer = window.setTimeout(() => { showMsgContextMenu(e.touches[0].clientX, e.touches[0].clientY, idToSet); }, 600); };
         item.ontouchend = () => { clearTimeout(pressTimer); };
         
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Логика работы кастомного меню удаления
-    function showContextMenu(x, y, msgId) {
-        selectedMsgId = msgId;
-        contextMenu.style.left = `${x}px`;
-        contextMenu.style.top = `${y}px`;
+    function showMsgContextMenu(x, y, msgId) {
+        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
+        contextMenu.innerHTML = `<button onclick="executeDeleteMessage('${msgId}')" class="delete-btn">Удалить сообщение 🗑</button>`;
         contextMenu.style.display = 'block';
     }
 
-    // Закрываем меню при клике в любое другое место
+    function showChatContextMenu(x, y, partnerNick) {
+        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
+        contextMenu.innerHTML = `
+            <button onclick="window.executeDeleteChat('${partnerNick}', false)">Удалить только у себя 📂</button>
+            <button onclick="window.executeDeleteChat('${partnerNick}', true)" class="delete-btn">Удалить для всех 🚨</button>
+        `;
+        contextMenu.style.display = 'block';
+    }
+
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
 
-    // Клик по кнопке "Удалить"
-    deleteMsgBtn.onclick = () => {
-        if (!selectedMsgId || !currentRoom) return;
-
-        // 1. Отправляем скрытый сокет-сигнал собеседнику, чтобы он удалил у себя
-        socket.emit('private chat message', {
-            room: currentRoom,
-            text: `[DELETE_SIGNAL:${selectedMsgId}]`,
-            user: myNick
-        });
-
-        // 2. Удаляем у себя с экрана
-        const localEl = document.getElementById(selectedMsgId);
-        if (localEl) localEl.remove();
-
-        // 3. Удаляем из своего localStorage
+    window.executeDeleteMessage = function(msgId) {
+        if (!currentRoom) return;
+        if (!deletedMessageIds.includes(msgId)) {
+            deletedMessageIds.push(msgId);
+            localStorage.setItem('burmalda_deleted_ids', JSON.stringify(deletedMessageIds));
+        }
+        socket.emit('private chat message', { room: currentRoom, text: `[DELETE_SIGNAL:${msgId}]`, user: myNick });
+        const localEl = document.getElementById(msgId); if (localEl) localEl.remove();
         if (savedMessages[currentRoom]) {
-            savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== selectedMsgId);
+            savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
     };
 
-    function logout() {
-        window.location.href = '/';
-    }
+    // ЧИСТАЯ ФУНКЦИЯ УДАЛЕНИЯ ЧАТА
+    window.executeDeleteChat = function(partnerNick, deleteForBoth) {
+        const generatedRoom = [myNick, partnerNick].sort().join('_');
+        
+        // 1. Отправляем сигнал тотальной очистки если нужно
+        if (deleteForBoth) {
+            socket.emit('private chat message', { room: generatedRoom, text: '[CLEAR_CHAT_SIGNAL]', user: myNick });
+        }
 
+        // 2. Стираем историю сообщений комнаты
+        if (savedMessages[generatedRoom]) {
+            delete savedMessages[generatedRoom];
+        }
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+
+        // 3. Вырезаем собеседника из списка активных чатов
+        activeChats = activeChats.filter(c => c !== partnerNick);
+        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+
+        // 4. Закрываем рабочую область, если этот чат был открыт
+        if (generatedRoom === currentRoom) {
+            currentActiveChatPartner = null;
+            currentRoom = null;
+            chatArea.style.display = 'none';
+            chatPlaceholder.style.display = 'block';
+            document.body.classList.remove('chat-opened');
+        }
+
+        // 5. Перерисовываем список
+        renderChatsList();
+    };
+
+    function logout() { window.location.href = '/'; }
     renderChatsList();
 </script>
 </body>
