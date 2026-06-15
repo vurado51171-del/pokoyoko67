@@ -345,7 +345,11 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io();
+    // Проверяем, загрузился ли вообще socket.io, чтобы не было дефолтных ошибок
+    const socket = typeof io !== 'undefined' ? io() : null;
+    if (!socket) {
+        alert("Помилка: Не вдалося завантажити сокети з сервера Render!");
+    }
 
     // URL твого Google веб-додатку
     const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
@@ -358,8 +362,19 @@
     const MSG_HISTORY_KEY = `msg_history_${myNick}`;
 
     let onlineUsers = [];
-    let activeChats = JSON.parse(localStorage.getItem(CHAT_LIST_KEY)) || [];
-    let savedMessages = JSON.parse(localStorage.getItem(MSG_HISTORY_KEY)) || {};
+    let activeChats = [];
+    let savedMessages = {};
+
+    // Захист від кривих даних у LocalStorage
+    try {
+        activeChats = JSON.parse(localStorage.getItem(CHAT_LIST_KEY)) || [];
+        if (!Array.isArray(activeChats)) activeChats = [];
+    } catch(e) { activeChats = []; }
+
+    try {
+        savedMessages = JSON.parse(localStorage.getItem(MSG_HISTORY_KEY)) || {};
+        if (typeof savedMessages !== 'object' || savedMessages === null) savedMessages = {};
+    } catch(e) { savedMessages = {}; }
     
     let currentActiveChatPartner = null;
     let currentRoom = null;
@@ -375,77 +390,79 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
-    socket.emit('store user', myNick);
+    if (socket) {
+        socket.emit('store user', myNick);
 
-    socket.on('online users', (users) => {
-        if (Array.isArray(users)) {
-            onlineUsers = users;
-            renderChatsList();
-        }
-    });
-
-    searchToggleBtn.onclick = function(e) {
-        e.preventDefault();
-        searchFrame.classList.toggle('active');
-        if (searchFrame.classList.contains('active')) {
-            searchInput.focus();
-        }
-    };
-
-    // Перевірка користувача в базі даних перед додаванням
-    searchInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            const targetNick = searchInput.value.trim();
-            if (!targetNick) return;
-            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert("Не можна створити чат з самим собою!");
-                return;
+        socket.on('online users', (users) => {
+            if (Array.isArray(users)) {
+                onlineUsers = users;
+                renderChatsList();
             }
+        });
+    }
 
-            if (activeChats.includes(targetNick)) {
-                searchInput.value = '';
-                searchFrame.classList.remove('active');
-                openChatWith(targetNick);
-                return;
+    if (searchToggleBtn) {
+        searchToggleBtn.onclick = function(e) {
+            e.preventDefault();
+            searchFrame.classList.toggle('active');
+            if (searchFrame.classList.contains('active')) {
+                searchInput.focus();
             }
+        };
+    }
 
-            searchInput.disabled = true;
-            searchInput.placeholder = "Перевірка в Burmalda_Users...";
+    if (searchInput) {
+        searchInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                const targetNick = searchInput.value.trim();
+                if (!targetNick) return;
+                if (targetNick.toLowerCase() === myNick.toLowerCase()) {
+                    alert("Не можна створити чат з самим собою!");
+                    return;
+                }
 
-            fetch(googleScriptUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: "check_user", targetUser: targetNick })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("Помилка сервера Google");
-                return res.json();
-            })
-            .then(data => {
-                searchInput.disabled = false;
-                searchInput.placeholder = "Введіть нікнейм...";
-
-                if (data && data.status === 'success' && data.exists) {
-                    activeChats.push(targetNick);
-                    localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
-                    
-                    syncContactsWithCloud();
-
+                if (activeChats.includes(targetNick)) {
                     searchInput.value = '';
                     searchFrame.classList.remove('active');
                     openChatWith(targetNick);
-                } else {
-                    alert((data && data.message) || "Користувача не знайдено в базі даних!");
+                    return;
                 }
-            })
-            .catch(err => {
-                searchInput.disabled = false;
-                searchInput.placeholder = "Введіть нікнейм...";
-                alert("Помилка мережі при перевірці акаунта.");
-                console.error(err);
-            });
-        }
-    };
+
+                searchInput.disabled = true;
+                searchInput.placeholder = "Перевірка в Burmalda_Users...";
+
+                fetch(googleScriptUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: "check_user", targetUser: targetNick })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    searchInput.disabled = false;
+                    searchInput.placeholder = "Введіть нікнейм...";
+
+                    if (data && data.status === 'success' && data.exists) {
+                        activeChats.push(targetNick);
+                        localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
+                        
+                        syncContactsWithCloud();
+
+                        searchInput.value = '';
+                        searchFrame.classList.remove('active');
+                        openChatWith(targetNick);
+                    } else {
+                        alert((data && data.message) || "Користувача не знайдено в базі даних!");
+                    }
+                })
+                .catch(err => {
+                    searchInput.disabled = false;
+                    searchInput.placeholder = "Введіть нікнейм...";
+                    alert("Помилка мережі при перевірці акаунта.");
+                    console.error(err);
+                });
+            }
+        };
+    }
 
     function syncContactsWithCloud() {
         fetch(googleScriptUrl, {
@@ -493,28 +510,33 @@
         if (chatArea) chatArea.style.display = 'flex';
         if (chatHeader) chatHeader.textContent = `Діалог з: ${user}`;
 
-        socket.emit('join room', user);
+        if (socket) socket.emit('join room', user);
         loadMessagesHistory();
         renderChatsList();
     }
 
-    socket.on('force join room', (roomName) => {
-        if (!roomName) return;
-        const partner = roomName.toString().replace(myNick, '').replace('_', '');
-        if (!partner) return;
+    if (socket) {
+        socket.on('force join room', (roomName) => {
+            if (!roomName) return;
+            // Полностью безопасное преобразование в строку без вызова чистой .toString() на неопределенном объекте
+            const cleanRoomName = String(roomName);
+            const partner = cleanRoomName.replace(myNick, '').replace('_', '');
+            if (!partner) return;
 
-        if (!activeChats.includes(partner)) {
-            activeChats.push(partner);
-            localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
-            syncContactsWithCloud();
-            renderChatsList();
-        }
-        socket.emit('join room', partner);
-    });
+            if (!activeChats.includes(partner)) {
+                activeChats.push(partner);
+                localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
+                syncContactsWithCloud();
+                renderChatsList();
+            }
+            socket.emit('join room', partner);
+        });
+    }
 
     function sendMessage() {
+        if (!input) return;
         const text = input.value.trim();
-        if (text && currentRoom) {
+        if (text && currentRoom && socket) {
             socket.emit('private chat message', { room: currentRoom, text: text });
             input.value = '';
         }
@@ -523,18 +545,20 @@
     if (button) button.onclick = sendMessage;
     if (input) input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-    socket.on('chat message', (data) => {
-        if (!data || !data.room) return;
-        
-        const roomKey = data.room.toString();
-        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
-        savedMessages[roomKey].push(data);
-        localStorage.setItem(MSG_HISTORY_KEY, JSON.stringify(savedMessages));
+    if (socket) {
+        socket.on('chat message', (data) => {
+            if (!data || !data.room) return;
+            
+            const roomKey = String(data.room);
+            if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+            savedMessages[roomKey].push(data);
+            localStorage.setItem(MSG_HISTORY_KEY, JSON.stringify(savedMessages));
 
-        if (roomKey === currentRoom) {
-            displaySingleMessage(data);
-        }
-    });
+            if (roomKey === currentRoom) {
+                displaySingleMessage(data);
+            }
+        });
+    }
 
     function loadMessagesHistory() {
         if (!messagesContainer) return;
@@ -549,8 +573,8 @@
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
         
-        const userDisplay = data.user ? data.user.toString() : 'User';
-        const textDisplay = data.text ? data.text.toString() : '';
+        const userDisplay = data.user ? String(data.user) : 'User';
+        const textDisplay = data.text ? String(data.text) : '';
 
         item.innerHTML = `<strong>${userDisplay}</strong> ${textDisplay}`;
         messagesContainer.appendChild(item);
