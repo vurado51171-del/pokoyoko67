@@ -38,7 +38,6 @@
                 return;
             }
 
-            // Твой URL Google Apps Script
             const url = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
 
             errorDiv.innerText = "Проверка...";
@@ -53,12 +52,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Сохраняем сессию в браузере
-                    sessionStorage.setItem('chat_logged_in', 'true');
-                    sessionStorage.setItem('chat_current_user', nick);
+                    // Сохраняем сессию в локальное хранилище
+                    localStorage.setItem('chat_logged_in', 'true');
+                    localStorage.setItem('chat_current_user', nick);
 
-                    // ПЕРЕХОД: указываем точный файл chat.html в этой же папке
-                    window.location.href = './chat.html'; 
+                    // Переходим на страницу чата так, как настроено в твоём Node.js
+                    window.location.href = '/chat'; 
                 } else {
                     errorDiv.style.color = "#dc3545";
                     errorDiv.innerText = data.message || "Ошибка авторизации!";
@@ -66,7 +65,7 @@
             })
             .catch(err => {
                 errorDiv.style.color = "#dc3545";
-                errorDiv.innerText = "Ошибка сети или скрипта";
+                errorDiv.innerText = "Ошибка сети";
                 console.error(err);
             });
         }
