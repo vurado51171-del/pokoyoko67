@@ -2,94 +2,520 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#121212">
+    <meta name="color-scheme" content="dark">
     <title>Burmalda Messenger</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: sans-serif; margin: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; }
-        
-        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; }
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
-        
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 80%; width: fit-content; word-break: break-word; font-size: 15px; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; }
-        
-        #form { padding: 10px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; flex-shrink: 0; }
-        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; font-size: 16px; outline: none; -webkit-appearance: none; }
-        #button { padding: 12px 20px; margin-left: 8px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        @media (max-width: 768px) {
-            #sidebar { display: none; }
-            body.chat-opened #sidebar { display: none; }
-            body.chat-opened #chat-main { display: flex; width: 100%; }
-            #chat-main { display: none; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 100%;
+            max-width: 320px;
+            background: #1e1e1e;
+            border-right: 1px solid #2c2c2c;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            z-index: 10;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 640px) {
+            #sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                max-width: 85%;
+                width: 280px;
+                z-index: 20;
+            }
+            #sidebar.open {
+                transform: translateX(0);
+            }
+            .chat-main-area {
+                width: 100%;
+            }
+            .back-button-mobile {
+                display: flex !important;
+            }
+        }
+
+        .back-button-mobile {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #e0e0e0;
+            cursor: pointer;
+            padding: 6px 12px 6px 4px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-header {
+            padding: 14px 16px;
+            background: #262626;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            min-height: 64px;
+        }
+
+        .my-profile {
+            font-weight: 600;
+            color: #3b82f6;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-trigger-btn, .logout-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #aaa;
+            transition: color 0.2s;
+            padding: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 32px;
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        .search-container {
+            padding: 12px 16px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #333;
+            display: none;
+        }
+
+        .search-container.active {
+            display: block;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #1e1e1e;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 28px;
+            outline: none;
+            font-size: 16px;
+        }.section-title {
+            padding: 12px 16px 6px;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #chats-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .chat-item {
+            padding: 14px 16px;
+            border-bottom: 1px solid #2a2a2a;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 64px;
+            touch-action: manipulation;
+        }
+
+        .chat-item.active {
+            background: #2a2f36;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .status-dot.online {
+            color: #22c55e;
+        }
+
+        .chat-main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0f0f0f;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #chat-header {
+            padding: 14px 16px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #2c2c2c;
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 64px;
+        }
+
+        #messages {
+            list-style: none;
+            padding: 16px 12px;
+            margin: 0;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #messages li {
+            padding: 10px 14px;
+            background: #262626;
+            border-radius: 20px;
+            max-width: 85%;
+            width: fit-content;
+            word-break: break-word;
+            font-size: 15px;
+        }
+
+        #messages li.my-msg {
+            background: #3b82f6;
+            align-self: flex-end;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        #form {
+            padding: 12px 16px;
+            background: #1e1e1e;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid #2c2c2c;
+        }
+
+        #input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #2d2d2d;
+            border: none;
+            color: white;
+            border-radius: 28px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        #button {
+            padding: 10px 22px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            min-width: 80px;
+            min-height: 44px;
+        }
+
+        .no-chat-selected {
+            margin: auto;
+            text-align: center;
+            color: #6b7280;
+            padding: 24px;
         }
     </style>
 </head>
 <body id="main-body" style="display: none;">
+    <div class="app-container">
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <div class="my-profile" id="my-profile-name">Загрузка...</div>
+                <div class="header-controls">
+                    <button class="search-trigger-btn" id="search-toggle-btn">🔍</button>
+                    <button class="logout-btn" id="logout-btn">🚪</button>
+                </div>
+            </div>
+            <div class="search-container" id="search-frame">
+                <input type="text" id="search-input" placeholder="Введите имя друга и нажмите Enter" autocomplete="off">
+            </div>
+            <div class="section-title">💬 Диалоги</div>
+            <div id="chats-list"></div>
+        </div>
 
-<div id="sidebar">
-    <div style="padding:15px; border-bottom:1px solid #333;">Ваши диалоги</div>
-    <div id="chats-list" style="flex-grow:1; overflow-y:auto;"></div>
-</div>
-
-<div id="chat-main">
-    <div id="chat-area" style="display:none; flex-direction:column; height:100%;">
-        <div id="chat-header" style="padding:15px; border-bottom:1px solid #333; font-weight:bold;">Чат</div>
-        <ul id="messages"></ul>
-        <div id="form">
-            <input id="input" autocomplete="off" placeholder="Сообщение..." />
-            <button id="button">Отправить</button>
+        <div class="chat-main-area" id="chat-main-area">
+            <div id="no-chat-placeholder" class="no-chat-selected"><p><strong>Burmalda Messenger</strong><br>Выберите диалог или нажмите 🔍</p>
+            </div>
+            <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
+                <div id="chat-header">
+                    <button class="back-button-mobile" id="sidebar-toggle-btn">☰</button>
+                    <span id="chat-header-name">Чат</span>
+                </div>
+                <ul id="messages"></ul>
+                <div id="form">
+                    <input id="input" autocomplete="off" placeholder="Сообщение..." />
+                    <button id="button">Отправить</button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    // Инициализация
-    const urlParams = new URLSearchParams(window.location.search);
-    const authToken = urlParams.get('auth');
-    let myNick = 'Аноним';
-    
-    // Авторизация
-    if (authToken) {
-        try {
-            const decoded = decodeURIComponent(atob(authToken));
-            myNick = decoded.split('_')[0];
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const authToken = urlParams.get('auth');
+            let myNick = 'Аноним';
+            let authorized = false;
+
+            if (authToken) {
+                try {
+                    const decoded = decodeURIComponent(atob(authToken));
+                    const parts = decoded.split('_');
+                    myNick = parts[0];
+                    const loginTime = parseInt(parts[1]);
+                    if (Date.now() - loginTime < 86400000 && myNick) {
+                        authorized = true;
+                    }
+                } catch (e) {}
+            }
+
+            if (!authorized) {
+                alert('Доступ запрещён. Авторизуйтесь на главной странице.');
+                window.location.href = '/';
+                return;
+            }
+
             document.getElementById('main-body').style.display = 'flex';
-        } catch(e) { window.location.href = '/'; }
-    } else { window.location.href = '/'; }
+            document.getElementById('my-profile-name').textContent = Я: ${myNick};
 
-    const socket = io();
-    const input = document.getElementById('input');
-    const messages = document.getElementById('messages');
-    
-    socket.emit('store user', myNick);
+            const socket = io();
+            let currentRoom = null;
+            let currentActiveChatPartner = null;
+            let onlineUsers = [];
 
-    function openChatWith(user) {
-        document.body.classList.add('chat-opened');
-        document.getElementById('chat-area').style.display = 'flex';
-        setTimeout(() => input.focus(), 300);
-    }
+            let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
+            let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
 
-    function sendMessage() {
-        if (input.value.trim()) {
-            socket.emit('private chat message', { text: input.value });
-            input.value = '';
-        }
-    }
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+            const searchToggleBtn = document.getElementById('search-toggle-btn');
+            const searchFrame = document.getElementById('search-frame');
+            const searchInput = document.getElementById('search-input');
+            const chatsListEl = document.getElementById('chats-list');
+            const chatPlaceholder = document.getElementById('no-chat-placeholder');
+            const chatArea = document.getElementById('chat-area');
+            const chatHeaderName = document.getElementById('chat-header-name');
+            const messagesContainer = document.getElementById('messages');
+            const inputMsg = document.getElementById('input');
+            const sendBtn = document.getElementById('button');
+            const logoutBtn = document.getElementById('logout-btn');
 
-    socket.on('chat message', (data) => {
-        if (!data) return;
-        const li = document.createElement('li');
-        li.textContent = (data.user || 'Гость') + ": " + (data.text || '');
-        if (data.user === myNick) li.classList.add('my-msg');
-        messages.appendChild(li);
-        messages.scrollTop = messages.scrollHeight;
-    });
+            function closeSidebarMobile() {
+                if (window.innerWidth <= 640 && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            }
 
-    document.getElementById('button').onclick = sendMessage;
-</script>
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                });
+            }
+
+            socket.emit('store user', myNick);
+
+            socket.on('online users', (users) => {
+                onlineUsers = users;
+                renderChatsList();
+            });
+
+            socket.on('force join room', (roomName) => {
+                let partner = roomName.replace(myNick, '').replace('_', '');if (!partner) {
+                    const parts = roomName.split('_');
+                    partner = parts[0] === myNick ? parts[1] : parts[0];
+                }
+                if (partner && partner !== myNick && !activeChats.includes(partner)) {
+                    activeChats.push(partner);
+                    localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+                    renderChatsList();
+                }
+                if (partner && partner !== myNick) {
+                    socket.emit('join room', partner);
+                }
+            });
+
+            socket.on('chat message', (data) => {
+                if (!savedMessages[data.room]) savedMessages[data.room] = [];
+                savedMessages[data.room].push(data);
+                localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+                if (data.room === currentRoom) {
+                    displaySingleMessage(data);
+                }
+            });
+
+            function sendMessage() {
+                const text = inputMsg.value.trim();
+                if (text && currentRoom) {
+                    socket.emit('private chat message', { room: currentRoom, text: text });
+                    inputMsg.value = '';
+                    inputMsg.blur();
+                }
+            }
+
+            sendBtn.onclick = sendMessage;
+            inputMsg.onkeypress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+
+            function displaySingleMessage(data) {
+                const li = document.createElement('li');
+                if (data.user === myNick) {
+                    li.classList.add('my-msg');
+                    li.innerHTML = <strong>${escapeHtml(data.user)}:</strong> ${escapeHtml(data.text)};
+                } else {
+                    li.innerHTML = <strong>${escapeHtml(data.user)}:</strong> ${escapeHtml(data.text)};
+                }
+                messagesContainer.appendChild(li);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+
+            function loadMessagesHistory() {
+                messagesContainer.innerHTML = '';
+                if (savedMessages[currentRoom]) {
+                    savedMessages[currentRoom].forEach(displaySingleMessage);
+                }
+            }
+
+            function renderChatsList() {
+                chatsListEl.innerHTML = '';
+                if (activeChats.length === 0) {
+                    chatsListEl.innerHTML = '<div style="padding: 20px; color: #6b7280; text-align: center;">Нет диалогов<br>Нажмите 🔍 для поиска</div>';
+                    return;
+                }
+                activeChats.forEach(user => {
+                    if (user === myNick) return;
+                    const div = document.createElement('div');
+                    div.className = 'chat-item';
+                    if (currentActiveChatPartner === user) div.classList.add('active');
+                    const isOnline = onlineUsers.includes(user);
+                    div.innerHTML = <span>${escapeHtml(user)}</span><span class="status-dot ${isOnline ? 'online' : ''}">${isOnline ? '●' : '○'}</span>;
+                    div.addEventListener('click', () => {
+                        openChatWith(user);
+                        closeSidebarMobile();
+                    });
+                    chatsListEl.appendChild(div);
+                });
+            }function openChatWith(user) {
+                if (user === myNick) return;
+                currentActiveChatPartner = user;
+                currentRoom = [myNick, user].sort().join('_');
+                chatPlaceholder.style.display = 'none';
+                chatArea.style.display = 'flex';
+                chatHeaderName.textContent = user;
+                socket.emit('join room', user);
+                loadMessagesHistory();
+                renderChatsList();
+                setTimeout(() => inputMsg.focus(), 150);
+                localStorage.setItem('burmalda_last_chat', user);
+            }
+
+            searchToggleBtn.onclick = () => {
+                searchFrame.classList.toggle('active');
+                if (searchFrame.classList.contains('active')) searchInput.focus();
+            };
+
+            searchInput.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    const targetNick = searchInput.value.trim();
+                    if (!targetNick || targetNick === myNick) return;
+                    if (!activeChats.includes(targetNick)) {
+                        activeChats.push(targetNick);
+                        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+                        renderChatsList();
+                    }
+                    searchInput.value = '';
+                    searchFrame.classList.remove('active');
+                    openChatWith(targetNick);
+                    closeSidebarMobile();
+                }
+            };
+
+            logoutBtn.onclick = () => {
+                if (confirm('Выйти?')) window.location.href = '/';
+            };
+
+            function tryOpenLastChat() {
+                const lastChat = localStorage.getItem('burmalda_last_chat');
+                if (lastChat && activeChats.includes(lastChat)) {
+                    openChatWith(lastChat);
+                } else if (activeChats.length > 0 && !currentActiveChatPartner) {
+                    openChatWith(activeChats[0]);
+                }
+            }
+
+            renderChatsList();
+            tryOpenLastChat();
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 640 && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
