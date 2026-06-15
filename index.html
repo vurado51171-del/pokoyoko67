@@ -64,7 +64,6 @@
     <div class="section-title">Ваши диалоги</div>
     <div id="chats-list"></div>
 </div>
-
 <div id="chat-main">
     <div id="no-chat-placeholder" class="no-chat-selected">
         <p>Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
@@ -79,7 +78,6 @@
         </div>
     </div>
 </div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
@@ -142,4 +140,112 @@
             }
 
             // Добавляем человека в список, если его там не было
-            if (!activeChats.includ
+            if (!activeChats.includes(targetNick)) {
+                activeChats.push(targetNick);
+                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            }
+
+            searchInput.value = '';
+            searchFrame.classList.remove('active'); // Прячем поиск после добавления
+            
+            // Сразу открываем добавленный чат
+            openChatWith(targetNick);
+        }
+    };
+
+    // Перерисовка списка чатов слева
+    function renderChatsList() {
+        chatsList.innerHTML = '';
+        
+        if (activeChats.length === 0) {
+            chatsList.innerHTML = '<div style="padding: 15px; color: #555; font-size: 14px; text-align: center;">Список пуст.<br>Нажмите на 🔍 вверху</div>';
+            return;
+        }
+
+        activeChats.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'chat-item';
+            if (currentActiveChatPartner === user) item.classList.add('active');const isOnline = onlineUsers.includes(user);
+            item.innerHTML = 
+                <span>${user}</span>
+                <span class="status-dot ${isOnline ? 'online' : ''}">${isOnline ? '● онлайн' : 'офлайн'}</span>
+            ;
+
+            // Клик по чату в меню — переключает на него
+            item.onclick = () => openChatWith(user);
+            chatsList.appendChild(item);
+        });
+    }
+
+    // Открытие чата
+    function openChatWith(user) {
+        currentActiveChatPartner = user;
+        currentRoom = [myNick, user].sort().join('_');
+
+        chatPlaceholder.style.display = 'none';
+        chatArea.style.display = 'flex';
+        chatHeader.textContent = Диалог с: ${user};
+
+        socket.emit('join room', user);
+        loadMessagesHistory();
+        renderChatsList();
+    }
+
+    // Авто-добавление чата, если кто-то написал нам
+    socket.on('force join room', (roomName) => {
+        const partner = roomName.replace(myNick, '').replace('_', '');
+        if (!activeChats.includes(partner)) {
+            activeChats.push(partner);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            renderChatsList();
+        }
+        socket.emit('join room', partner);
+    });
+
+    // Отправка сообщений
+    function sendMessage() {
+        const text = input.value.trim();
+        if (text && currentRoom) {
+            socket.emit('private chat message', { room: currentRoom, text: text });
+            input.value = '';
+        }
+    }
+
+    button.onclick = sendMessage;
+    input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+    // Получение сообщений
+    socket.on('chat message', (data) => {
+        if (!savedMessages[data.room]) savedMessages[data.room] = [];
+        
+        savedMessages[data.room].push(data);
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+
+        if (data.room === currentRoom) {
+            displaySingleMessage(data);
+        }
+    });
+
+    // Загрузка истории
+    function loadMessagesHistory() {
+        messagesContainer.innerHTML = '';
+        if (savedMessages[currentRoom]) {
+            savedMessages[currentRoom].forEach(displaySingleMessage);
+        }
+    }
+
+    function displaySingleMessage(data) {
+        const item = document.createElement('li');
+        if (data.user === myNick) {
+            item.classList.add('my-msg');
+        }
+        item.innerHTML = <strong>${data.user}:</strong> ${data.text};
+        messagesContainer.appendChild(item);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Первичный рендер при входе
+    renderChatsList();
+</script>
+</body>
+</html>
