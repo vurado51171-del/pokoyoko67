@@ -159,7 +159,6 @@
     </div>
 </div>
 
-<!-- Универсальное Модальное Окно Настроек и Профилей -->
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
@@ -167,7 +166,6 @@
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
 
-        <!-- Блок работы с Аватаркой в модалке -->
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
             <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
@@ -244,7 +242,7 @@
             logoutBtn: "Вийти з профілю 🚪",
             emptyList: "Список порожній.<br>Натиніть на 🔍 вгорі",
             selfChatError: "Не можна створити чат із самим собою!",
-            ctxDeleteChat: "Видалити чат 🗑",
+            ctxDeleteChat: "Видати чат 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
             meLabel: "Я",
@@ -411,12 +409,16 @@
         settingsModal.classList.add('active');
     }
 
+    // Сохранение и отправка описания на сервер
     function saveMyBio(text) {
         if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '' };
         localProfiles[myNick].bio = text;
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
+        
+        socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
     }
 
+    // Загрузка и отправка аватарки на сервер
     function handleAvatarUpload(inputEl) {
         const file = inputEl.files[0];
         if (!file) return;
@@ -430,6 +432,8 @@
             document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
             document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${(currentLang === 'en' ? 'Me: ' : 'Я: ') + myNick}</span>`;
             renderChatsList();
+
+            socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
         };
         reader.readAsDataURL(file);
     }
@@ -468,7 +472,32 @@
         applyLanguage();
     }
 
+    // Инициализация соединения и запрос базы данных аватарок
     socket.emit('store user', myNick);
+    socket.emit('request profiles'); 
+
+    // Получение обновлений профилей в реальном времени
+    socket.on('broadcast profile update', (packet) => {
+        if (packet && packet.user && packet.data) {
+            localProfiles[packet.user] = packet.data;
+            localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
+            renderChatsList();
+            if (currentActiveChatPartner === packet.user) {
+                const t = translations[currentLang];
+                chatTitleText.innerHTML = `${getAvatarHTML(packet.user)} <span>${t.dialogWith + packet.user}</span>`;
+            }
+        }
+    });
+
+    // Загрузка всех профилей, сохраненных на сервере
+    socket.on('all profiles data', (serverProfiles) => {
+        if (serverProfiles) {
+            localProfiles = { ...localProfiles, ...serverProfiles };
+            localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
+            applyLanguage();
+        }
+    });
+
     socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
 
     input.oninput = () => {
@@ -621,7 +650,6 @@
         }
     }
 
-    // Изменено: вывод сообщений полностью в твоем старом дизайне (без картинок внутри списка)
     function displaySingleMessage(data) {
         if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
         
