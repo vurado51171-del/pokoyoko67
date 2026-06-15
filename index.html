@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мой первый мессенджер</title>
+    <title>Мой мессенджер</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }
         #chat-container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         #messages { list-style-type: none; padding: 0; height: 300px; overflow-y: auto; border: 1px solid #ddd; margin-bottom: 10px; background: #fafafa; border-radius: 4px; }
-        #messages li { padding: 8px 12px; bottom-border: 1px solid #eee; }
+        #messages li { padding: 8px 12px; border-bottom: 1px solid #eee; }
         #messages li:nth-child(odd) { background: #f9f9f9; }
         #form { display: flex; }
         #input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px 0 0 4px; outline: none; }
@@ -19,6 +19,7 @@
 
 <div id="chat-container">
     <ul id="messages"></ul>
+    
     <div id="form">
         <input id="input" autocomplete="off" placeholder="Введите сообщение..." />
         <button id="button">Отправить</button>
@@ -27,36 +28,42 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io(); // Автоматически подключается к нашему серверу
+    const socket = io(); // Підключаємось до нашого сервера
 
-    const form = document.getElementById('form');
+    // Автоматично витягуємо нікнейм, який передала сторінка реєстрації в адресному рядку
+    const urlParams = new URLSearchParams(window.location.search);
+    const myNick = urlParams.get('nick') || 'Аноним';
+
     const input = document.getElementById('input');
     const button = document.getElementById('button');
     const messages = document.getElementById('messages');
 
-    // Функция отправки сообщения
+    // Функція відправки повідомлення
     function sendMessage() {
         if (input.value.trim() !== '') {
-            // Отправляем текст на сервер с тегом 'chat message'
-            socket.emit('chat message', input.value);
-            input.value = ''; // Очищаем поле ввода
+            // Тепер відправляємо не просто текст, а об'єкт: { user: 'нік', text: 'повідомлення' }
+            socket.emit('chat message', { user: myNick, text: input.value });
+            input.value = ''; // Очищаємо поле введення
         }
     }
 
-    // Слушаем клик по кнопке
+    // Слухаємо клік по кнопці "Отправить"
     button.addEventListener('click', sendMessage);
 
-    // Слушаем нажатие клавиши Enter в поле ввода
+    // Слухаємо натискання клавіші Enter у полі введення
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
 
-    // Слушаем сервер: когда от него прилетает 'chat message'
-    socket.on('chat message', (msg) => {
+    // Слухаємо сервер: коли від нього прилітає оновлене повідомлення
+    socket.on('chat message', (data) => {
         const item = document.createElement('li');
-        item.textContent = msg;
+        
+        // Гарно оформлюємо: "Нік: повідомлення" (нік виділяємо жирним)
+        item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+        
         messages.appendChild(item);
-        messages.scrollTop = messages.scrollHeight; // Прокрутка вниз
+        messages.scrollTop = messages.scrollHeight; // Автоматична прокрутка вниз
     });
 </script>
 </body>
