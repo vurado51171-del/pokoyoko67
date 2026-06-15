@@ -12,10 +12,9 @@
         /* Шапка с ником и кнопками */
         .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
-        .header-controls { display: flex; gap: 5px; align-items: center; }
-        .search-trigger-btn, .settings-btn, .logout-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
+        .header-controls { display: flex; gap: 8px; align-items: center; }
+        .search-trigger-btn, .settings-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
         .search-trigger-btn:hover, .settings-btn:hover { color: #fff; }
-        .logout-btn:hover { color: #dc3545; }
 
         /* Поле поиска друзей */
         .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
@@ -73,7 +72,6 @@
         <div class="header-controls">
             <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск людей">🔍</button>
             <button class="settings-btn" id="settings-toggle-btn" title="Настройки аккаунта">⚙️</button>
-            <button class="logout-btn" onclick="logout()" title="Выйти из аккаунта">🚪</button>
         </div>
     </div>
     
@@ -127,18 +125,15 @@
 
     if (authToken) {
         try {
-            // Расшифровываем Base64 строку токена
             const decoded = decodeURIComponent(atob(authToken));
             const parts = decoded.split('_');
             myNick = parts[0];
             const loginTime = parseInt(parts[1]);
             
-            // Форматируем время входа для вывода в настройках
             if (!isNaN(loginTime)) {
                 sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
             }
             
-            // Если токен существует и создан меньше суток назад (86400000 мс) — пускаем в систему
             if (Date.now() - loginTime < 86400000 && myNick) {
                 authorized = true;
             }
@@ -147,12 +142,10 @@
         }
     }
 
-    // Если токен не прошёл валидацию, перенаправляем на корень сервера Render
     if (!authorized) {
         alert('Доступ заблокирован! Пожалуйста, пройдите авторизацию на главной странице.');
         window.location.href = '/'; 
     } else {
-        // Показываем интерфейс мессенджера
         document.getElementById('main-body').style.display = 'flex';
     }
 
@@ -160,7 +153,6 @@
     const socket = io();
     document.getElementById('my-profile-name').textContent = "Я: " + myNick;
     
-    // Заполняем свойства в панели настроек
     document.getElementById('info-nick').textContent = myNick;
     document.getElementById('info-login-time').textContent = sessionTimeString;
 
@@ -168,7 +160,6 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    // Подгружаем списки чатов и локальную историю из памяти браузера
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
 
@@ -189,28 +180,23 @@
     const settingsModal = document.getElementById('settings-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
 
-    // Логика открытия/закрытия настроек
     settingsToggleBtn.onclick = () => {
         settingsModal.classList.add('active');
     };
     settingsCloseBtn.onclick = () => {
         settingsModal.classList.remove('active');
     };
-    // Закрытие кликом по фону вне окошка
     settingsModal.onclick = (e) => {
         if (e.target === settingsModal) settingsModal.classList.remove('active');
     };
 
-    // Регистрируем наш никнейм на сервере Node.js
     socket.emit('store user', myNick);
 
-    // Слушаем обновление списка пользователей онлайн
     socket.on('online users', (users) => {
         onlineUsers = Array.isArray(users) ? users : [];
         renderChatsList();
     });
 
-    // Показ/скрытие инпута поиска (лупа)
     searchToggleBtn.onclick = function(e) {
         e.preventDefault();
         searchFrame.classList.toggle('active');
@@ -219,7 +205,6 @@
         }
     };
 
-    // Добавление нового собеседника по нажатию Enter
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
@@ -240,7 +225,6 @@
         }
     };
 
-    // Отрисовка левой панели с диалогами
     function renderChatsList() {
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
@@ -265,7 +249,6 @@
         });
     }
 
-    // Открытие окна переписки
     function openChatWith(user) {
         if (!user) return;
         currentActiveChatPartner = user;
@@ -280,7 +263,6 @@
         renderChatsList();
     }
 
-    // Принудительное подключение к комнате, если собеседник написал первый
     socket.on('force join room', (roomName) => {
         if (!roomName) return;
         const cleanRoomName = String(roomName);
@@ -295,7 +277,6 @@
         socket.emit('join room', partner);
     });
 
-    // Отправка текстового сообщения
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
@@ -307,7 +288,6 @@
     button.onclick = sendMessage;
     input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-    // Получение входящих сообщений от сокета (с защитой типа данных комнаты)
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
         const roomKey = String(data.room);
@@ -321,7 +301,6 @@
         }
     });
 
-    // Загрузка локальной истории сообщений конкретной комнаты
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
         if (currentRoom && savedMessages[currentRoom]) {
@@ -329,7 +308,6 @@
         }
     }
 
-    // Добавление сообщения в блок UI
     function displaySingleMessage(data) {
         if (!messagesContainer || !data) return;
         const item = document.createElement('li');
@@ -343,12 +321,10 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Безопасный выход из аккаунта
     function logout() {
         window.location.href = '/';
     }
 
-    // Первичный запуск отрисовки
     renderChatsList();
 </script>
 </body>
