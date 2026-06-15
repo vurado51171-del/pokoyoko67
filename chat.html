@@ -18,7 +18,7 @@
             overflow: hidden;
         }
 
-        /* --- ШАПКА ХЕДЕРА --- */
+        /* --- КЛАССИЧЕСКАЯ ШАПКА ХЕДЕРА --- */
         .header {
             background: #16192b;
             padding: 15px 20px;
@@ -35,12 +35,6 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .header-user:hover {
-            background: rgba(255, 255, 255, 0.05);
         }
 
         .user-avatar {
@@ -113,7 +107,6 @@
         .msg-sender {
             color: #00f2fe;
             cursor: pointer;
-            text-decoration: underline;
         }
         .msg.outgoing .msg-sender {
             color: #ffffff;
@@ -162,7 +155,7 @@
         }
         .send-btn:active { transform: scale(0.95); }
 
-        /* --- ВСПЛЫВАЮЩЕЕ ОКНО ПРОФИЛЯ --- */
+        /* --- НАШЕ СТАНДАРТНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -176,76 +169,60 @@
         .profile-card {
             background: #16192b;
             border: 1px solid #252943;
-            border-radius: 20px;
+            border-radius: 10px; /* Твой стандартный радиус */
             width: 90%;
             max-width: 320px;
-            padding: 30px 20px;
+            padding: 25px 20px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: scaleUp 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
         .profile-card .large-avatar {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: #4facfe;
             margin: 0 auto 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
             font-weight: bold;
-            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.4);
             object-fit: cover;
         }
 
-        .profile-card h2 { margin: 0 0 5px 0; font-size: 22px; color: #fff; }
+        .profile-card h2 { margin: 0 0 5px 0; font-size: 20px; color: #fff; }
         .profile-card .prof-username { font-size: 14px; color: #00f2fe; margin-bottom: 5px; }
         .profile-card .prof-regdate { font-size: 11px; color: #858aa0; margin-bottom: 15px; }
-        
-        .upload-btn {
-            background: linear-gradient(135deg, #1d78c2 0%, #00f2fe 100%);
-            border: none;
-            color: white;
-            width: 100%;
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 13px;
-            margin-bottom: 20px;
-            transition: opacity 0.2s;
-        }
-        .upload-btn:hover { opacity: 0.9; }
 
         .profile-card .bio-box {
             background: #20243e;
             border: 1px solid #2d335c;
             padding: 12px;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 14px;
             color: #b3b9d1;
             text-align: left;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             word-wrap: break-word;
         }
 
-        .close-prof-btn {
+        /* Твой классический стиль для всех стандартных кнопок */
+        .classic-btn {
             background: #20243e;
             border: 1px solid #2d335c;
             color: white;
             width: 100%;
             padding: 12px;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 14px;
-            transition: background 0.2s;
+            margin-bottom: 10px;
+            transition: all 0.2s;
         }
-        .close-prof-btn:hover { background: #2d335c; }
+        .classic-btn:hover { background: #2d335c; border-color: #00f2fe; }
 
         /* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */
         .lang-container {
@@ -294,7 +271,6 @@
 </head>
 <body>
 
-    <!-- Шапка чата -->
     <div class="header">
         <div class="header-user" onclick="openProfile(myNickname)">
             <img id="user-avatar-img" class="user-avatar" src="" alt="" style="display:none;">
@@ -308,43 +284,33 @@
         <button class="logout-btn" id="t-logout" onclick="logout()">Выйти</button>
     </div>
 
-    <!-- Модальное окно просмотра профиля (твоего или собеседника) -->
     <div class="modal-overlay" id="profile-modal" onclick="closeProfileViaOverlay(event)">
         <div class="profile-card">
-            <!-- Аватарка -->
             <img id="modal-avatar-img" class="large-avatar" src="" alt="" style="display:none;">
             <div id="modal-avatar-letter" class="large-avatar">U</div>
 
-            <!-- Имя (юз при регистрации) -->
             <h2 id="modal-name">Username</h2>
             <div class="prof-username" id="modal-user-tag">@username</div>
-            
-            <!-- Дата регистрации -->
             <div class="prof-regdate" id="modal-regdate">Регистрация: --.--.----</div>
             
-            <!-- СКРЫТЫЙ ИНПУТ ДЛЯ ЗАГРУЗКИ (Показывается только в своём профиле) -->
             <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
-            <button class="upload-btn" id="t-upload-btn" onclick="document.getElementById('avatar-input').click()">
+            <button class="classic-btn" id="t-upload-btn" onclick="document.getElementById('avatar-input').click()">
                 📁 Загрузить из устройства
             </button>
             
-            <!-- Описание профиля -->
             <div class="bio-box" id="modal-bio">Пользователь Burmalda Messenger.</div>
 
-            <button class="close-prof-btn" id="t-close-prof" onclick="closeProfile()">Закрыть</button>
+            <button class="classic-btn" id="t-close-prof" onclick="closeProfile()" style="margin-bottom: 0;">Закрыть</button>
         </div>
     </div>
 
-    <!-- Окно сообщений -->
     <div class="chat-area" id="chat-box"></div>
 
-    <!-- Панель отправки -->
     <div class="input-panel">
         <input type="text" id="msg-input" placeholder="Напишите сообщение..." autocomplete="off">
         <button class="send-btn" id="t-send" onclick="sendMessage()">Отправить</button>
     </div>
 
-    <!-- Переключатель языков -->
     <div class="lang-container">
         <div class="lang-switch">
             <div class="lang-btn" onclick="setLang('uk')" id="btn-uk">UK</div>
@@ -404,7 +370,6 @@
             myNickname = localStorage.getItem('burmalda_my_nick') || "User";
             document.getElementById('user-display-name').innerText = myNickname;
 
-            // Если у нашего юзера нет сохраненной даты регистрации — генерируем её
             if (!localStorage.getItem(`regdate_${myNickname}`)) {
                 const today = new Date().toLocaleDateString();
                 localStorage.setItem(`regdate_${myNickname}`, today);
@@ -415,14 +380,13 @@
             const savedLang = localStorage.getItem('burmalda_lang') || 'ru';
             setLang(savedLang);
 
-            // Фейковые сообщения собеседников для теста кликов по профилю
+            // Фейковые сообщения для демонстрации
             appendMessage("Burmalda System", "Добро пожаловать в чат!", "incoming");
-            appendMessage("Gamer2026", "Привет! Зацени мой новый статус в профиле!", "incoming");
+            appendMessage("Gamer2026", "Привет! Нажми на мой ник, чтобы увидеть профиль.", "incoming");
             
-            // Зададим фейку дату регистрации и описание ради демонстрации
             if (!localStorage.getItem("regdate_Gamer2026")) {
                 localStorage.setItem("regdate_Gamer2026", "12.02.2026");
-                localStorage.setItem("bio_Gamer2026", "Люблю кодить на Python и настраивать сервера! 🛠️");
+                localStorage.setItem("bio_Gamer2026", "Настраиваю сервера и люблю олдскульный софт. 🛠️");
             }
         }
 
@@ -451,25 +415,21 @@
                 const base64Image = e.target.result;
                 localStorage.setItem(`avatar_${myNickname}`, base64Image);
                 renderAvatar();
-                openProfile(myNickname); // Перерисовываем открытое окно
+                openProfile(myNickname);
             };
             reader.readAsDataURL(file);
         }
 
-        // --- ДИНАМИЧЕСКОЕ ОТКРЫТИЕ ЛЮБОГО ПРОФИЛЯ ---
         function openProfile(username) {
             document.getElementById('modal-name').innerText = username;
             document.getElementById('modal-user-tag').innerText = '@' + username.toLowerCase();
             
-            // Вытягиваем дату регистрации из хранилища
             const regDate = localStorage.getItem(`regdate_${username}`) || new Date().toLocaleDateString();
             document.getElementById('modal-regdate').innerText = i18n[currentLang].regDate + regDate;
 
-            // Вытягиваем био / описание
             const userBio = localStorage.getItem(`bio_${username}`) || i18n[currentLang].defaultBio;
             document.getElementById('modal-bio').innerText = userBio;
 
-            // Логика отображения аватарки для выбранного юзера
             const modalImg = document.getElementById('modal-avatar-img');
             const modalLetter = document.getElementById('modal-avatar-letter');
             const targetAvatar = localStorage.getItem(`avatar_${username}`);
@@ -484,7 +444,6 @@
                 modalLetter.style.display = 'flex';
             }
 
-            // Прячем кнопку загрузки, если смотрим ЧУЖОЙ профиль
             const uploadBtn = document.getElementById('t-upload-btn');
             if (username === myNickname) {
                 uploadBtn.style.display = 'block';
@@ -520,7 +479,6 @@
             document.getElementById('t-close-prof').innerText = i18n[lang].closeProf;
             document.getElementById('t-upload-btn').innerText = i18n[lang].uploadBtn;
             
-            // Если модалка открыта во время переключения языков — обновляем текст даты
             const openName = document.getElementById('modal-name').innerText;
             if(document.getElementById('profile-modal').style.display === 'flex') {
                 const regDate = localStorage.getItem(`regdate_${openName}`) || new Date().toLocaleDateString();
@@ -534,7 +492,6 @@
             msgDiv.classList.add('msg', type);
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Оборачиваем имя отправителя в класс .msg-sender с событием onclick
             msgDiv.innerHTML = `
                 <strong class="msg-sender" onclick="openProfile('${sender}')">${sender}</strong>: ${text}
                 <span class="msg-meta">${time}</span>
