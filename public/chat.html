@@ -52,10 +52,10 @@
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         .back-btn:hover { background: #3a3a3a; }
 
-        /* Сообщения (Чистый старый стиль без аватарок внутри списка) */
+        /* Сообщения (Чистый стиль без имен и префиксов) */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
         #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 42px; }
         
         /* Галочки */
         .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
@@ -86,6 +86,10 @@
         .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
         .account-property strong { color: #fff; }
         
+        /* Поле ввода для смены Ника (отображаемого имени) */
+        .profile-name-input { width: 100%; padding: 8px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 14px; margin-top: 5px; }
+        .profile-name-input:disabled { background: #1a1a1a; color: #888; cursor: not-allowed; }
+
         /* Стили кастомизации профиля внутри модалки */
         .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; }
         .modal-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
@@ -159,6 +163,7 @@
     </div>
 </div>
 
+<!-- Модальное Окно Настроек и Профилей -->
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
@@ -173,7 +178,11 @@
         </div>
 
         <div id="account-info">
-            <div class="account-property"><span id="lbl-profile">Профиль:</span> <strong id="info-nick">...</strong></div>
+            <div class="account-property">
+                <span id="lbl-profile-name">Имя в чате (Ник):</span>
+                <input type="text" id="profile-display-name" class="profile-name-input" placeholder="Твой ник" oninput="saveMyDisplayName(this.value)">
+            </div>
+            <div class="account-property"><span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: #888;">...</strong></div>
             <div class="account-property"><span id="lbl-status">Статус:</span> <strong style="color: #28a745;" id="lbl-online-status">В сети</strong></div>
             <div class="account-property">
                 <span id="lbl-bio-title">О себе / Описание:</span>
@@ -205,12 +214,12 @@
             dialogsTitle: "Ваши диалоги",
             placeholderText: "Бурмалда Мессенджер<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
             backBtn: "⬅ Назад",
-            dialogWith: "Диалог с: ",
             inputPlaceholder: "Напишите сообщение...",
             btnSend: "Отправить",
             settingsTitle: "⚙️ Настройки",
             profileTitle: "👤 Профиль пользователя",
-            profile: "Профиль:",
+            profile: "Юзернейм (ID):",
+            profileName: "Имя в чате (Ник):",
             status: "Статус:",
             online: "В сети (Online)",
             loginTime: "Время входа:",
@@ -220,7 +229,6 @@
             ctxDeleteChat: "Удалить чат 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
-            meLabel: "Я",
             typingText: "печатает...",
             uploadBtn: "📁 Загрузить фото",
             bioPlaceholder: "Ничего не указано"
@@ -230,22 +238,21 @@
             dialogsTitle: "Ваші діалоги",
             placeholderText: "Бурмалда Месенджер<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
             backBtn: "⬅ Назад",
-            dialogWith: "Діалог з: ",
             inputPlaceholder: "Напишіть повідомлення...",
             btnSend: "Надіслати",
             settingsTitle: "⚙️ Налаштування",
             profileTitle: "👤 Профіль користувача",
-            profile: "Профіль:",
+            profile: "Юзернейм (ID):",
+            profileName: "Ім'я в чаті (Нік):",
             status: "Статус:",
             online: "В мережі (Online)",
             loginTime: "Час входу:",
             logoutBtn: "Вийти з профілю 🚪",
             emptyList: "Список порожній.<br>Натиніть на 🔍 вгорі",
             selfChatError: "Не можна створити чат із самим собою!",
-            ctxDeleteChat: "Видати чат 🗑",
+            ctxDeleteChat: "Видалити чат 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
-            meLabel: "Я",
             typingText: "пише...",
             uploadBtn: "📁 Завантажити фото",
             bioPlaceholder: "Нічого не вказано"
@@ -255,12 +262,12 @@
             dialogsTitle: "Your dialogs",
             placeholderText: "Burmalda Messenger<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
             backBtn: "⬅ Back",
-            dialogWith: "Chat with: ",
             inputPlaceholder: "Write a message...",
             btnSend: "Send",
             settingsTitle: "⚙️ Settings",
             profileTitle: "👤 User Profile",
-            profile: "Profile:",
+            profile: "Username (ID):",
+            profileName: "Display Name (Nick):",
             status: "Status:",
             online: "Online",
             loginTime: "Login time:",
@@ -270,7 +277,6 @@
             ctxDeleteChat: "Delete chat 🗑",
             chatStatusOnline: "● online",
             chatStatusOffline: "offline",
-            meLabel: "Me",
             typingText: "is typing...",
             uploadBtn: "📁 Upload Photo",
             bioPlaceholder: "Nothing specified"
@@ -281,7 +287,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('auth');
-    let myNick = 'Аноним';
+    let myNick = 'Аноним'; 
     let authorized = false;
     let sessionTimeString = 'Неизвестно';
 
@@ -289,7 +295,7 @@
         try {
             const decoded = decodeURIComponent(atob(authToken));
             const parts = decoded.split('_');
-            myNick = parts[0];
+            myNick = parts[0]; 
             const loginTime = parseInt(parts[1]);
             if (!isNaN(loginTime)) {
                 sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
@@ -350,12 +356,22 @@
         }
     };
 
+    // Функция получения Красивого Имени (если оно настроено, иначе возвращает Юзернейм)
+    function getVisibleName(username) {
+        const uData = localProfiles[username];
+        if (uData && uData.displayName && uData.displayName.trim() !== '') {
+            return uData.displayName.trim();
+        }
+        return username;
+    }
+
     function getAvatarHTML(username, cssClass = 'avatar') {
         const uData = localProfiles[username];
         if (uData && uData.avatar) {
             return `<img src="${uData.avatar}" class="${cssClass}" alt="">`;
         }
-        const firstLetter = username ? username.charAt(0) : '?';
+        const visibleName = getVisibleName(username);
+        const firstLetter = visibleName ? visibleName.charAt(0) : '?';
         const placeholderClass = cssClass === 'avatar' ? 'avatar-placeholder' : 'modal-avatar-placeholder';
         return `<div class="${placeholderClass}">${firstLetter}</div>`;
     }
@@ -363,7 +379,7 @@
     function openMyProfile() {
         const t = translations[currentLang];
         document.getElementById('modal-title-text').textContent = t.settingsTitle;
-        document.getElementById('info-nick').textContent = myNick;
+        document.getElementById('info-nick').textContent = myNick; // Здесь всегда пишем исходный логин/ID
         document.getElementById('lbl-online-status').textContent = t.online;
         document.getElementById('lbl-online-status').style.color = '#28a745';
         
@@ -372,7 +388,13 @@
         document.getElementById('btn-logout').style.display = 'block';
         document.getElementById('lbl-upload-btn').style.display = 'inline-block';
         
-        const myData = localProfiles[myNick] || { avatar: '', bio: '' };
+        const myData = localProfiles[myNick] || { avatar: '', bio: '', displayName: '' };
+        
+        // Поле ввода отображаемого Ника
+        const nameInput = document.getElementById('profile-display-name');
+        nameInput.disabled = false;
+        nameInput.value = myData.displayName || myNick;
+
         const descInput = document.getElementById('profile-desc');
         descInput.disabled = false;
         descInput.value = myData.bio || '';
@@ -387,7 +409,7 @@
         const t = translations[currentLang];
         
         document.getElementById('modal-title-text').textContent = t.profileTitle;
-        document.getElementById('info-nick').textContent = currentActiveChatPartner;
+        document.getElementById('info-nick').textContent = currentActiveChatPartner; 
         
         const isOnline = onlineUsers.includes(currentActiveChatPartner);
         const statusEl = document.getElementById('lbl-online-status');
@@ -399,7 +421,12 @@
         document.getElementById('btn-logout').style.display = 'none';
         document.getElementById('lbl-upload-btn').style.display = 'none';
         
-        const partnerData = localProfiles[currentActiveChatPartner] || { avatar: '', bio: '' };
+        const partnerData = localProfiles[currentActiveChatPartner] || { avatar: '', bio: '', displayName: '' };
+        
+        const nameInput = document.getElementById('profile-display-name');
+        nameInput.disabled = true;
+        nameInput.value = partnerData.displayName || currentActiveChatPartner;
+
         const descInput = document.getElementById('profile-desc');
         descInput.disabled = true;
         descInput.value = partnerData.bio || '';
@@ -409,9 +436,20 @@
         settingsModal.classList.add('active');
     }
 
+    // Сохранение Отображаемого Ника
+    function saveMyDisplayName(newName) {
+        if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
+        localProfiles[myNick].displayName = newName;
+        localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
+        
+        document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
+        renderChatsList();
+        socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
+    }
+
     // Сохранение и отправка описания на сервер
     function saveMyBio(text) {
-        if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '' };
+        if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
         localProfiles[myNick].bio = text;
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
         
@@ -425,12 +463,12 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const base64Img = e.target.result;
-            if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '' };
+            if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
             localProfiles[myNick].avatar = base64Img;
             localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
             
             document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
-            document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${(currentLang === 'en' ? 'Me: ' : 'Я: ') + myNick}</span>`;
+            document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
             renderChatsList();
 
             socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
@@ -442,7 +480,7 @@
         const t = translations[currentLang];
         document.getElementById('lang-select').value = currentLang;
         
-        document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${(currentLang === 'en' ? "Me: " : "Я: ") + myNick}</span>`;
+        document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
         document.getElementById('info-nick').textContent = myNick;
         document.getElementById('info-login-time').textContent = sessionTimeString;
         document.getElementById('lbl-upload-btn').textContent = t.uploadBtn;
@@ -455,12 +493,14 @@
         button.textContent = t.btnSend;
         
         document.getElementById('lbl-profile').textContent = t.profile;
+        document.getElementById('lbl-profile-name').textContent = t.profileName;
         document.getElementById('lbl-status').textContent = t.status;
         document.getElementById('lbl-time').textContent = t.loginTime;
         document.getElementById('btn-logout').textContent = t.logoutBtn;
         
         if (currentActiveChatPartner) {
-            chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${t.dialogWith + currentActiveChatPartner}</span>`;
+            // В шапке пишем чисто Кастомное Имя (без лишних "Диалог с:")
+            chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${getVisibleName(currentActiveChatPartner)}</span>`;
         }
         renderChatsList();
         loadMessagesHistory();
@@ -483,8 +523,7 @@
             localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
             renderChatsList();
             if (currentActiveChatPartner === packet.user) {
-                const t = translations[currentLang];
-                chatTitleText.innerHTML = `${getAvatarHTML(packet.user)} <span>${t.dialogWith + packet.user}</span>`;
+                chatTitleText.innerHTML = `${getAvatarHTML(packet.user)} <span>${getVisibleName(packet.user)}</span>`;
             }
         }
     });
@@ -579,10 +618,11 @@
             if (currentActiveChatPartner === user) item.classList.add('active');
             const isOnline = onlineUsers.includes(user);
             
+            // Сайдбар выводит Кастомное Имя (getVisibleName)
             item.innerHTML = `
                 <div class="chat-info-block">
                     ${getAvatarHTML(user)}
-                    <span>${user}</span>
+                    <span>${getVisibleName(user)}</span>
                 </div>
                 <span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>
             `;
@@ -601,7 +641,8 @@
         currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         
-        chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${translations[currentLang].dialogWith + user}</span>`;
+        // В шапке пишется чисто Отображаемый Ник друга
+        chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
         typingStatusEl.style.display = 'none';
         
         if (!document.body.classList.contains('chat-opened')) {
@@ -655,15 +696,15 @@
         
         const item = document.createElement('li');
         item.id = data.msgId || ('msg-' + Date.now());
-        const t = translations[currentLang];
         
+        // Внутри сообщений ПОЛНОСТЬЮ убран вывод имен/ников, остался только чистый текст
         if (data.user === myNick) {
             item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `<strong>${t.meLabel}:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
+            item.innerHTML = `${data.text} <span class="${readClass}">${checkRead}</span>`;
         } else {
-            item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+            item.innerHTML = `${data.text}`;
         }
         
         messagesContainer.appendChild(item);
