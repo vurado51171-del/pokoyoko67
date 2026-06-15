@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquid Glass Chat</title>
-    <!-- Сучасний шрифт Inter для преміального вигляду -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,7 +19,6 @@
             margin: 0;
             padding: 0;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            /* Складний темний градієнт для глибини під склом */
             background: radial-gradient(circle at 10% 20%, #1a103c 0%, #0b0f19 60%, #020408 100%);
             height: 100vh;
             display: flex;
@@ -30,7 +28,6 @@
             overflow: hidden;
         }
 
-        /* Основний скляний контейнер додатку */
         .app-container {
             display: flex;
             width: 90vw;
@@ -44,11 +41,10 @@
             box-shadow: 
                 0 25px 60px rgba(0, 0, 0, 0.45),
                 inset 0 1px 2px rgba(255, 255, 255, 0.25),
-                inset 0 15px 35px var(--liquid-glow); /* Рідкий відблиск зверху */
+                inset 0 15px 35px var(--liquid-glow);
             overflow: hidden;
         }
 
-        /* Ліва панель чатів */
         .sidebar {
             width: 320px;
             border-right: 1px solid var(--glass-border);
@@ -75,7 +71,6 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* Кнопки керування */
         .icon-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
@@ -93,7 +88,6 @@
             box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
         }
 
-        /* Анімований контейнер пошуку */
         .search-frame {
             padding: 0 20px;
             max-height: 0;
@@ -127,7 +121,6 @@
             background: rgba(0, 0, 0, 0.3);
         }
 
-        /* Список чатів */
         #chatsList {
             flex: 1;
             overflow-y: auto;
@@ -163,7 +156,6 @@
             font-size: 0.95rem;
         }
 
-        /* Статуси */
         .status-dot {
             font-size: 0.8rem;
             color: var(--text-muted);
@@ -175,7 +167,6 @@
             text-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
         }
 
-        /* Права частина - Область чату */
         .main-chat {
             flex: 1;
             display: flex;
@@ -210,7 +201,6 @@
             letter-spacing: 0.3px;
         }
 
-        /* Вікно повідомлень */
         #messages {
             flex: 1;
             list-style: none;
@@ -235,7 +225,6 @@
             font-size: 0.95rem;
         }
 
-        /* Мої повідомлення (Рідкий неоновий ефект) */
         #messages li.my-msg {
             align-self: flex-end;
             border-radius: 16px 16px 4px 16px;
@@ -260,7 +249,6 @@
             opacity: 0.8;
         }
 
-        /* Зона введення тексту */
         .input-area {
             padding: 20px 25px;
             display: flex;
@@ -285,7 +273,6 @@
         #input:focus {
             border-color: var(--accent);
             background: rgba(0, 0, 0, 0.3);
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
         }
 
         #button {
@@ -311,7 +298,6 @@
             transform: translateY(0);
         }
 
-        /* Гарний кастомний скроллбар */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -330,7 +316,6 @@
 <body>
 
 <div class="app-container">
-    <!-- Ліва колонка: Списки та пошук -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <h2>Чати</h2>
@@ -340,23 +325,18 @@
             </div>
         </div>
         
-        <!-- Панель пошуку користувачів -->
         <div id="searchFrame" class="search-frame">
             <input type="text" id="searchInput" placeholder="Введіть нікнейм...">
         </div>
 
-        <!-- Список активних діалогів -->
         <div id="chatsList"></div>
     </aside>
 
-    <!-- Права колонка: Вікно листування -->
     <main class="main-chat">
-        <!-- Початковий екран без чату -->
         <div id="chat-placeholder">
             <span>💬 Оберіть чат або натисніть 🔍 для пошуку</span>
         </div>
 
-        <!-- Активний чат (по дефолту прихований) -->
         <div id="chat-area" style="display: none;">
             <div id="chat-header">Діалог з:</div>
             
@@ -370,22 +350,27 @@
     </main>
 </div>
 
-<!-- Підключення Socket.io клієнта -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // Ініціалізація сокет-з'єднання
     const socket = io();
 
-    // Припускаємо, що змінні мого нікнейму та історії вже оголошені у вашому глобальному контексті
-    // Якщо ні, ось дефолтні ініціалізації для запобігання помилок:
+    // 1. Отримуємо нікнейм поточного користувача (задається сервером або під час авторизації)
+    // Якщо нікнейму немає в куках або сесії, використовуємо поточний з localStorage для тесту
     const myNick = localStorage.getItem('burmalda_my_nick') || 'User_' + Math.floor(Math.random() * 1000);
+    
+    // ПРИВ'ЯЗКА ДО АКАУНТА: Створюємо унікальні динамічні ключі для поточного нікнейму
+    const CHAT_LIST_KEY = `chat_list_${myNick}`;
+    const MSG_HISTORY_KEY = `msg_history_${myNick}`;
+
     let onlineUsers = [];
-    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
-    let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
+    
+    // Завантажуємо дані саме для ЦЬОГО користувача
+    let activeChats = JSON.parse(localStorage.getItem(CHAT_LIST_KEY)) || [];
+    let savedMessages = JSON.parse(localStorage.getItem(MSG_HISTORY_KEY)) || {};
+    
     let currentActiveChatPartner = null;
     let currentRoom = null;
 
-    // Отримання елементів DOM за вашими ID
     const chatsList = document.getElementById('chatsList');
     const searchToggleBtn = document.getElementById('searchToggleBtn');
     const searchFrame = document.getElementById('searchFrame');
@@ -397,16 +382,13 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
-    // Реєструємо наш никнейм на сервері Node.js
     socket.emit('store user', myNick);
 
-    // Слухаємо оновлення списку користувачів онлайн
     socket.on('online users', (users) => {
         onlineUsers = users;
         renderChatsList();
     });
 
-    // Показ/приховування інпуту пошуку (лупа)
     searchToggleBtn.onclick = function(e) {
         e.preventDefault();
         searchFrame.classList.toggle('active');
@@ -415,7 +397,6 @@
         }
     };
 
-    // Додавання нового співрозмовника по натисканню Enter
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
@@ -427,7 +408,8 @@
 
             if (!activeChats.includes(targetNick)) {
                 activeChats.push(targetNick);
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+                // Зберігаємо в індивідуальне сховище акаунта
+                localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
             }
 
             searchInput.value = '';
@@ -436,7 +418,6 @@
         }
     };
 
-    // Отрисовка лівої панелі з діалогами
     function renderChatsList() {
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
@@ -460,7 +441,6 @@
         });
     }
 
-    // Відкриття вікна переписки
     function openChatWith(user) {
         currentActiveChatPartner = user;
         currentRoom = [myNick, user].sort().join('_');
@@ -474,18 +454,17 @@
         renderChatsList();
     }
 
-    // Примусове підключення до кімнати, якщо співрозмовник написав першим
     socket.on('force join room', (roomName) => {
         const partner = roomName.replace(myNick, '').replace('_', '');
         if (!activeChats.includes(partner)) {
             activeChats.push(partner);
-            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            // Зберігаємо в індивідуальне сховище акаунта
+            localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
             renderChatsList();
         }
         socket.emit('join room', partner);
     });
 
-    // Відправка текстового повідомлення
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
@@ -497,18 +476,18 @@
     button.onclick = sendMessage;
     input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-    // Отримання вхідних повідомлень від сокета
     socket.on('chat message', (data) => {
         if (!savedMessages[data.room]) savedMessages[data.room] = [];
         savedMessages[data.room].push(data);
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        
+        // Зберігаємо історію саме цього акаунта
+        localStorage.setItem(MSG_HISTORY_KEY, JSON.stringify(savedMessages));
 
         if (data.room === currentRoom) {
             displaySingleMessage(data);
         }
     });
 
-    // Завантаження локальної історії повідомлень конкретної кімнати
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
         if (savedMessages[currentRoom]) {
@@ -516,7 +495,6 @@
         }
     }
 
-    // Додавання повідомлення в блок UI
     function displaySingleMessage(data) {
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
@@ -525,12 +503,12 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Безпечний вихід з аккаунту
     function logout() {
+        // При виході ми просто перенаправляємо на сторінку логіну/головну.
+        // Завдяки динамічним ключам, коли зайде інший юзер, завантажаться ЙОГО чати.
         window.location.href = '/';
     }
 
-    // Первинний запуск отрисовки списку
     renderChatsList();
 </script>
 </body>
