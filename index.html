@@ -6,23 +6,23 @@
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; }
         
-        /* Ліва панель (Головне меню чатів) */
+        /* Левая панель (Главное меню чатов) */
         #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
         
-        /* Шапка з ніком та кнопкою-лупою */
+        /* Шапка с ником и кнопкой-лупой */
         .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
-        .search-trigger-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; transition: color 0.2s; }
+        .search-trigger-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px 10px; }
         .search-trigger-btn:hover { color: #fff; }
 
-        /* Поле пошуку (фрейм, який з'являється при натисканні на лупу) */
+        /* Поле поиска (фрейм, который появляется при нажатии на лупу) */
         .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
         .search-container.active { display: block; }
-        .search-container input { width: calc(100% - 20px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
+        .search-container input { width: calc(100% - 24px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
 
         .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Список доданих чатів */
+        /* Список добавленных чатов */
         #chats-list { flex-grow: 1; overflow-y: auto; }
         .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
         .chat-item:hover { background: #262626; }
@@ -30,23 +30,23 @@
         .status-dot { font-size: 11px; color: #888; }
         .status-dot.online { color: #28a745; font-weight: bold; }
 
-        /* Головна зона чату (Права сторона) */
+        /* Главная зона чата (Правая сторона) */
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; }
         #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; }
         
-        /* Повідомлення */
+        /* Сообщения */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
         #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; }
         #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
         
-        /* Нижня панель введення текстку */
+        /* Нижняя панель ввода текста */
         #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
         #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 15px; }
         #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         #button:disabled { background: #444; cursor: not-allowed; }
         
-        /* Заглушка, коли чат не обрано */
-        .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; }
+        /* Заглушка, когда чат не выбран */
+        .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -92,7 +92,7 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    // Локальна пам'ять браузера: завантажуємо список доданих чатів та історію повідомлень
+    // Загружаем сохраненные чаты и историю из памяти браузера (localStorage)
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
 
@@ -108,35 +108,38 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
-    // Авторизуємо наш нік на сервері
+    // Авторизуемся на сервере
     socket.emit('store user', myNick);
 
-    // Отримуємо з сервера список тих, хто в мережі прямо зараз
+    // Получаем список людей онлайн
     socket.on('online users', (users) => {
         onlineUsers = users;
         renderChatsList();
     });
 
-    // Поведінка лупи: відкрити/закрити фрейм пошуку
-    searchToggleBtn.onclick = () => {
+    // ИСПРАВЛЕНО: Четкий клик по лупе с выводом логов в консоль для проверки
+    searchToggleBtn.onclick = function(e) {
+        e.preventDefault();
+        console.log("Клик по лупе зафиксирован!");
         searchFrame.classList.toggle('active');
-        if(searchFrame.classList.contains('active')) {
+        
+        if (searchFrame.classList.contains('active')) {
+            console.log("Фрейм поиска открыт");
             searchInput.focus();
+        } else {
+            console.log("Фрейм поиска закрыт");
         }
     };
 
-    // Обробка пошуку: коли ввели нік і натиснули Enter
+    // Обработка поиска: ввод никнейма и нажатие Enter
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
-            if (targetNick === myNick) return alert("Нельзя добавить чат с самим собой!");
-
-            // Додаємо нік у список чатів, якщо його там ще немає
-            if (!activeChats.includes(targetNick)) {
-                activeChats.push(targetNick);
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            if (targetNick === myNick) {
+                alert("Нельзя добавить чат с самим собой!");
+                return;
             }
 
-            searchInput.value = '';
-            searchFrame.classList.remove('active'); // ховаємо п
+            // Добавляем человека в список, если его там не было
+            if (!activeChats.includ
