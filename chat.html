@@ -52,12 +52,10 @@
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         .back-btn:hover { background: #3a3a3a; }
 
-        /* Сообщения */
+        /* Сообщения (Чистый старый стиль без аватарок внутри списка) */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; display: flex; gap: 10px; align-items: flex-start; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; flex-direction: row-reverse; }
-        .msg-body { display: flex; flex-direction: column; }
-        .msg-avatar { width: 28px; height: 28px; font-size: 12px; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
         
         /* Галочки */
         .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
@@ -169,7 +167,7 @@
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
 
-        <!-- Новый блок работы с Аватаркой -->
+        <!-- Блок работы с Аватаркой в модалке -->
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
             <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
@@ -317,7 +315,6 @@
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
     let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
 
-    // Хранилища профилей в LocalStorage (структура: { ник: { avatar: "base64...", bio: "текст" } })
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
 
     const searchToggleBtn = document.getElementById('search-toggle-btn');
@@ -337,7 +334,6 @@
     const settingsModal = document.getElementById('settings-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     
-    // Открытие дефолтных настроек по шестеренке
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
@@ -356,7 +352,6 @@
         }
     };
 
-    // Генерация HTML разметки для аватара
     function getAvatarHTML(username, cssClass = 'avatar') {
         const uData = localProfiles[username];
         if (uData && uData.avatar) {
@@ -367,7 +362,6 @@
         return `<div class="${placeholderClass}">${firstLetter}</div>`;
     }
 
-    // Открытие своего собственного профиля
     function openMyProfile() {
         const t = translations[currentLang];
         document.getElementById('modal-title-text').textContent = t.settingsTitle;
@@ -390,7 +384,6 @@
         settingsModal.classList.add('active');
     }
 
-    // Просмотр чужого профиля собеседника
     function openPartnerProfile() {
         if (!currentActiveChatPartner) return;
         const t = translations[currentLang];
@@ -418,14 +411,12 @@
         settingsModal.classList.add('active');
     }
 
-    // Сохранение текста описания
     function saveMyBio(text) {
         if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '' };
         localProfiles[myNick].bio = text;
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
     }
 
-    // Загрузка и перевод картинки в Base64
     function handleAvatarUpload(inputEl) {
         const file = inputEl.files[0];
         if (!file) return;
@@ -439,7 +430,6 @@
             document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
             document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${(currentLang === 'en' ? 'Me: ' : 'Я: ') + myNick}</span>`;
             renderChatsList();
-            loadMessagesHistory();
         };
         reader.readAsDataURL(file);
     }
@@ -631,6 +621,7 @@
         }
     }
 
+    // Изменено: вывод сообщений полностью в твоем старом дизайне (без картинок внутри списка)
     function displaySingleMessage(data) {
         if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
         
@@ -642,20 +633,9 @@
             item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `
-                ${getAvatarHTML(myNick, 'avatar msg-avatar')}
-                <div class="msg-body">
-                    <strong>${t.meLabel}:</strong> ${data.text}
-                </div>
-                <span class="${readClass}">${checkRead}</span>
-            `;
+            item.innerHTML = `<strong>${t.meLabel}:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
         } else {
-            item.innerHTML = `
-                ${getAvatarHTML(data.user, 'avatar msg-avatar')}
-                <div class="msg-body">
-                    <strong>${data.user}:</strong> ${data.text}
-                </div>
-            `;
+            item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
         }
         
         messagesContainer.appendChild(item);
