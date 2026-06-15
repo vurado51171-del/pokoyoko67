@@ -5,28 +5,60 @@
     <title>Вход в чат</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-        input { padding: 10px; width: 200px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; width: 250px; }
+        h2 { margin-bottom: 20px; color: #333; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .error-msg { color: red; font-size: 13px; margin-bottom: 10px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>Введите ваш ник</h2>
+        <h2>Введите данные</h2>
         <input type="text" id="username" placeholder="Никнейм...">
+        <input type="password" id="password" placeholder="Пароль...">
+        <div id="error" class="error-msg"></div>
         <button onclick="enterChat()">Войти</button>
     </div>
+
     <script>
         function enterChat() {
             const nick = document.getElementById('username').value.trim();
-            if (!nick) return;
-            // ВСТАВ СЮДИ СВОЄ ПОСИЛАННЯ З GOOGLE SCRIPT:
-            fetch('https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec', {
-                method: 'POST', mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: nick })
-            }).then(() => {
-                window.location.href = '/chat?nick=' + encodeURIComponent(nick);
+            const pass = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('error');
+
+            errorDiv.style.display = 'none';
+
+            if (!nick || !pass) {
+                errorDiv.innerText = "Введите ник и пароль!";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Твой URL Google Apps Script
+            const url = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' }, // Используем text/plain во избежание сложных CORS-проверок
+                body: JSON.stringify({ username: nick, password: pass })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Если пароль верный, пускаем в чат
+                    window.location.href = '/chat?nick=' + encodeURIComponent(nick);
+                } else {
+                    // Если пароль неверный
+                    errorDiv.innerText = data.message || "Неверный пароль!";
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                errorDiv.innerText = "Ошибка авторизации или сети";
+                errorDiv.style.display = 'block';
+                console.error(err);
             });
         }
     </script>
