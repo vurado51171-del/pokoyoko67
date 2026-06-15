@@ -1,16 +1,359 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Glass Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --liquid-glow: rgba(0, 229, 255, 0.15);
+            --text-main: #f5f7fa;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --accent: #00e5ff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 10% 20%, #1a103c 0%, #0b0f19 60%, #020408 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Скляний контейнер */
+        .app-container {
+            display: flex;
+            width: 90vw;
+            max-width: 1100px;
+            height: 85vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 25px 60px rgba(0, 0, 0, 0.45),
+                inset 0 1px 2px rgba(255, 255, 255, 0.25),
+                inset 0 15px 35px var(--liquid-glow);
+            overflow: hidden;
+        }
+
+        /* Ліва панель */
+        .sidebar {
+            width: 320px;
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            font-size: 1rem;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+        }
+
+        /* Пошук */
+        .search-frame {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+            opacity: 0;
+        }
+
+        .search-frame.active {
+            padding: 15px 20px;
+            max-height: 75px;
+            opacity: 1;
+        }
+
+        .search-frame input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: #fff;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .search-frame input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(0, 225, 255, 0.25);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Елементи списку */
+        #chatsList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .chat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .chat-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .chat-item.active {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0, 229, 255, 0.12));
+            border-color: rgba(0, 229, 255, 0.3);
+            box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.1);
+        }
+
+        .chat-item span {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .status-dot {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .status-dot.online {
+            color: #00ffcc;
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
+        }
+
+        /* Права панель чату */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        #chat-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            letter-spacing: 0.3px;
+        }
+
+        #chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #chat-header {
+            padding: 22px 25px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.3px;
+        }
+
+        #messages {
+            flex: 1;
+            list-style: none;
+            padding: 25px;
+            margin: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #messages li {
+            max-width: 65%;
+            padding: 12px 18px;
+            border-radius: 16px 16px 16px 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            line-height: 1.45;
+            align-self: flex-start;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            word-break: break-word;
+            font-size: 0.95rem;
+        }
+
+        #messages li.my-msg {
+            align-self: flex-end;
+            border-radius: 16px 16px 4px 16px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 102, 255, 0.2));
+            border-color: rgba(0, 229, 255, 0.35);
+            box-shadow: 
+                0 6px 20px rgba(0, 229, 255, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        #messages strong {
+            display: block;
+            font-size: 0.78rem;
+            color: var(--accent);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #messages li.my-msg strong {
+            color: #fff;
+            opacity: 0.8;
+        }
+
+        .input-area {
+            padding: 20px 25px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        #input {
+            flex: 1;
+            padding: 14px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        #button {
+            padding: 0 26px;
+            background: linear-gradient(135deg, #00e5ff 0%, #0066ff 100%);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3);
+            font-family: inherit;
+        }
+
+        #button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 22px rgba(0, 229, 255, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Чати</h2>
+            <div>
+                <button id="searchToggleBtn" class="icon-btn">🔍</button>
+                <button onclick="logout()" class="icon-btn" style="margin-left: 6px;">🚪</button>
+            </div>
+        </div>
+        
+        <div id="searchFrame" class="search-frame">
+            <input type="text" id="searchInput" placeholder="Введіть нікнейм...">
+        </div>
+
+        <div id="chatsList"></div>
+    </aside>
+
+    <main class="main-chat">
+        <div id="chat-placeholder">
+            <span>💬 Оберіть чат або натисніть 🔍 для пошуку</span>
+        </div>
+
+        <div id="chat-area" style="display: none;">
+            <div id="chat-header">Діалог з:</div>
+            
+            <ul id="messages"></ul>
+            
+            <div class="input-area">
+                <input type="text" id="input" placeholder="Ваше повідомлення..." autocomplete="off">
+                <button id="button">Надіслати</button>
+            </div>
+        </div>
+    </main>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
 
-    // URL твоего Google Скрипта
-    const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
+    // URL твого Google веб-додатку
+    const googleScriptUrl = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
 
-    // Получаем текущего пользователя из сессии входа
+    // Поточний авторизований користувач
     const myNick = localStorage.getItem('burmalda_my_nick') || 'User_' + Math.floor(Math.random() * 1000);
     
-    // Динамические ключи разделения аккаунтов
+    // Динамічні ізольовані ключі для розділення акаунтів
     const CHAT_LIST_KEY = `chat_list_${myNick}`;
     const MSG_HISTORY_KEY = `msg_history_${myNick}`;
 
@@ -21,6 +364,7 @@
     let currentActiveChatPartner = null;
     let currentRoom = null;
 
+    // Зв'язуємо змінні з виправленими ID в HTML
     const chatsList = document.getElementById('chatsList');
     const searchToggleBtn = document.getElementById('searchToggleBtn');
     const searchFrame = document.getElementById('searchFrame');
@@ -47,17 +391,16 @@
         }
     };
 
-    // НОВАЯ СИСТЕМА ПОИСКА И ПРОВЕРКИ ЮЗЕРОВ
+    // Перевірка користувача в базі даних перед додаванням
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
             if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert("Нельзя создать чат с самим собой!");
+                alert("Нежна створити чат з самим собою!");
                 return;
             }
 
-            // Если чат уже есть в списке локально, просто открываем его
             if (activeChats.includes(targetNick)) {
                 searchInput.value = '';
                 searchFrame.classList.remove('active');
@@ -65,9 +408,8 @@
                 return;
             }
 
-            // Если чата нет, шлем запрос во внешний бэкенд Google Таблицы
             searchInput.disabled = true;
-            searchInput.placeholder = "Проверка пользователя в БД...";
+            searchInput.placeholder = "Перевірка в Burmalda_Users...";
 
             fetch(googleScriptUrl, {
                 method: 'POST',
@@ -80,30 +422,28 @@
                 searchInput.placeholder = "Введіть нікнейм...";
 
                 if (data.status === 'success' && data.exists) {
-                    // Пользователь существует в таблице — добавляем его!
                     activeChats.push(targetNick);
                     localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
                     
-                    // Синхронизируем новые контакты обратно в облако
+                    // Синхронізація контакт-листа з хмарою Google Таблиць
                     syncContactsWithCloud();
 
                     searchInput.value = '';
                     searchFrame.classList.remove('active');
                     openChatWith(targetNick);
                 } else {
-                    alert(data.message || "Пользователь не найден в системе Burmalda!");
+                    alert(data.message || "Користувача не знайдено в базі даних!");
                 }
             })
             .catch(err => {
                 searchInput.disabled = false;
                 searchInput.placeholder = "Введіть нікнейм...";
-                alert("Ошибка сети при проверке аккаунта.");
+                alert("Помилка мережі при перевірці акаунта.");
                 console.error(err);
             });
         }
     };
 
-    // Функция отправки обновленного контакт-листа в Google Таблицу
     function syncContactsWithCloud() {
         fetch(googleScriptUrl, {
             method: 'POST',
@@ -113,7 +453,7 @@
                 currentUser: myNick, 
                 contacts: activeChats.join(',') 
             })
-        }).catch(err => console.error("Синхронизация не удалась:", err));
+        }).catch(err => console.error("Помилка синхронізації:", err));
     }
 
     function renderChatsList() {
@@ -157,7 +497,7 @@
         if (!activeChats.includes(partner)) {
             activeChats.push(partner);
             localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
-            syncContactsWithCloud(); // Тоже сохраняем в облако
+            syncContactsWithCloud();
             renderChatsList();
         }
         socket.emit('join room', partner);
@@ -194,7 +534,7 @@
     function displaySingleMessage(data) {
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
-        item.innerHTML = `<strong>${data.user}</strong>${data.text}`;
+        item.innerHTML = `<strong>${data.user}</strong> ${data.text}`;
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -206,4 +546,5 @@
 
     renderChatsList();
 </script>
+</body>
 </html>
