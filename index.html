@@ -2,69 +2,141 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мой мессенджер</title>
+    <title>Burmalda Messenger</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background: #f0f2f5; }
-        #chat-container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #messages { list-style-type: none; padding: 0; height: 300px; overflow-y: auto; border: 1px solid #ddd; margin-bottom: 10px; background: #fafafa; border-radius: 4px; }
-        #messages li { padding: 8px 12px; border-bottom: 1px solid #eee; }
-        #messages li:nth-child(odd) { background: #f9f9f9; }
-        #form { display: flex; }
-        #input { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px 0 0 4px; outline: none; }
-        #button { padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 0 4px 4px 0; cursor: pointer; }
-        #button:hover { background: #0056b3; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; }
+        
+        /* Ліва панель (Головне меню чатів) */
+        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
+        
+        /* Шапка з ніком та кнопкою-лупою */
+        .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
+        .search-trigger-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; transition: color 0.2s; }
+        .search-trigger-btn:hover { color: #fff; }
+
+        /* Поле пошуку (фрейм, який з'являється при натисканні на лупу) */
+        .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
+        .search-container.active { display: block; }
+        .search-container input { width: calc(100% - 20px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
+
+        .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Список доданих чатів */
+        #chats-list { flex-grow: 1; overflow-y: auto; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .chat-item:hover { background: #262626; }
+        .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
+        .status-dot { font-size: 11px; color: #888; }
+        .status-dot.online { color: #28a745; font-weight: bold; }
+
+        /* Головна зона чату (Права сторона) */
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; }
+        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; }
+        
+        /* Повідомлення */
+        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
+        
+        /* Нижня панель введення текстку */
+        #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
+        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 15px; }
+        #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #button:disabled { background: #444; cursor: not-allowed; }
+        
+        /* Заглушка, коли чат не обрано */
+        .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; }
     </style>
 </head>
 <body>
 
-<div id="chat-container">
-    <ul id="messages"></ul>
+<div id="sidebar">
+    <div class="sidebar-header">
+        <div class="my-profile" id="my-profile-name">Загрузка...</div>
+        <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск людей">🔍</button>
+    </div>
     
-    <div id="form">
-        <input id="input" autocomplete="off" placeholder="Введите сообщение..." />
-        <button id="button">Отправить</button>
+    <div class="search-container" id="search-frame">
+        <input type="text" id="search-input" placeholder="Введите имя и нажмите Enter...">
+    </div>
+    
+    <div class="section-title">Ваши диалоги</div>
+    <div id="chats-list"></div>
+</div>
+
+<div id="chat-main">
+    <div id="no-chat-placeholder" class="no-chat-selected">
+        <p>Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
+    </div>
+    
+    <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
+        <div id="chat-header">Чат</div>
+        <ul id="messages"></ul>
+        <div id="form">
+            <input id="input" autocomplete="off" placeholder="Напишите сообщение..." />
+            <button id="button">Отправить</button>
+        </div>
     </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io(); // Підключаємось до нашого сервера
-
-    // Автоматично витягуємо нікнейм, який передала сторінка реєстрації в адресному рядку
+    const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     const myNick = urlParams.get('nick') || 'Аноним';
 
+    document.getElementById('my-profile-name').textContent = "Я: " + myNick;
+
+    let currentRoom = null;
+    let currentActiveChatPartner = null;
+    let onlineUsers = [];
+
+    // Локальна пам'ять браузера: завантажуємо список доданих чатів та історію повідомлень
+    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
+    let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
+
+    const searchToggleBtn = document.getElementById('search-toggle-btn');
+    const searchFrame = document.getElementById('search-frame');
+    const searchInput = document.getElementById('search-input');
+    const chatsList = document.getElementById('chats-list');
+    
+    const chatPlaceholder = document.getElementById('no-chat-placeholder');
+    const chatArea = document.getElementById('chat-area');
+    const chatHeader = document.getElementById('chat-header');
+    const messagesContainer = document.getElementById('messages');
     const input = document.getElementById('input');
     const button = document.getElementById('button');
-    const messages = document.getElementById('messages');
 
-    // Функція відправки повідомлення
-    function sendMessage() {
-        if (input.value.trim() !== '') {
-            // Тепер відправляємо не просто текст, а об'єкт: { user: 'нік', text: 'повідомлення' }
-            socket.emit('chat message', { user: myNick, text: input.value });
-            input.value = ''; // Очищаємо поле введення
+    // Авторизуємо наш нік на сервері
+    socket.emit('store user', myNick);
+
+    // Отримуємо з сервера список тих, хто в мережі прямо зараз
+    socket.on('online users', (users) => {
+        onlineUsers = users;
+        renderChatsList();
+    });
+
+    // Поведінка лупи: відкрити/закрити фрейм пошуку
+    searchToggleBtn.onclick = () => {
+        searchFrame.classList.toggle('active');
+        if(searchFrame.classList.contains('active')) {
+            searchInput.focus();
         }
-    }
+    };
 
-    // Слухаємо клік по кнопці "Отправить"
-    button.addEventListener('click', sendMessage);
+    // Обробка пошуку: коли ввели нік і натиснули Enter
+    searchInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            const targetNick = searchInput.value.trim();
+            if (!targetNick) return;
+            if (targetNick === myNick) return alert("Нельзя добавить чат с самим собой!");
 
-    // Слухаємо натискання клавіші Enter у полі введення
-    input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
+            // Додаємо нік у список чатів, якщо його там ще немає
+            if (!activeChats.includes(targetNick)) {
+                activeChats.push(targetNick);
+                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            }
 
-    // Слухаємо сервер: коли від нього прилітає оновлене повідомлення
-    socket.on('chat message', (data) => {
-        const item = document.createElement('li');
-        
-        // Гарно оформлюємо: "Нік: повідомлення" (нік виділяємо жирним)
-        item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
-        
-        messages.appendChild(item);
-        messages.scrollTop = messages.scrollHeight; // Автоматична прокрутка вниз
-    });
-</script>
-</body>
-</html>
+            searchInput.value = '';
+            searchFrame.classList.remove('active'); // ховаємо п
