@@ -3,71 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title id="t-title">Burmalda Messenger - Чат</title>
+    <title>Burmalda Messenger - Чат</title>
     <style>
         * { box-sizing: border-box; }
         
         body, html {
             margin: 0; padding: 0;
             height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0b0d16;
-            color: #ffffff;
+            font-family: sans-serif;
+            background: #121212;
+            color: white;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* --- КЛАССИЧЕСКАЯ ШАПКА ХЕДЕРА --- */
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ (ХЕДЕР) --- */
         .header {
-            background: #16192b;
+            background: #1e1e1e;
             padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #252943;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border-bottom: 1px solid #2d2d2d;
             z-index: 10;
         }
 
         .header-user {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             cursor: pointer;
         }
 
+        /* Наша классическая круглая ава */
         .user-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #4facfe;
+            background: #007bff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 18px;
-            box-shadow: 0 0 10px rgba(79, 172, 254, 0.4);
+            font-size: 16px;
+            color: white;
             object-fit: cover;
         }
 
-        .user-info h3 { margin: 0; font-size: 16px; color: #fff; }
-        .user-info span { font-size: 12px; color: #00f2fe; }
+        .user-info h3 { margin: 0; font-size: 16px; color: white; }
+        .user-info span { font-size: 12px; color: #007bff; }
 
+        /* Кнопка выхода в стиле ошибки/удаления */
         .logout-btn {
-            background: #ff4a4a;
+            background: #dc3545;
             border: none;
             color: white;
             padding: 8px 15px;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
             font-size: 13px;
-            transition: all 0.2s ease;
+            transition: background 0.2s;
         }
-        .logout-btn:hover { background: #e03e3e; }
+        .logout-btn:hover { background: #bd2130; }
 
-        /* --- ОБЛАСТЬ СООБЩЕНИЙ --- */
+        /* --- ОБЛАСТЬ ДЛЯ ТЕКСТА СООБЩЕНИЙ --- */
         .chat-area {
             flex: 1;
             padding: 20px;
@@ -75,41 +76,39 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            background: #0b0d16;
+            background: #121212;
         }
 
         .msg {
             max-width: 75%;
-            padding: 12px 16px;
-            border-radius: 16px;
-            font-size: 15px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
             line-height: 1.4;
             word-wrap: break-word;
-            animation: fadeIn 0.2s ease;
+            border: 1px solid #2d2d2d;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
+        /* Входящие от других людей */
         .msg.incoming {
-            background: #1c2038;
+            background: #1e1e1e;
             align-self: flex-start;
-            border-bottom-left-radius: 4px;
-            border: 1px solid #2a2f52;
         }
 
+        /* Твои исходящие сообщения */
         .msg.outgoing {
-            background: linear-gradient(135deg, #1d78c2 0%, #00f2fe 100%);
+            background: #2d2d2d;
             align-self: flex-end;
-            border-bottom-right-radius: 4px;
-            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.2);
+            border-color: #444;
         }
 
         .msg-sender {
-            color: #00f2fe;
+            color: #007bff;
             cursor: pointer;
+            font-weight: bold;
         }
         .msg.outgoing .msg-sender {
-            color: #ffffff;
+            color: #28a745; /* Свой ник подсветим зеленым */
         }
 
         .msg-meta {
@@ -117,49 +116,49 @@
             margin-top: 5px;
             display: block;
             text-align: right;
-            opacity: 0.6;
+            color: #888;
         }
 
-        /* --- ПАНЕЛЬ ВВОДА --- */
+        /* --- НИЖНЯЯ ПАНЕЛЬ ВВОДА --- */
         .input-panel {
-            background: #16192b;
+            background: #1e1e1e;
             padding: 15px;
             display: flex;
             gap: 10px;
             align-items: center;
-            border-top: 1px solid #252943;
+            border-top: 1px solid #2d2d2d;
         }
 
         .input-panel input {
             flex: 1;
-            background: #20243e;
-            border: 1px solid #2d335c;
-            padding: 14px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            padding: 12px;
             color: white;
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 5px;
+            font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
         }
-        .input-panel input:focus { border-color: #00f2fe; }
+        .input-panel input:focus { border-color: #007bff; }
 
         .send-btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #28a745;
             border: none;
             color: white;
-            padding: 14px 20px;
-            border-radius: 10px;
+            padding: 12px 20px;
+            border-radius: 5px;
             font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
-            transition: transform 0.1s;
+            transition: background 0.2s;
         }
-        .send-btn:active { transform: scale(0.95); }
+        .send-btn:hover { background: #218838; }
 
-        /* --- НАШЕ СТАНДАРТНОЕ МОДАЛЬНОЕ ОКНО ПРОФИЛЯ --- */
+        /* --- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             display: none;
             justify-content: center;
             align-items: center;
@@ -167,103 +166,104 @@
         }
 
         .profile-card {
-            background: #16192b;
-            border: 1px solid #252943;
-            border-radius: 10px; /* Твой стандартный радиус */
+            background: #1e1e1e;
+            border: 1px solid #2d2d2d;
+            border-radius: 8px;
             width: 90%;
-            max-width: 320px;
+            max-width: 300px;
             padding: 25px 20px;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
         .profile-card .large-avatar {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            background: #4facfe;
+            background: #007bff;
             margin: 0 auto 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 32px;
             font-weight: bold;
-            box-shadow: 0 0 10px rgba(79, 172, 254, 0.4);
+            color: white;
             object-fit: cover;
         }
 
-        .profile-card h2 { margin: 0 0 5px 0; font-size: 20px; color: #fff; }
-        .profile-card .prof-username { font-size: 14px; color: #00f2fe; margin-bottom: 5px; }
-        .profile-card .prof-regdate { font-size: 11px; color: #858aa0; margin-bottom: 15px; }
+        .profile-card h2 { margin: 0 0 5px 0; font-size: 20px; color: #007bff; }
+        .profile-card .prof-username { font-size: 14px; color: #888; margin-bottom: 5px; }
+        .profile-card .prof-regdate { font-size: 12px; color: #6c757d; margin-bottom: 15px; }
 
         .profile-card .bio-box {
-            background: #20243e;
-            border: 1px solid #2d335c;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            color: #b3b9d1;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #ddd;
             text-align: left;
             margin-bottom: 20px;
             word-wrap: break-word;
         }
 
-        /* Твой классический стиль для всех стандартных кнопок */
-        .classic-btn {
-            background: #20243e;
-            border: 1px solid #2d335c;
-            color: white;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
+        /* Кнопки внутри профиля в стиле нашей системы */
+        .action-btn {
+            padding: 10px;
+            border-radius: 5px;
             font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
             margin-bottom: 10px;
-            transition: all 0.2s;
+            border: none;
+            color: white;
+            transition: background 0.2s;
         }
-        .classic-btn:hover { background: #2d335c; border-color: #00f2fe; }
+        .btn-upload { background: #28a745; }
+        .btn-upload:hover { background: #218838; }
+        .btn-close { background: #444; }
+        .btn-close:hover { background: #555; }
 
-        /* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */
+        /* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ ВНИЗУ --- */
         .lang-container {
             display: flex;
             justify-content: center;
-            background: #0b0d16;
+            background: #121212;
             padding: 10px 0;
-            border-top: 1px solid #16192b;
+            border-top: 1px solid #1e1e1e;
         }
 
         .lang-switch {
             display: flex;
             gap: 5px;
-            background: #16192b;
+            background: #1e1e1e;
             padding: 4px;
-            border-radius: 12px;
-            border: 1px solid #252943;
+            border-radius: 5px;
+            border: 1px solid #2d2d2d;
         }
         
         .lang-btn {
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            color: #858aa0;
+            color: #888;
             padding: 5px 12px;
-            border-radius: 8px;
-            transition: all 0.2s;
+            border-radius: 3px;
         }
         
         .lang-btn.active {
-            background: #20243e;
-            color: #00f2fe;
-            border: 1px solid rgba(0, 242, 254, 0.3);
+            background: #2d2d2d;
+            color: #007bff;
+            border: 1px solid #444;
         }
 
         .footer-text {
             text-align: center;
             font-size: 11px;
-            color: #4a4f73;
+            color: #444;
             padding: 5px;
-            background: #0b0d16;
+            background: #121212;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
@@ -294,13 +294,13 @@
             <div class="prof-regdate" id="modal-regdate">Регистрация: --.--.----</div>
             
             <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
-            <button class="classic-btn" id="t-upload-btn" onclick="document.getElementById('avatar-input').click()">
+            <button class="action-btn btn-upload" id="t-upload-btn" onclick="document.getElementById('avatar-input').click()">
                 📁 Загрузить из устройства
             </button>
             
             <div class="bio-box" id="modal-bio">Пользователь Burmalda Messenger.</div>
 
-            <button class="classic-btn" id="t-close-prof" onclick="closeProfile()" style="margin-bottom: 0;">Закрыть</button>
+            <button class="action-btn btn-close" id="t-close-prof" onclick="closeProfile()" style="margin-bottom: 0;">Закрыть</button>
         </div>
     </div>
 
@@ -324,7 +324,6 @@
     <script>
         const i18n = {
             ru: {
-                title: "Burmalda Messenger - Чат",
                 status: "онлайн",
                 logout: "Выйти",
                 placeholder: "Напишите сообщение...",
@@ -335,7 +334,6 @@
                 defaultBio: "Пользователь Burmalda Messenger. Статус не установлен."
             },
             uk: {
-                title: "Burmalda Messenger - Чат",
                 status: "онлайн",
                 logout: "Вийти",
                 placeholder: "Напішіть повідомлення...",
@@ -346,7 +344,6 @@
                 defaultBio: "Користувач Burmalda Messenger. Статус не встановлено."
             },
             en: {
-                title: "Burmalda Messenger - Chat",
                 status: "online",
                 logout: "Logout",
                 placeholder: "Type a message...",
@@ -362,14 +359,16 @@
         let myNickname = "User";
 
         function initChat() {
+            // Проверка авторизации из твоего Login-файла (`chat_current_user`)
             if (localStorage.getItem('chat_logged_in') !== 'true') {
                 window.location.href = '/';
                 return;
             }
 
-            myNickname = localStorage.getItem('burmalda_my_nick') || "User";
+            myNickname = localStorage.getItem('chat_current_user') || "User";
             document.getElementById('user-display-name').innerText = myNickname;
 
+            // Если даты регистрации для текущего юза нет — создаем сегодняшнюю
             if (!localStorage.getItem(`regdate_${myNickname}`)) {
                 const today = new Date().toLocaleDateString();
                 localStorage.setItem(`regdate_${myNickname}`, today);
@@ -379,17 +378,9 @@
 
             const savedLang = localStorage.getItem('burmalda_lang') || 'ru';
             setLang(savedLang);
-
-            // Фейковые сообщения для демонстрации
-            appendMessage("Burmalda System", "Добро пожаловать в чат!", "incoming");
-            appendMessage("Gamer2026", "Привет! Нажми на мой ник, чтобы увидеть профиль.", "incoming");
-            
-            if (!localStorage.getItem("regdate_Gamer2026")) {
-                localStorage.setItem("regdate_Gamer2026", "12.02.2026");
-                localStorage.setItem("bio_Gamer2026", "Настраиваю сервера и люблю олдскульный софт. 🛠️");
-            }
         }
 
+        // Логика отображения авы (Фотка устройства или первая буква юза)
         function renderAvatar() {
             const savedAvatar = localStorage.getItem(`avatar_${myNickname}`);
             const headerImg = document.getElementById('user-avatar-img');
@@ -406,6 +397,7 @@
             }
         }
 
+        // Загрузка файла картинки из хранилища девайса
         function uploadAvatar(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -415,11 +407,12 @@
                 const base64Image = e.target.result;
                 localStorage.setItem(`avatar_${myNickname}`, base64Image);
                 renderAvatar();
-                openProfile(myNickname);
+                openProfile(myNickname); // Сразу обновляем картинку в открытой карточке
             };
             reader.readAsDataURL(file);
         }
 
+        // Открытие карточки любого профиля (твоего по хэдеру или чужого по клику в чате)
         function openProfile(username) {
             document.getElementById('modal-name').innerText = username;
             document.getElementById('modal-user-tag').innerText = '@' + username.toLowerCase();
@@ -444,6 +437,7 @@
                 modalLetter.style.display = 'flex';
             }
 
+            // Кнопку загрузки показываем только если это НАШ профиль
             const uploadBtn = document.getElementById('t-upload-btn');
             if (username === myNickname) {
                 uploadBtn.style.display = 'block';
@@ -471,7 +465,6 @@
             document.getElementById('btn-en').classList.remove('active');
             document.getElementById(`btn-${lang}`).classList.add('active');
 
-            document.getElementById('t-title').innerText = i18n[lang].title;
             document.getElementById('t-status').innerText = i18n[lang].status;
             document.getElementById('t-logout').innerText = i18n[lang].logout;
             document.getElementById('msg-input').placeholder = i18n[lang].placeholder;
@@ -492,6 +485,7 @@
             msgDiv.classList.add('msg', type);
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+            // Клик по msg-sender открывает профиль этого человека
             msgDiv.innerHTML = `
                 <strong class="msg-sender" onclick="openProfile('${sender}')">${sender}</strong>: ${text}
                 <span class="msg-meta">${time}</span>
@@ -515,6 +509,7 @@
 
         function logout() {
             localStorage.removeItem('chat_logged_in');
+            localStorage.removeItem('chat_current_user');
             window.location.href = '/';
         }
 
