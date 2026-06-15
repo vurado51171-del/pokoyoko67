@@ -177,6 +177,53 @@
             z-index: 20; pointer-events: none; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
 
+        /* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */
+        .lang-switcher {
+            position: absolute;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            display: flex;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 6px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .lang-btn {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: none;
+            width: auto;
+            margin: 0;
+        }
+
+        .lang-btn:hover {
+            color: #00f2fe;
+            background: rgba(0, 242, 254, 0.05);
+            box-shadow: none;
+            transform: none;
+        }
+
+        .lang-btn.active {
+            color: #fff;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 2px 8px rgba(0, 242, 254, 0.4);
+        }
+
         /* Адаптація під мобільні екрани */
         @media (max-width: 768px) {
             .img-1 { width: 120px; top: 10%; left: 5%; }
@@ -185,6 +232,8 @@
             h2 { font-size: 22px; }
             .pig-boss { width: 100px; top: -55px; margin-left: -50px; }
             .blob { filter: blur(80px); }
+            .lang-switcher { bottom: 50px; }
+            .bottom-text { bottom: 15px; font-size: 10px; }
         }
     </style>
 </head>
@@ -205,17 +254,24 @@
             
             <img src="photo_2026-06-16_00-59-57.jpg" class="pig-boss" alt="Pig Boss">
 
-            <h2>Burmalda Login</h2>
+            <h2 id="title-text">Burmalda Login</h2>
             
             <input type="text" id="username" placeholder="Никнейм..." autocomplete="off" maxlength="12">
-            <div class="hint">Максимум 12 символов</div>
+            <div class="hint" id="hint-text">Максимум 12 символов</div>
             
             <input type="password" id="password" placeholder="Пароль...">
             
             <div id="error" class="error-msg"></div>
             
-            <button onclick="enterChat()">Войти / Создать</button>
+            <button onclick="enterChat()" id="btn-text">Войти / Создать</button>
         </div>
+    </div>
+
+    <!-- БЛОК ВЫБОРА ЯЗЫКА -->
+    <div class="lang-switcher">
+        <button class="lang-btn" onclick="changeLang('ua')">UA</button>
+        <button class="lang-btn active" onclick="changeLang('ru')">RU</button>
+        <button class="lang-btn" onclick="changeLang('en')">EN</button>
     </div>
 
     <div class="bottom-text">остап пушка дєвки ловушка</div>
@@ -223,29 +279,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
 
     <script>
+        // Словарь переводов
+        const translations = {
+            ru: {
+                title: "Burmalda Login",
+                username: "Никнейм...",
+                password: "Пароль...",
+                hint: "Максимум 12 символов",
+                button: "Войти / Создать",
+                errEmpty: "Введите ник и пароль!",
+                checking: "Проверка...",
+                errAuth: "Ошибка авторизации!",
+                errNetwork: "Ошибка сети"
+            },
+            ua: {
+                title: "Burmalda Вхід",
+                username: "Нікнейм...",
+                password: "Пароль...",
+                hint: "Максимум 12 символів",
+                button: "Увійти / Створити",
+                errEmpty: "Введіть нік та пароль!",
+                checking: "Перевірка...",
+                errAuth: "Помилка авторизації!",
+                errNetwork: "Помилка мережі"
+            },
+            en: {
+                title: "Burmalda Login",
+                username: "Username...",
+                password: "Password...",
+                hint: "Maximum 12 characters",
+                button: "Login / Create",
+                errEmpty: "Enter username and password!",
+                checking: "Checking...",
+                errAuth: "Authorization error!",
+                errNetwork: "Network error"
+            }
+        };
+
+        let currentLang = 'ru';
+
+        function changeLang(lang) {
+            currentLang = lang;
+            
+            // Обновляем активную кнопку в переключателе
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                if(btn.innerText.toLowerCase() === lang) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Меняем тексты на странице
+            document.getElementById('title-text').innerText = translations[lang].title;
+            document.getElementById('username').placeholder = translations[lang].username;
+            document.getElementById('password').placeholder = translations[lang].password;
+            document.getElementById('hint-text').innerText = translations[lang].hint;
+            
+            // Если кнопка не в режиме загрузки, меняем текст
+            const btn = document.querySelector('button:not(.lang-btn)');
+            if (!btn.disabled) {
+                btn.innerText = translations[lang].button;
+            }
+        }
+
         function enterChat() {
             const nick = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('error');
-            const btn = document.querySelector('button');
+            const btn = document.querySelector('button:not(.lang-btn)');
 
             errorDiv.style.display = 'none';
 
             if (!nick || !pass) {
-                showError("Введите ник и пароль!");
+                showError(translations[currentLang].errEmpty);
                 return;
             }
 
             const url = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
 
             // Візуальний стан завантаження
-            const originalBtnText = btn.innerText;
-            btn.innerText = "Загрузка...";
+            const originalBtnText = translations[currentLang].button;
+            btn.innerText = translations[currentLang].checking;
             btn.style.opacity = "0.8";
             btn.disabled = true;
 
-            // Стилізуємо повідомлення "Проверка..." під прозоре скло
-            errorDiv.innerText = "Проверка...";
+            // Стилізуємо повідомлення під прозоре скло
+            errorDiv.innerText = translations[currentLang].checking;
             errorDiv.style.color = "#00f2fe";
             errorDiv.style.background = "transparent";
             errorDiv.style.border = "none";
@@ -259,33 +379,28 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Чистим старые следы перед новой сессией
                     localStorage.removeItem('chat_logged_in');
                     localStorage.removeItem('burmalda_my_nick');
 
-                    // Записуємо нові дані
                     localStorage.setItem('chat_logged_in', 'true');
                     localStorage.setItem('burmalda_my_nick', nick);
 
-                    // Переводим контакты из базы данных в массив для чата
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
 
-                    // Передаем токен авторизации
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
                     window.location.href = '/chat?auth=' + loginToken; 
                 } else {
-                    showError(data.message || "Ошибка авторизации!");
+                    showError(data.message || translations[currentLang].errAuth);
                     resetButton(btn, originalBtnText);
                 }
             })
             .catch(err => {
-                showError("Ошибка сети");
+                showError(translations[currentLang].errNetwork);
                 console.error(err);
                 resetButton(btn, originalBtnText);
             });
             
-            // Допоміжні функції для красивого виводу помилок
             function showError(msg) {
                 errorDiv.innerText = msg;
                 errorDiv.style.color = "#ff4a4a";
