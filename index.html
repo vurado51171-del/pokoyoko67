@@ -123,6 +123,7 @@
             100% { transform: translate(0, 0) rotate(0deg) scale(1) translateZ(50px); opacity: 1; }
         }
 
+        /* Виштовхуємо елементи вперед для 3D ефекту */
         .box h2, .box input, .box button, .box .hint { transform: translateZ(30px); }
         
         h2 { 
@@ -168,82 +169,38 @@
             transform: translateZ(30px);
         }
 
-        /* --- APPLE-STYLE СВІТЧ (LIQUID GLASS) --- */
-        .lang-switch-wrapper {
+        /* --- ВИБІР МОВИ (LIQUID GLASS) --- */
+        .lang-switch {
             position: absolute;
             bottom: 55px;
-            z-index: 20;
-        }
-
-        .lang-switch {
-            position: relative;
             display: flex;
-            align-items: center;
-            width: 120px;
-            height: 44px;
+            gap: 4px;
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 22px;
+            padding: 5px;
+            border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 20;
+        }
+        
+        .lang-btn {
             cursor: pointer;
-            user-select: none;
-            /* Ефект натискання на весь контейнер */
-            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
-        }
-
-        .lang-switch:active {
-            transform: scale(0.95);
-        }
-
-        .lang-slider {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            width: 54px;
-            height: 34px;
-            background: rgba(0, 242, 254, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 242, 254, 0.4);
-            border-radius: 17px;
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
-            /* Плавне переміщення */
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s ease;
-            z-index: 1;
-        }
-
-        /* Ефект розтягування повзунка при затисканні (як у Apple) */
-        .lang-switch:active .lang-slider {
-            width: 65px; 
-        }
-
-        /* Позиція для англійської мови */
-        .lang-switch.en-active .lang-slider {
-            transform: translateX(56px);
-        }
-
-        /* Коригування розтягування, щоб не вилазило за краї */
-        .lang-switch.en-active:active .lang-slider {
-            transform: translateX(45px); 
-        }
-
-        .lang-text {
-            flex: 1;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.4);
-            z-index: 2;
-            transition: color 0.4s ease, text-shadow 0.4s ease;
+            font-size: 12px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 6px 12px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
             letter-spacing: 1px;
         }
-
-        /* Підсвічування тексту активної мови */
-        .lang-switch.uk-active #lang-uk-text,
-        .lang-switch.en-active #lang-en-text {
-            color: #fff;
-            text-shadow: 0 0 10px rgba(0, 242, 254, 0.8);
+        
+        .lang-btn.active {
+            background: rgba(0, 242, 254, 0.15);
+            color: #00f2fe;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+            border: 1px solid rgba(0, 242, 254, 0.3);
         }
 
         /* --- НИЖНІЙ НАПИС --- */
@@ -295,12 +252,10 @@
         </div>
     </div>
 
-    <div class="lang-switch-wrapper">
-        <div class="lang-switch uk-active" id="lang-toggle">
-            <div class="lang-slider" id="lang-slider"></div>
-            <div class="lang-text" id="lang-uk-text">UK</div>
-            <div class="lang-text" id="lang-en-text">EN</div>
-        </div>
+    <div class="lang-switch">
+        <div class="lang-btn active" onclick="setLang('uk')" id="btn-uk">UK</div>
+        <div class="lang-btn" onclick="setLang('ru')" id="btn-ru">RU</div>
+        <div class="lang-btn" onclick="setLang('en')" id="btn-en">EN</div>
     </div>
 
     <div class="bottom-text" id="dynamic-phrase">остап пушка дєвки ловушка</div>
@@ -323,11 +278,24 @@
                 errAuth: "Помилка авторизації!",
                 errNet: "Помилка мережі!"
             },
+            ru: {
+                title: "Вход в Burmalda Messenger",
+                heading: "Вход Burmalda",
+                userPlaceholder: "Никнейм...",
+                userHint: "Максимум 12 символов",
+                passPlaceholder: "Пароль...",
+                btnText: "Войти / Создать",
+                loading: "Загрузка...",
+                checking: "Проверка...",
+                errEmpty: "Введите ник и пароль!",
+                errAuth: "Ошибка авторизации!",
+                errNet: "Ошибка сети!"
+            },
             en: {
                 title: "Burmalda Messenger Login",
                 heading: "Burmalda Login",
                 userPlaceholder: "Nickname...",
-                userHint: "Max 12 characters",
+                userHint: "Maximum 12 characters",
                 passPlaceholder: "Password...",
                 btnText: "Login / Create",
                 loading: "Loading...",
@@ -338,44 +306,40 @@
             }
         };
 
-        let currentLang = 'uk'; 
+        let currentLang = 'uk'; // Мова за замовчуванням
 
+        // Ініціалізація мови при завантаженні
         function initLanguage() {
             const savedLang = localStorage.getItem('burmalda_lang');
-            const userLang = navigator.language || navigator.userLanguage; 
+            const userLang = navigator.language || navigator.userLanguage; // Беремо мову регіону/браузера
 
             if (savedLang && i18n[savedLang]) {
                 currentLang = savedLang;
             } else if (userLang.toLowerCase().includes('en')) {
                 currentLang = 'en';
+            } else if (userLang.toLowerCase().includes('ru')) {
+                currentLang = 'ru';
             } else {
-                currentLang = 'uk'; 
+                currentLang = 'uk'; // За замовчуванням ставимо українську
             }
             
             setLang(currentLang);
         }
 
-        // Логіка кліку по свитчу
-        const langToggle = document.getElementById('lang-toggle');
-        langToggle.addEventListener('click', () => {
-            const newLang = currentLang === 'uk' ? 'en' : 'uk';
-            setLang(newLang);
-        });
-
+        // Функція перемикання мови
         function setLang(lang) {
             currentLang = lang;
             localStorage.setItem('burmalda_lang', lang);
 
-            // Анімація повзунка
-            if (lang === 'uk') {
-                langToggle.classList.remove('en-active');
-                langToggle.classList.add('uk-active');
-            } else {
-                langToggle.classList.remove('uk-active');
-                langToggle.classList.add('en-active');
-            }
+            // Оновлюємо UI перемикача (скидаємо всі активні класи)
+            document.getElementById('btn-uk').classList.remove('active');
+            document.getElementById('btn-ru').classList.remove('active');
+            document.getElementById('btn-en').classList.remove('active');
+            
+            // Активуємо обрану кнопку
+            document.getElementById(`btn-${lang}`).classList.add('active');
 
-            // Оновлюємо тексти
+            // Оновлюємо тексти на сторінці
             document.getElementById('t-title').innerText = i18n[lang].title;
             document.getElementById('t-heading').innerText = i18n[lang].heading;
             document.getElementById('username').placeholder = i18n[lang].userPlaceholder;
@@ -383,10 +347,13 @@
             document.getElementById('password').placeholder = i18n[lang].passPlaceholder;
             document.getElementById('login-btn').innerText = i18n[lang].btnText;
 
+            // Ховаємо помилки, якщо користувач змінив мову
             document.getElementById('error').style.display = 'none';
         }
 
+        // Виклик ініціалізації при завантаженні сторінки
         window.addEventListener('DOMContentLoaded', initLanguage);
+
 
         // --- ЛОГІКА РАНДОМНИХ ФРАЗ ---
         const phrases = [
