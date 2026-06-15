@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Burmalda Messenger</title>
+    <script>
+        // СТРОГАЯ ЗАЩИТА: Проверяем сессию ДО прогрузки страницы
+        (function() {
+            const isLoggedIn = sessionStorage.getItem('chat_logged_in');
+            if (isLoggedIn !== 'true') {
+                alert('Доступ заблокирован! Пожалуйста, сначала авторизуйтесь.');
+                window.location.href = './index.html'; // Выкидываем на точный файл входа
+            }
+        })();
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; }
+        
+        /* Левая панель (Главное меню чатов) */
+        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
+        
+        /* Шапка с ником и кнопками */
+        .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
+        .header-controls { display: flex; gap: 5px; align-items: center; }
+        .search-trigger-btn, .logout-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
+        .search-trigger-btn:hover { color: #fff; }
+        .logout-btn:hover { color: #dc3545; }
+
+        /* Поле поиска */
+        .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
+        .search-container.active { display: block; }
+        .search-container input { width: calc(100% - 24px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
+
+        .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Список добавленных чатов */
+        #chats-list { flex-grow: 1; overflow-y: auto; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .chat-item:hover { background: #262626; }
+        .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
+        .status-dot { font-size: 11px; color: #888; }
+        .status-dot.online { color: #28a745; font-weight: bold; }
+
+        /* Главная зона чата (Правая сторона) */
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; }
+        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; }
+        
+        /* Сообщения */
+        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
+        
+        /* Нижняя панель ввода текста */
+        #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
+        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 15px; }
+        #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #button:disabled { background: #444; cursor: not-allowed; }
+        
+        /* Заглушка, когда чат не выбран */
+        .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <div class="my-profile" id="my-profile-name">Загрузка...</div>
+        <div class="header-controls">
+            <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск людей">🔍</button>
+            <button class="logout-btn" onclick="logout()" title="Выйти из аккаунта">🚪</button>
+        </div>
+    </div>
+    
+    <div class="search-container" id="search-frame">
+        <input type="text" id="search-input" placeholder="Введите имя и нажмите Enter...">
+    </div>
+    
+    <div class="section-title">Ваши диалоги</div>
+    <div id="chats-list"></div>
+</div>
+
+<div id="chat-main">
+    <div id="no-chat-placeholder" class="no-chat-selected">
+        <p>Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
+    </div>
+    
+    <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
+        <div id="chat-header">Чат</div>
+        <ul id="messages"></ul>
+        <div id="form">
+            <input id="input" autocomplete="off" placeholder="Напишите сообщение..." />
+            <button id="button">Отправить</button>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    
+    // Безопасно вытаскиваем никнейм из сессии
+    const myNick = sessionStorage.getItem('chat_current_user') || 'Аноним';
+    document.getElementById('my-profile-name').textContent = "Я: " + myNick;
+
+    let currentRoom = null;
+    let currentActiveChatPartner = null;
+    let onlineUsers = [];
+
+    // Подгружаем сохраненную историю
+    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
+    let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
+
+    const searchToggleBtn = document.getElementById('search-toggle-btn');
+    const searchFrame = document.getElementById('search-frame');
+    const searchInput = document.getElementById('search-input');
+    const chatsList = document.getElementById('chats-list');
+    
+    const chatPlaceholder = document.getElementById('no-chat-placeholder');
+    const chatArea = document.getElementById('chat-area');
+    const chatHeader = document.getElementById('chat-header');
+    const messagesContainer = document.getElementById('messages');
+    const input = document.getElementById('input');
+    const button = document.getElementById('button');
+
+    // Авторизация на сокет-сервере
+    socket.emit('store user', myNick);
+
+    socket.on('online users', (users) => {
+        onlineUsers = users;
+        renderChatsList();
+    });
+
+    searchToggleBtn.onclick = function(e) {
+        e.preventDefault();
+        searchFrame.classList.toggle('active');
+        if (searchFrame.classList.contains('active')) {
+            searchInput.focus();
+        }
+    };
+
+    searchInput.onkeypress = (e) => {
+        if (e.key === 'Enter') {
+            const targetNick = searchInput.value.trim();
+            if (!targetNick) return;
+            if (targetNick === myNick) {
+                alert("Нельзя добавить чат с самим собой!");
+                return;
+            }
+
+            if (!activeChats.includes(targetNick)) {
+                activeChats.push(targetNick);
+                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            }
+
+            searchInput.value = '';
+            searchFrame.classList.remove('active');
+            openChatWith(targetNick);
+        }
+    };
+
+    function renderChatsList() {
+        chatsList.innerHTML = '';
+        if (activeChats.length === 0) {
+            chatsList.innerHTML = '<div style="padding: 15px; color: #555; font-size: 14px; text-align: center;">Список пуст.<br>Нажмите на 🔍 вверху</div>';
+            return;
+        }
+
+        activeChats.forEach(user => {
+            const item = document.createElement('div');
+            item.className = 'chat-item';
+            if (currentActiveChatPartner === user) item.classList.add('active');
+            
+            const isOnline = onlineUsers.includes(user);
+            item.innerHTML = `
+                <span>${user}</span>
+                <span class="status-dot ${isOnline ? 'online' : ''}">${isOnline ? '● онлайн' : 'офлайн'}</span>
+            `;
+
+            item.onclick = () => openChatWith(user);
+            chatsList.appendChild(item);
+        });
+    }
+
+    function openChatWith(user) {
+        currentActiveChatPartner = user;
+        currentRoom = [myNick, user].sort().join('_');
+
+        chatPlaceholder.style.display = 'none';
+        chatArea.style.display = 'flex';
+        chatHeader.textContent = `Диалог с: ${user}`;
+
+        socket.emit('join room', user);
+        loadMessagesHistory();
+        renderChatsList();
+    }
+
+    socket.on('force join room', (roomName) => {
+        const partner = roomName.replace(myNick, '').replace('_', '');
+        if (!activeChats.includes(partner)) {
+            activeChats.push(partner);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            renderChatsList();
+        }
+        socket.emit('join room', partner);
+    });
+
+    function sendMessage() {
+        const text = input.value.trim();
+        if (text && currentRoom) {
+            socket.emit('private chat message', { room: currentRoom, text: text });
+            input.value = '';
+        }
+    }
+
+    button.onclick = sendMessage;
+    input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+    socket.on('chat message', (data) => {
+        if (!savedMessages[data.room]) savedMessages[data.room] = [];
+        savedMessages[data.room].push(data);
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+
+        if (data.room === currentRoom) {
+            displaySingleMessage(data);
+        }
+    });
+
+    function loadMessagesHistory() {
+        messagesContainer.innerHTML = '';
+        if (savedMessages[currentRoom]) {
+            savedMessages[currentRoom].forEach(displaySingleMessage);
+        }
+    }
+
+    function displaySingleMessage(data) {
+        const item = document.createElement('li');
+        if (data.user === myNick) item.classList.add('my-msg');
+        item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+        messagesContainer.appendChild(item);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Функция безопасного разлогина
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = './index.html';
+    }
+
+    renderChatsList();
+</script>
+</body>
+</html>
