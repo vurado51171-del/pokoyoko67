@@ -2,120 +2,82 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Burmalda Messenger</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; }
         
-        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
-        .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
-        .header-controls { display: flex; gap: 8px; align-items: center; }
-        .search-trigger-btn, .settings-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
+        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; }
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; overflow: hidden; }
         
-        .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
-        .search-container.active { display: block; }
-        .search-container input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
-
-        .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        #chats-list { flex-grow: 1; overflow-y: auto; }
-        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; }
-        .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
-
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; overflow: hidden; }
-        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; display: flex; align-items: center; gap: 12px; }
-        
-        .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-        
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 75%; width: fit-content; word-break: break-word; }
+        #messages { list-style-type: none; padding: 15px; margin: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        #messages li { padding: 8px 12px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 85%; width: fit-content; word-break: break-word; font-size: 14px; }
         #messages li.my-msg { background: #007bff; align-self: flex-end; }
         
-        /* ИСПРАВЛЕНО: добавлена высокая позиция для корректного фокуса */
-        #form { padding: 10px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; flex-shrink: 0; z-index: 9999; }
-        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; font-size: 16px; outline: none; -webkit-appearance: none; }
-        #button { padding: 12px 20px; margin-left: 8px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        #form { padding: 10px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; flex-shrink: 0; }
+        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; -webkit-appearance: none; }
+        #button { padding: 10px 20px; margin-left: 8px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 14px; }
 
         @media (max-width: 768px) {
-            #sidebar { width: 100%; }
-            #chat-main { display: none; width: 100%; }
-            body.chat-opened #sidebar { display: none; }
-            body.chat-opened #chat-main { display: flex; }
-            body.chat-opened .back-btn { display: block; }
+            #sidebar { display: none; } /* Скрываем список чатов на телефоне, чтобы не грузить UI */
+            body.show-list #sidebar { display: flex; width: 100%; }
         }
     </style>
 </head>
-<body id="main-body" style="display: none;">
+<body id="main-body">
 
 <div id="sidebar">
-    <div class="sidebar-header">
-        <div class="my-profile" id="my-profile-name">Загрузка...</div>
-        <div class="header-controls">
-            <button class="search-trigger-btn" id="search-toggle-btn">🔍</button>
-            <button class="settings-btn" id="settings-toggle-btn">⚙️</button>
-        </div>
-    </div>
-    <div class="search-container" id="search-frame">
-        <input type="text" id="search-input" placeholder="Имя друга...">
-    </div>
+    <div class="sidebar-header" style="padding:15px; background:#262626;">Ваши диалоги</div>
     <div id="chats-list"></div>
 </div>
 
 <div id="chat-main">
-    <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
-        <div id="chat-header">
-            <button class="back-btn" onclick="closeChatMobile()">⬅</button>
-            <span id="chat-title-text">Чат</span>
-        </div>
-        <ul id="messages"></ul>
-        <div id="form">
-            <input id="input" autocomplete="off" placeholder="Сообщение..." />
-            <button id="button">Отправить</button>
-        </div>
+    <div id="messages"></div>
+    <div id="form">
+        <input id="input" autocomplete="off" placeholder="Сообщение..." />
+        <button id="button">OK</button>
     </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // Логика инициализации (авторизация)
-    const urlParams = new URLSearchParams(window.location.search);
-    const authToken = urlParams.get('auth');
-    if (!authToken) window.location.href = '/';
-    document.getElementById('main-body').style.display = 'flex';
-
     const socket = io();
-    const input = document.getElementById('input');
-    const button = document.getElementById('button');
     const messagesContainer = document.getElementById('messages');
+    const input = document.getElementById('input');
 
-    function openChatWith(user) {
-        document.body.classList.add('chat-opened');
-        document.getElementById('chat-area').style.display = 'flex';
-        document.getElementById('chat-title-text').textContent = user;
+    // Функция с защитой от undefined
+    function displaySingleMessage(data) {
+        if (!data || typeof data !== 'object') return; // Защита от битых данных
         
-        // ИСПРАВЛЕНО: принудительный фокус на клавиатуру
-        setTimeout(() => {
-            input.focus();
-        }, 500);
+        const item = document.createElement('li');
+        const user = data.user ? String(data.user) : 'Гость';
+        const text = data.text ? String(data.text) : '';
+
+        item.innerHTML = `<strong>${user}:</strong> ${text}`;
+        if (data.user === myNick) item.classList.add('my-msg');
+        
+        messagesContainer.appendChild(item);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    function closeChatMobile() {
-        document.body.classList.remove('chat-opened');
-        document.getElementById('chat-area').style.display = 'none';
-    }
+    // Инициализация при загрузке
+    socket.on('chat message', (data) => {
+        try {
+            displaySingleMessage(data);
+        } catch (e) {
+            console.error("Ошибка отображения:", e);
+        }
+    });
 
-    function sendMessage() {
+    // Обработка кнопки отправки
+    document.getElementById('button').onclick = () => {
         const text = input.value.trim();
         if (text) {
-            // Твой код отправки...
+            socket.emit('private chat message', { room: currentRoom, text: text });
             input.value = '';
-            input.focus(); // Возвращаем фокус после отправки
         }
-    }
-
-    button.onclick = sendMessage;
-    input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    };
 </script>
 </body>
 </html>
