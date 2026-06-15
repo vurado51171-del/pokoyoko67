@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
 });
 
 // Стартуем сервер
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
     console.log(`Сервер запущен! Открой в браузере: http://localhost:${PORT}`);
 });
