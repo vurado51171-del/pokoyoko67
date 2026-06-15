@@ -2,16 +2,78 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Вход в Burmalda</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; display: flex; flex-direction: column; width: 280px; }
-        h2 { margin-bottom: 20px; color: #fff; font-size: 22px; }
-        input { padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px; margin-bottom: 12px; font-size: 15px; outline: none; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: sans-serif; 
+            background: #121212; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            padding: 15px;
+        }
+        
+        /* Базовые стили для ПК (центрированный контейнер) */
+        .box { 
+            background: #1e1e1e; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            width: 100%;
+            max-width: 340px; /* Идеальный размер для десктопа и мобилок */
+        }
+        
+        h2 { margin-top: 0; margin-bottom: 20px; color: #fff; font-size: 22px; }
+        
+        /* 16px предотвращает автоматический зум экрана на смартфонах */
+        input { 
+            width: 100%;
+            padding: 12px; 
+            background: #2d2d2d; 
+            border: 1px solid #444; 
+            color: white; 
+            border-radius: 4px; 
+            margin-bottom: 12px; 
+            font-size: 16px; 
+            outline: none; 
+        }
+        input:focus { border-color: #007bff; }
+        
         .hint { font-size: 11px; color: #888; margin-top: -8px; margin-bottom: 15px; text-align: left; padding-left: 5px; }
-        button { padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        
+        button { 
+            width: 100%;
+            padding: 12px 20px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold; 
+            transition: background 0.2s;
+        }
         button:hover { background: #0056b3; }
-        .error-msg { color: #ff4a4a; font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; }
+        
+        .error-msg { color: #ff4a4a; font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; word-break: break-word; }
+
+        /* Адаптивные стили для мобильных экранов */
+        @media (max-width: 480px) {
+            .box { 
+                padding: 20px 15px; 
+                background: #1e1e1e; 
+                border-radius: 8px;
+            }
+            h2 { font-size: 20px; margin-bottom: 15px; }
+        }
     </style>
 </head>
 <body>
