@@ -43,9 +43,13 @@
 
         /* Сообщения */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
         
+        /* Стиль для галочек прочтения */
+        .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
+        .msg-status.read { color: #00d4ff; }
+
         /* Нижняя панель ввода текста */
         #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
         #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
@@ -196,7 +200,7 @@
 
     if (!authorized) {
         alert('Доступ заблокирован! Пожалуйста, пройдите авторизацию на главной странице.');
-        window.location.href = '/';	
+        window.location.href = '/'; 
     } else {
         document.getElementById('main-body').style.display = 'flex';
     }
@@ -310,22 +314,21 @@
         chatArea.style.display = 'flex';
         chatTitleText.textContent = `Диалог с: ${user}`;
 
-        // Добавляем класс для переключения на полный экран в мобильной версии
         document.body.classList.add('chat-opened');
 
         socket.emit('join room', user);
         loadMessagesHistory();
         renderChatsList();
         
-        // ФИКС ДЛЯ АНДРОИД: принудительный фокус на поле ввода
+        // Отправляем скрытый сигнал прочтения собеседнику
+        sendReadSignal();
+        
         setTimeout(() => {
             input.focus();
-            // Дополнительный трюк для показа клавиатуры
             input.click();
         }, 300);
     }
 
-    // Функция для кнопки «Назад» на телефонах
     function closeChatMobile() {
         document.body.classList.remove('chat-opened');
         currentActiveChatPartner = null;
@@ -350,8 +353,26 @@
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
-            socket.emit('private chat message', { room: currentRoom, text: text });
+            // Привязываем таймстамп как уникальный ID сообщения
+            const msgData = { 
+                room: currentRoom, 
+                text: text, 
+                user: myNick,
+                msgId: Date.now() 
+            };
+            socket.emit('private chat message', msgData);
             input.value = '';
+        }
+    }
+
+    // Функция отправки скрытого сигнала прочтения
+    function sendReadSignal() {
+        if (currentRoom) {
+            socket.emit('private chat message', { 
+                room: currentRoom, 
+                text: '[READ_SIGNAL]', 
+                user: myNick 
+            });
         }
     }
 
@@ -362,7 +383,32 @@
         if (!data || !data.room) return;
         const roomKey = String(data.room);
 
+        // Перехватываем сигнал прочтения
+        if (data.text === '[READ_SIGNAL]') {
+            if (roomKey === currentRoom && data.user !== myNick) {
+                // Если мы в этом чате и сигнал от собеседника — красим наши галочки в синий
+                const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
+                systemStatuses.forEach(span => {
+                    span.textContent = '✓✓';
+                    span.classList.add('read');
+                });
+                
+                // Обновляем историю в локалсторидже, чтобы галочки не слетали
+                if (savedMessages[roomKey]) {
+                    savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
+                    localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+                }
+            }
+            return; // Скрываем сам сервисный текст из чата
+        }
+
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+        
+        // Если мы уже открыли этот чат, то входящее сообщение от собеседника сразу триггерит отправку ответа "Прочитано"
+        if (roomKey === currentRoom && data.user !== myNick) {
+            setTimeout(sendReadSignal, 300);
+        }
+
         savedMessages[roomKey].push(data);
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
@@ -381,12 +427,21 @@
     function displaySingleMessage(data) {
         if (!messagesContainer || !data) return;
         const item = document.createElement('li');
-        if (data.user === myNick) item.classList.add('my-msg');
         
         const userDisplay = data.user ? String(data.user) : 'User';
         const textDisplay = data.text ? String(data.text) : '';
 
-        item.innerHTML = `<strong>${userDisplay}:</strong> ${textDisplay}`;
+        if (data.user === myNick) {
+            item.classList.add('my-msg');
+            // Проверяем, было ли сообщение уже прочитано ранее
+            const checkRead = data.isRead ? '✓✓' : '✓';
+            const readClass = data.isRead ? 'msg-status read' : 'msg-status';
+            
+            item.innerHTML = `<strong>Я:</strong> ${textDisplay} <span class="${readClass}">${checkRead}</span>`;
+        } else {
+            item.innerHTML = `<strong>${userDisplay}:</strong> ${textDisplay}`;
+        }
+        
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
