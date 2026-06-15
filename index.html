@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Вход в Burmalda Messenger</title>
+    <title id="t-title">Вхід у Burmalda Messenger</title>
     <style>
         * { box-sizing: border-box; }
         
@@ -163,11 +163,44 @@
             background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
         }
         
-        /* Гнучкі стилі для сповіщень */
         .error-msg { 
             font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; 
             padding: 10px; border-radius: 8px;
             transform: translateZ(30px);
+        }
+
+        /* --- ВИБІР МОВИ (LIQUID GLASS) --- */
+        .lang-switch {
+            position: absolute;
+            bottom: 55px;
+            display: flex;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 5px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 20;
+        }
+        
+        .lang-btn {
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 6px 14px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+        
+        .lang-btn.active {
+            background: rgba(0, 242, 254, 0.15);
+            color: #00f2fe;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+            border: 1px solid rgba(0, 242, 254, 0.3);
         }
 
         /* --- НИЖНІЙ НАПИС --- */
@@ -175,7 +208,6 @@
             position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 12px;
             color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 3px;
             z-index: 20; pointer-events: none; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            /* Додано плавний перехід для зникнення/появи */
             transition: opacity 0.5s ease;
         }
 
@@ -207,17 +239,22 @@
             
             <img src="photo_2026-06-16_00-59-57.jpg" class="pig-boss" alt="Pig Boss">
 
-            <h2>Burmalda Login</h2>
+            <h2 id="t-heading">Вхід Burmalda</h2>
             
-            <input type="text" id="username" placeholder="Никнейм..." autocomplete="off" maxlength="12">
-            <div class="hint">Максимум 12 символов</div>
+            <input type="text" id="username" placeholder="Нікнейм..." autocomplete="off" maxlength="12">
+            <div class="hint" id="t-hint">Максимум 12 символів</div>
             
             <input type="password" id="password" placeholder="Пароль...">
             
             <div id="error" class="error-msg"></div>
             
-            <button onclick="enterChat()">Войти / Создать</button>
+            <button id="login-btn" onclick="enterChat()">Увійти / Створити</button>
         </div>
+    </div>
+
+    <div class="lang-switch">
+        <div class="lang-btn active" onclick="setLang('uk')" id="btn-uk">UK</div>
+        <div class="lang-btn" onclick="setLang('en')" id="btn-en">EN</div>
     </div>
 
     <div class="bottom-text" id="dynamic-phrase">остап пушка дєвки ловушка</div>
@@ -225,6 +262,80 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
 
     <script>
+        // --- СЛОВНИК ПЕРЕКЛАДІВ ---
+        const i18n = {
+            uk: {
+                title: "Вхід у Burmalda Messenger",
+                heading: "Вхід Burmalda",
+                userPlaceholder: "Нікнейм...",
+                userHint: "Максимум 12 символів",
+                passPlaceholder: "Пароль...",
+                btnText: "Увійти / Створити",
+                loading: "Завантаження...",
+                checking: "Перевірка...",
+                errEmpty: "Введіть нік та пароль!",
+                errAuth: "Помилка авторизації!",
+                errNet: "Помилка мережі!"
+            },
+            en: {
+                title: "Burmalda Messenger Login",
+                heading: "Burmalda Login",
+                userPlaceholder: "Nickname...",
+                userHint: "Maximum 12 characters",
+                passPlaceholder: "Password...",
+                btnText: "Login / Create",
+                loading: "Loading...",
+                checking: "Checking...",
+                errEmpty: "Enter nickname and password!",
+                errAuth: "Authorization error!",
+                errNet: "Network error!"
+            }
+        };
+
+        let currentLang = 'uk'; // Мова за замовчуванням
+
+        // Ініціалізація мови при завантаженні
+        function initLanguage() {
+            const savedLang = localStorage.getItem('burmalda_lang');
+            const userLang = navigator.language || navigator.userLanguage; // Беремо мову регіону/браузера
+
+            if (savedLang && i18n[savedLang]) {
+                currentLang = savedLang;
+            } else if (userLang.toLowerCase().includes('en')) {
+                currentLang = 'en';
+            } else {
+                currentLang = 'uk'; // Для України (uk), ру (ru) та інших ставимо українську
+            }
+            
+            setLang(currentLang);
+        }
+
+        // Функція перемикання мови
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('burmalda_lang', lang);
+
+            // Оновлюємо UI перемикача
+            document.getElementById('btn-uk').classList.remove('active');
+            document.getElementById('btn-en').classList.remove('active');
+            document.getElementById(`btn-${lang}`).classList.add('active');
+
+            // Оновлюємо тексти на сторінці
+            document.getElementById('t-title').innerText = i18n[lang].title;
+            document.getElementById('t-heading').innerText = i18n[lang].heading;
+            document.getElementById('username').placeholder = i18n[lang].userPlaceholder;
+            document.getElementById('t-hint').innerText = i18n[lang].userHint;
+            document.getElementById('password').placeholder = i18n[lang].passPlaceholder;
+            document.getElementById('login-btn').innerText = i18n[lang].btnText;
+
+            // Ховаємо помилки, якщо користувач змінив мову
+            document.getElementById('error').style.display = 'none';
+        }
+
+        // Виклик ініціалізації при завантаженні сторінки
+        window.addEventListener('DOMContentLoaded', initLanguage);
+
+
         // --- ЛОГІКА РАНДОМНИХ ФРАЗ ---
         const phrases = [
             "остап пушка дєвки ловушка",
@@ -235,42 +346,36 @@
         const phraseElement = document.getElementById('dynamic-phrase');
         
         setInterval(() => {
-            // Спочатку робимо текст прозорим
             phraseElement.style.opacity = '0';
-            
-            // Чекаємо 500мс (поки пройде анімація зникнення), міняємо текст і показуємо знову
             setTimeout(() => {
                 const randomIndex = Math.floor(Math.random() * phrases.length);
                 phraseElement.innerText = phrases[randomIndex];
                 phraseElement.style.opacity = '1';
             }, 500); 
-            
-        }, 5000); // Повторюємо кожні 5 секунд
-        // ------------------------------
+        }, 5000); 
 
+        // --- ЛОГІКА АВТОРИЗАЦІЇ ---
         function enterChat() {
             const nick = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('error');
-            const btn = document.querySelector('button');
+            const btn = document.getElementById('login-btn');
 
             errorDiv.style.display = 'none';
 
             if (!nick || !pass) {
-                showError("Введите ник и пароль!");
+                showError(i18n[currentLang].errEmpty);
                 return;
             }
 
             const url = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
 
-            // Візуальний стан завантаження
             const originalBtnText = btn.innerText;
-            btn.innerText = "Загрузка...";
+            btn.innerText = i18n[currentLang].loading;
             btn.style.opacity = "0.8";
             btn.disabled = true;
 
-            // Стилізуємо повідомлення "Проверка..." під прозоре скло
-            errorDiv.innerText = "Проверка...";
+            errorDiv.innerText = i18n[currentLang].checking;
             errorDiv.style.color = "#00f2fe";
             errorDiv.style.background = "transparent";
             errorDiv.style.border = "none";
@@ -284,33 +389,28 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Чистим старые следы перед новой сессией
                     localStorage.removeItem('chat_logged_in');
                     localStorage.removeItem('burmalda_my_nick');
 
-                    // Записуємо нові дані
                     localStorage.setItem('chat_logged_in', 'true');
                     localStorage.setItem('burmalda_my_nick', nick);
 
-                    // Переводим контакты из базы данных в массив для чата
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
 
-                    // Передаем токен авторизации
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
                     window.location.href = '/chat?auth=' + loginToken; 
                 } else {
-                    showError(data.message || "Ошибка авторизации!");
+                    showError(data.message || i18n[currentLang].errAuth);
                     resetButton(btn, originalBtnText);
                 }
             })
             .catch(err => {
-                showError("Ошибка сети");
+                showError(i18n[currentLang].errNet);
                 console.error(err);
                 resetButton(btn, originalBtnText);
             });
             
-            // Допоміжні функції для красивого виводу помилок
             function showError(msg) {
                 errorDiv.innerText = msg;
                 errorDiv.style.color = "#ff4a4a";
