@@ -6,7 +6,7 @@
     <title>Burmalda Messenger</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; position: relative; }
         
         /* Левая панель (Главное меню чатов) */
         #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
@@ -27,7 +27,7 @@
         
         /* Список добавленных чатов */
         #chats-list { flex-grow: 1; overflow-y: auto; }
-        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
         .chat-item:hover { background: #262626; }
         .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
         .status-dot { font-size: 11px; color: #888; }
@@ -43,7 +43,7 @@
 
         /* Сообщения */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; cursor: pointer; user-select: none; }
         #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
         
         /* Стиль для галочек прочтения */
@@ -58,6 +58,12 @@
         
         /* Заглушка, когда чат не выбран */
         .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
+
+        /* Кастомное контекстное меню */
+        .context-menu { position: fixed; background: #262626; border: 1px solid #444; border-radius: 5px; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 160px; }
+        .context-menu button { background: none; border: none; color: #fff; width: 100%; text-align: left; padding: 10px 15px; font-size: 14px; cursor: pointer; outline: none; }
+        .context-menu button:hover { background: #333; }
+        .context-menu button.delete-btn { color: #dc3545; font-weight: bold; border-top: 1px solid #333; }
 
         /* МОДАЛЬНОЕ ОКНО НАСТРОЕК */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
@@ -78,17 +84,15 @@
             #sidebar { width: 100%; display: flex; }
             #chat-main { display: none; width: 100%; }
             
-            /* Если открыт чат на мобилке, скрываем боковую панель, показываем чат и кнопку Назад */
             body.chat-opened #sidebar { display: none; }
             body.chat-opened #chat-main { display: flex; }
             body.chat-opened .back-btn { display: block; }
             
             #messages li { max-width: 80%; }
-            .no-chat-selected { display: none; } /* На смартфонах пустая заглушка не имеет смысла */
+            .no-chat-selected { display: none; }
             #form { padding: 10px; }
             #button { padding: 12px 18px; margin-left: 6px; }
             
-            /* ФИКС ДЛЯ АНДРОИД: принудительный показ клавиатуры */
             #input {
                 font-size: 16px !important;
                 opacity: 1 !important;
@@ -170,6 +174,8 @@
     </div>
 </div>
 
+<div class="context-menu" id="global-context-menu"></div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     // 1. ДЕКОДИРОВАНИЕ URL-ТОКЕНА И ПРОВЕРКА АВТОРИЗАЦИИ
@@ -231,20 +237,17 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
+    // ГЛОБАЛЬНОЕ КОНТЕКСТНОЕ МЕНЮ
+    const contextMenu = document.getElementById('global-context-menu');
+
     // ЭЛЕМЕНТЫ ОКНА НАСТРОЕК
     const settingsToggleBtn = document.getElementById('settings-toggle-btn');
     const settingsModal = document.getElementById('settings-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
 
-    settingsToggleBtn.onclick = () => {
-        settingsModal.classList.add('active');
-    };
-    settingsCloseBtn.onclick = () => {
-        settingsModal.classList.remove('active');
-    };
-    settingsModal.onclick = (e) => {
-        if (e.target === settingsModal) settingsModal.classList.remove('active');
-    };
+    settingsToggleBtn.onclick = () => { settingsModal.classList.add('active'); };
+    settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
+    settingsModal.onclick = (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); };
 
     socket.emit('store user', myNick);
 
@@ -301,6 +304,23 @@
             `;
 
             item.onclick = () => openChatWith(user);
+            
+            // Меню удаления чата по правому клику (ПК)
+            item.oncontextmenu = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showChatContextMenu(e.clientX, e.clientY, user);
+            };
+
+            // Долгий тап для мобилок (удаление чата)
+            let chatTimer;
+            item.ontouchstart = (e) => {
+                chatTimer = window.setTimeout(() => {
+                    showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, user);
+                }, 600);
+            };
+            item.ontouchend = () => { clearTimeout(chatTimer); };
+
             chatsList.appendChild(item);
         });
     }
@@ -320,7 +340,6 @@
         loadMessagesHistory();
         renderChatsList();
         
-        // Отправляем скрытый сигнал прочтения собеседнику
         sendReadSignal();
         
         setTimeout(() => {
@@ -353,26 +372,21 @@
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
-            // Привязываем таймстамп как уникальный ID сообщения
+            const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
             const msgData = { 
                 room: currentRoom, 
                 text: text, 
                 user: myNick,
-                msgId: Date.now() 
+                msgId: generatedId
             };
             socket.emit('private chat message', msgData);
             input.value = '';
         }
     }
 
-    // Функция отправки скрытого сигнала прочтения
     function sendReadSignal() {
         if (currentRoom) {
-            socket.emit('private chat message', { 
-                room: currentRoom, 
-                text: '[READ_SIGNAL]', 
-                user: myNick 
-            });
+            socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick });
         }
     }
 
@@ -383,28 +397,60 @@
         if (!data || !data.room) return;
         const roomKey = String(data.room);
 
-        // Перехватываем сигнал прочтения
+        // Сигнал прочтения
         if (data.text === '[READ_SIGNAL]') {
             if (roomKey === currentRoom && data.user !== myNick) {
-                // Если мы в этом чате и сигнал от собеседника — красим наши галочки в синий
                 const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
                 systemStatuses.forEach(span => {
                     span.textContent = '✓✓';
                     span.classList.add('read');
                 });
-                
-                // Обновляем историю в локалсторидже, чтобы галочки не слетали
                 if (savedMessages[roomKey]) {
                     savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
                     localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
                 }
             }
-            return; // Скрываем сам сервисный текст из чата
+            return;
+        }
+
+        // Сигнал удаления ОДНОГО сообщения
+        if (typeof data.text === 'string' && data.text.startsWith('[DELETE_SIGNAL:')) {
+            const targetId = data.text.replace('[DELETE_SIGNAL:', '').replace(']', '');
+            const el = document.getElementById(targetId);
+            if (el) el.remove();
+
+            if (savedMessages[roomKey]) {
+                savedMessages[roomKey] = savedMessages[roomKey].filter(m => m.msgId !== targetId);
+                localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+            }
+            return;
+        }
+
+        // Сигнал тотального удаления ВСЕГО чата собеседником
+        if (data.text === '[CLEAR_CHAT_SIGNAL]') {
+            // Стираем историю сообщений по этой комнате
+            delete savedMessages[roomKey];
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+            
+            // Удаляем пользователя из списка чатов
+            const partnerName = roomKey.replace(myNick, '').replace('_', '');
+            activeChats = activeChats.filter(c => c !== partnerName);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+
+            // Если этот чат прямо сейчас открыт — закрываем его на экран заглушки
+            if (roomKey === currentRoom) {
+                currentActiveChatPartner = null;
+                currentRoom = null;
+                chatArea.style.display = 'none';
+                chatPlaceholder.style.display = 'margin';
+                document.body.classList.remove('chat-opened');
+            }
+            renderChatsList();
+            return;
         }
 
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
         
-        // Если мы уже открыли этот чат, то входящее сообщение от собеседника сразу триггерит отправку ответа "Прочитано"
         if (roomKey === currentRoom && data.user !== myNick) {
             setTimeout(sendReadSignal, 300);
         }
@@ -428,23 +474,106 @@
         if (!messagesContainer || !data) return;
         const item = document.createElement('li');
         
+        const idToSet = data.msgId || ('msg-' + Date.now());
+        item.id = idToSet;
+        
         const userDisplay = data.user ? String(data.user) : 'User';
         const textDisplay = data.text ? String(data.text) : '';
 
         if (data.user === myNick) {
             item.classList.add('my-msg');
-            // Проверяем, было ли сообщение уже прочитано ранее
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            
             item.innerHTML = `<strong>Я:</strong> ${textDisplay} <span class="${readClass}">${checkRead}</span>`;
         } else {
             item.innerHTML = `<strong>${userDisplay}:</strong> ${textDisplay}`;
         }
         
+        // Меню удаления одного сообщения (ПК)
+        item.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showMsgContextMenu(e.clientX, e.clientY, idToSet);
+        };
+
+        // Долгий тап для мобилок (удаление сообщения)
+        let pressTimer;
+        item.ontouchstart = (e) => {
+            pressTimer = window.setTimeout(() => {
+                showMsgContextMenu(e.touches[0].clientX, e.touches[0].clientY, idToSet);
+            }, 600);
+        };
+        item.ontouchend = () => { clearTimeout(pressTimer); };
+        
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+
+    // Показ меню для сообщения
+    function showMsgContextMenu(x, y, msgId) {
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.innerHTML = `<button onclick="executeDeleteMessage('${msgId}')" class="delete-btn">Удалить сообщение 🗑</button>`;
+        contextMenu.style.display = 'block';
+    }
+
+    // Показ меню для чата
+    function showChatContextMenu(x, y, partnerNick) {
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.innerHTML = `
+            <button onclick="executeDeleteChat('${partnerNick}', false)">Удалить только у себя 📂</button>
+            <button onclick="executeDeleteChat('${partnerNick}', true)" class="delete-btn">Удалить для всех 🚨</button>
+        `;
+        contextMenu.style.display = 'block';
+    }
+
+    // Закрытие контекстного меню при кликах в любое место
+    document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
+
+    // Функция удаления сообщения
+    window.executeDeleteMessage = function(msgId) {
+        if (!currentRoom) return;
+        socket.emit('private chat message', { room: currentRoom, text: `[DELETE_SIGNAL:${msgId}]`, user: myNick });
+        const localEl = document.getElementById(msgId);
+        if (localEl) localEl.remove();
+        if (savedMessages[currentRoom]) {
+            savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        }
+    };
+
+    // Функция удаления ВСЕГО чата
+    window.executeDeleteChat = function(partnerNick, deleteForBoth) {
+        const generatedRoom = [myNick, partnerNick].sort().join('_');
+
+        // 1. Если стираем для обоих — шлем сокет-сигнал «ядерного уничтожения» чата
+        if (deleteForBoth) {
+            socket.emit('private chat message', {
+                room: generatedRoom,
+                text: '[CLEAR_CHAT_SIGNAL]',
+                user: myNick
+            });
+        }
+
+        // 2. Очищаем локально у себя
+        delete savedMessages[generatedRoom];
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+
+        activeChats = activeChats.filter(c => c !== partnerNick);
+        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+
+        // 3. Если этот чат сейчас открыт на экране — сбрасываем его
+        if (generatedRoom === currentRoom) {
+            currentActiveChatPartner = null;
+            currentRoom = null;
+            chatArea.style.display = 'none';
+            chatPlaceholder.style.display = 'block';
+            document.body.classList.remove('chat-opened');
+        }
+
+        renderChatsList();
+    };
 
     function logout() {
         window.location.href = '/';
