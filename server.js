@@ -1,31 +1,36 @@
-  const express = require('express');
+const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-// Указываем серверу отдавать файл index.html, когда кто-то заходит на http://localhost:3000
+// Коли людина просто заходить на сайт (головна сторінка), показуємо реєстрацію
 app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/register.html');
+});
+
+// Новий маршрут: сюди людину перекине після того, як її нік збережеться в таблиці
+app.get('/chat', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// Логика работы с WebSocket-соединениями
+// Логіка роботи з WebSocket-соединениями
 io.on('connection', (socket) => {
     console.log('Пользователь подключился');
 
-    // Когда сервер получает событие 'chat message' от кого-то
+    // Слухаємо повідомлення від клієнта (тепер воно прилітає як об'єкт з ніком і текстом)
     socket.on('chat message', (msg) => {
-        // Он пересылает это сообщение ВСЕМ подключенным пользователям
+        // Пересилаємо цей об'єкт усім підключеним користувачам
         io.emit('chat message', msg);
     });
 
-    // Когда пользователь закрывает вкладку
+    // Коли користувач закриває вкладку
     socket.on('disconnect', () => {
         console.log('Пользователь отключился');
     });
 });
 
-// Стартуем сервер
+// Старт сервера на порту Render або 3000 для локальних тестів
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-    console.log(`Сервер запущен! Открой в браузере: http://localhost:${PORT}`);
+    console.log(`Сервер запущен! Порт: ${PORT}`);
 });
