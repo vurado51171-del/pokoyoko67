@@ -2,24 +2,26 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Вход в чат</title>
+    <title>Вход в Burmalda</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; display: flex; flex-direction: column; width: 250px; }
-        h2 { margin-bottom: 20px; color: #333; }
-        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; display: flex; flex-direction: column; width: 280px; }
+        h2 { margin-bottom: 20px; color: #fff; font-size: 22px; }
+        input { padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px; margin-bottom: 12px; font-size: 15px; outline: none; }
+        .hint { font-size: 11px; color: #888; margin-top: -8px; margin-bottom: 15px; text-align: left; padding-left: 5px; }
+        button { padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
         button:hover { background: #0056b3; }
-        .error-msg { color: red; font-size: 13px; margin-bottom: 10px; display: none; font-weight: bold; }
+        .error-msg { color: #ff4a4a; font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>Введите данные</h2>
-        <input type="text" id="username" placeholder="Никнейм...">
+        <h2>Авторизация</h2>
+        <input type="text" id="username" placeholder="Никнейм..." maxlength="12">
+        <div class="hint">Максимум 12 символов</div>
         <input type="password" id="password" placeholder="Пароль...">
         <div id="error" class="error-msg"></div>
-        <button onclick="enterChat()">Войти</button>
+        <button onclick="enterChat()">Войти в чат</button>
     </div>
 
     <script>
@@ -36,21 +38,17 @@
                 return;
             }
 
-            // Твой URL Google Apps Script
             const url = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
 
             fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, // Используем text/plain во избежание сложных CORS-проверок
                 body: JSON.stringify({ username: nick, password: pass })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Если пароль верный, пускаем в чат
                     window.location.href = '/chat?nick=' + encodeURIComponent(nick);
                 } else {
-                    // Если пароль неверный
                     errorDiv.innerText = data.message || "Неверный пароль!";
                     errorDiv.style.display = 'block';
                 }
