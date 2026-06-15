@@ -74,7 +74,13 @@
         
         .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
         .account-property strong { color: #fff; }
-        .settings-logout-btn { width: 100%; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; font-size: 15px; }
+        
+        /* Выбор языка */
+        .lang-select-container { margin-top: 15px; margin-bottom: 15px; }
+        .lang-select-container label { display: block; font-size: 13px; color: #888; margin-bottom: 5px; }
+        .lang-select { width: 100%; padding: 8px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 14px; cursor: pointer; }
+
+        .settings-logout-btn { width: 100%; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: background 0.2s; font-size: 15px; }
         .settings-logout-btn:hover { background: #bd2130; }
 
         @media (max-width: 768px) {
@@ -97,34 +103,34 @@
 
 <div id="sidebar">
     <div class="sidebar-header">
-        <div class="my-profile" id="my-profile-name">Загрузка...</div>
+        <div class="my-profile" id="my-profile-name">...</div>
         <div class="header-controls">
-            <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск людей">🔍</button>
-            <button class="settings-btn" id="settings-toggle-btn" title="Настройки аккаунта">⚙️</button>
+            <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск">🔍</button>
+            <button class="settings-btn" id="settings-toggle-btn" title="Настройки">⚙️</button>
         </div>
     </div>
     
     <div class="search-container" id="search-frame">
-        <input type="text" id="search-input" placeholder="Введите имя и нажмите Enter...">
+        <input type="text" id="search-input" placeholder="">
     </div>
     
-    <div class="section-title">Ваши диалоги</div>
+    <div class="section-title" id="lbl-dialogs">Диалоги</div>
     <div id="chats-list"></div>
 </div>
 
 <div id="chat-main">
     <div id="no-chat-placeholder" class="no-chat-selected">
-        <p>Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
+        <p id="placeholder-text">Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
     </div>
     
     <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
         <div id="chat-header">
-            <button class="back-btn" onclick="closeChatMobile()">⬅ Назад</button>
+            <button class="back-btn" id="btn-back">⬅ Назад</button>
             <span id="chat-title-text">Чат</span>
         </div>
         <ul id="messages"></ul>
         <div id="form">
-            <input id="input" autocomplete="off" placeholder="Напишите сообщение..." />
+            <input id="input" autocomplete="off" placeholder="" />
             <button id="button">Отправить</button>
         </div>
     </div>
@@ -133,16 +139,26 @@
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
-            <span>⚙️ Настройки</span>
+            <span id="modal-title-text">⚙️ Настройки</span>
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
         <div id="account-info">
-            <div class="account-property">Профиль: <strong id="info-nick">...</strong></div>
-            <div class="account-property">Статус: <strong style="color: #28a745;">В сети (Online)</strong></div>
-            <div class="account-property">Авторизация: <strong style="color: #007bff;">Токен защиты валиден</strong></div>
-            <div class="account-property">Время входа: <small id="info-login-time" style="color: #888;"></small></div>
+            <div class="account-property"><span id="lbl-profile">Профиль:</span> <strong id="info-nick">...</strong></div>
+            <div class="account-property"><span id="lbl-status">Статус:</span> <strong style="color: #28a745;" id="lbl-online-status">В сети</strong></div>
+            <div class="account-property"><span id="lbl-time">Время входа:</span> <small id="info-login-time" style="color: #888;"></small></div>
         </div>
-        <button class="settings-logout-btn" onclick="logout()">Выйти из профиля 🚪</button>
+        
+        <!-- ВЫБОР ЯЗЫКА -->
+        <div class="lang-select-container">
+            <label id="lbl-lang-select" for="lang-select">Язык / Мова / Language</label>
+            <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
+                <option value="ru">Русский</option>
+                <option value="uk">Українська</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+
+        <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Выйти из профиля 🚪</button>
     </div>
 </div>
 
@@ -151,6 +167,78 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    // СЛОВАРЬ ДЛЯ ЛОКАЛИЗАЦИИ ТРЕХ ЯЗЫКОВ
+    const translations = {
+        ru: {
+            searchPlaceholder: "Введите имя и нажмите Enter...",
+            dialogsTitle: "Ваши диалоги",
+            placeholderText: "Бурмалда Мессенджер<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
+            backBtn: "⬅ Назад",
+            dialogWith: "Диалог с: ",
+            inputPlaceholder: "Напишите сообщение...",
+            btnSend: "Отправить",
+            settingsTitle: "⚙️ Настройки",
+            profile: "Профиль:",
+            status: "Статус:",
+            online: "В сети (Online)",
+            loginTime: "Время входа:",
+            logoutBtn: "Выйти из профиля 🚪",
+            emptyList: "Список пуст.<br>Нажмите на 🔍 вверху",
+            selfChatError: "Нельзя создать чат с самим собой!",
+            ctxDeleteMsg: "Удалить сообщение 🗑",
+            ctxDeleteChat: "Удалить чат 🗑",
+            chatStatusOnline: "● онлайн",
+            chatStatusOffline: "офлайн",
+            meLabel: "Я"
+        },
+        uk: {
+            searchPlaceholder: "Введіть ім'я та натисніть Enter...",
+            dialogsTitle: "Ваші діалоги",
+            placeholderText: "Бурмалда Месенджер<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
+            backBtn: "⬅ Назад",
+            dialogWith: "Діалог з: ",
+            inputPlaceholder: "Напишіть повідомлення...",
+            btnSend: "Надіслати",
+            settingsTitle: "⚙️ Налаштування",
+            profile: "Профіль:",
+            status: "Статус:",
+            online: "В мережі (Online)",
+            loginTime: "Час входу:",
+            logoutBtn: "Вийти з профілю 🚪",
+            emptyList: "Список порожній.<br>Натисніть на 🔍 вгорі",
+            selfChatError: "Не можна створити чат із самим собою!",
+            ctxDeleteMsg: "Видалити повідомлення 🗑",
+            ctxDeleteChat: "Видалити чат 🗑",
+            chatStatusOnline: "● онлайн",
+            chatStatusOffline: "офлайн",
+            meLabel: "Я"
+        },
+        en: {
+            searchPlaceholder: "Type name and press Enter...",
+            dialogsTitle: "Your dialogs",
+            placeholderText: "Burmalda Messenger<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
+            backBtn: "⬅ Back",
+            dialogWith: "Chat with: ",
+            inputPlaceholder: "Write a message...",
+            btnSend: "Send",
+            settingsTitle: "⚙️ Settings",
+            profile: "Profile:",
+            status: "Status:",
+            online: "Online",
+            loginTime: "Login time:",
+            logoutBtn: "Log out 🚪",
+            emptyList: "List is empty.<br>Click 🔍 above",
+            selfChatError: "You can't chat with yourself!",
+            ctxDeleteMsg: "Delete message 🗑",
+            ctxDeleteChat: "Delete chat 🗑",
+            chatStatusOnline: "● online",
+            chatStatusOffline: "offline",
+            meLabel: "Me"
+        }
+    };
+
+    let currentLang = localStorage.getItem('burmalda_lang') || 'ru';
+
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('auth');
     let myNick = 'Аноним';
@@ -177,10 +265,6 @@
     }
 
     const socket = io();
-    document.getElementById('my-profile-name').textContent = "Я: " + myNick;
-    document.getElementById('info-nick').textContent = myNick;
-    document.getElementById('info-login-time').textContent = sessionTimeString;
-
     let currentRoom = null;
     let currentActiveChatPartner = null;
     let onlineUsers = [];
@@ -207,6 +291,42 @@
     settingsToggleBtn.onclick = () => { settingsModal.classList.add('active'); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
+    // Функция обновления текстов интерфейса под выбранный язык
+    function applyLanguage() {
+        const t = translations[currentLang];
+        document.getElementById('lang-select').value = currentLang;
+        
+        document.getElementById('my-profile-name').textContent = (currentLang === 'en' ? "Me: " : (currentLang === 'uk' ? "Я: " : "Я: ")) + myNick;
+        document.getElementById('info-nick').textContent = myNick;
+        document.getElementById('info-login-time').textContent = sessionTimeString;
+        
+        searchInput.placeholder = t.searchPlaceholder;
+        document.getElementById('lbl-dialogs').textContent = t.dialogsTitle;
+        document.getElementById('placeholder-text').innerHTML = t.placeholderText;
+        document.getElementById('btn-back').textContent = t.backBtn;
+        input.placeholder = t.inputPlaceholder;
+        button.textContent = t.btnSend;
+        
+        document.getElementById('modal-title-text').textContent = t.settingsTitle;
+        document.getElementById('lbl-profile').textContent = t.profile;
+        document.getElementById('lbl-status').textContent = t.status;
+        document.getElementById('lbl-online-status').textContent = t.online;
+        document.getElementById('lbl-time').textContent = t.loginTime;
+        document.getElementById('btn-logout').textContent = t.logoutBtn;
+        
+        if (currentActiveChatPartner) {
+            chatTitleText.textContent = t.dialogWith + currentActiveChatPartner;
+        }
+        renderChatsList();
+        loadMessagesHistory();
+    }
+
+    function changeLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('burmalda_lang', lang);
+        applyLanguage();
+    }
+
     socket.emit('store user', myNick);
     socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
 
@@ -217,25 +337,28 @@
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
-            if (!targetNick || targetNick.toLowerCase() === myNick.toLowerCase()) return;
-            if (!activeChats.includes(targetNick)) {
-                activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            if (!targetNick) return;
+            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
+                alert(translations[currentLang].selfChatError);
+                return;
             }
+            if (!activeChats.includes(targetNick)) { activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); }
             searchInput.value = ''; searchFrame.classList.remove('active'); openChatWith(targetNick);
         }
     };
 
     function renderChatsList() {
         chatsList.innerHTML = '';
+        const t = translations[currentLang];
         if (activeChats.length === 0) {
-            chatsList.innerHTML = '<div style="padding:15px;color:#555;text-align:center;">Список пуст.</div>'; return;
+            chatsList.innerHTML = `<div style="padding:15px;color:#555;text-align:center;">${t.emptyList}</div>`; return;
         }
         activeChats.forEach(user => {
             if (!user) return;
             const item = document.createElement('div'); item.className = 'chat-item';
             if (currentActiveChatPartner === user) item.classList.add('active');
             const isOnline = onlineUsers.includes(user);
-            item.innerHTML = `<span>${user}</span><span class="status-dot ${isOnline?'online':''}">${isOnline?'● онлайн':'офлайн'}</span>`;
+            item.innerHTML = `<span>${user}</span><span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>`;
             item.onclick = () => openChatWith(user);
             item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showChatContextMenu(e.clientX, e.clientY, user); };
             let chatTimer;
@@ -249,7 +372,7 @@
         if (!user) return;
         currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
-        chatTitleText.textContent = `Диалог с: ${user}`;
+        chatTitleText.textContent = translations[currentLang].dialogWith + user;
         document.body.classList.add('chat-opened');
         socket.emit('join room', user);
         loadMessagesHistory(); renderChatsList(); sendReadSignal();
@@ -349,12 +472,13 @@
         const item = document.createElement('li');
         const idToSet = data.msgId || ('msg-' + Date.now());
         item.id = idToSet;
+        const t = translations[currentLang];
         
         if (data.user === myNick) {
             item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `<strong>Я:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
+            item.innerHTML = `<strong>${t.meLabel}:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
         } else {
             item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
         }
@@ -370,15 +494,14 @@
 
     function showMsgContextMenu(x, y, msgId) {
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="executeDeleteMessage('${msgId}')" class="delete-btn">Удалить сообщение 🗑</button>`;
+        contextMenu.innerHTML = `<button onclick="executeDeleteMessage('${msgId}')" class="delete-btn">${translations[currentLang].ctxDeleteMsg}</button>`;
         contextMenu.style.display = 'block';
     }
 
     function showChatContextMenu(x, y, partnerNick) {
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
         contextMenu.innerHTML = `
-            <button onclick="window.executeDeleteChat('${partnerNick}', false)">Удалить только у себя 📂</button>
-            <button onclick="window.executeDeleteChat('${partnerNick}', true)" class="delete-btn">Удалить для всех 🚨</button>
+            <button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>
         `;
         contextMenu.style.display = 'block';
     }
@@ -399,26 +522,18 @@
         }
     };
 
-    // ЧИСТАЯ ФУНКЦИЯ УДАЛЕНИЯ ЧАТА
-    window.executeDeleteChat = function(partnerNick, deleteForBoth) {
+    // ОДИНОЧНОЕ ЛОКАЛЬНОЕ УДАЛЕНИЕ ЧАТА
+    window.executeDeleteChat = function(partnerNick) {
         const generatedRoom = [myNick, partnerNick].sort().join('_');
         
-        // 1. Отправляем сигнал тотальной очистки если нужно
-        if (deleteForBoth) {
-            socket.emit('private chat message', { room: generatedRoom, text: '[CLEAR_CHAT_SIGNAL]', user: myNick });
-        }
-
-        // 2. Стираем историю сообщений комнаты
         if (savedMessages[generatedRoom]) {
             delete savedMessages[generatedRoom];
         }
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
-        // 3. Вырезаем собеседника из списка активных чатов
         activeChats = activeChats.filter(c => c !== partnerNick);
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
 
-        // 4. Закрываем рабочую область, если этот чат был открыт
         if (generatedRoom === currentRoom) {
             currentActiveChatPartner = null;
             currentRoom = null;
@@ -427,12 +542,13 @@
             document.body.classList.remove('chat-opened');
         }
 
-        // 5. Перерисовываем список
         renderChatsList();
     };
 
     function logout() { window.location.href = '/'; }
-    renderChatsList();
+    
+    // Инициализация локализации при старте
+    applyLanguage();
 </script>
 </body>
 </html>
