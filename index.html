@@ -408,15 +408,25 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
+                    
+                    // --- СИСТЕМА ІЗОЛЯЦІЇ АКАУНТІВ ---
+                    
+                    // 1. Очищаємо сесію та глобальні ключі попереднього користувача
                     localStorage.removeItem('chat_logged_in');
                     localStorage.removeItem('burmalda_my_nick');
-
+                    localStorage.removeItem('current_active_chat'); // Видаляє відкритий чат
+                    localStorage.removeItem('current_messages');    // Видаляє кеш повідомлень на екрані
+                    sessionStorage.clear(); // Про всяк випадок чистимо сесію браузера
+                    
+                    // 2. Встановлюємо дані для нового входу
                     localStorage.setItem('chat_logged_in', 'true');
                     localStorage.setItem('burmalda_my_nick', nick);
 
+                    // 3. Зберігаємо контакти з жорсткою прив'язкою до КОНКРЕТНОГО нікнейму
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
 
+                    // Перехід у чат
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
                     window.location.href = '/chat?auth=' + loginToken; 
                 } else {
