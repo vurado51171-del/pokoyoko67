@@ -364,7 +364,6 @@
     let currentActiveChatPartner = null;
     let currentRoom = null;
 
-    // Зв'язуємо змінні з виправленими ID в HTML
     const chatsList = document.getElementById('chatsList');
     const searchToggleBtn = document.getElementById('searchToggleBtn');
     const searchFrame = document.getElementById('searchFrame');
@@ -379,8 +378,10 @@
     socket.emit('store user', myNick);
 
     socket.on('online users', (users) => {
-        onlineUsers = users;
-        renderChatsList();
+        if (Array.isArray(users)) {
+            onlineUsers = users;
+            renderChatsList();
+        }
     });
 
     searchToggleBtn.onclick = function(e) {
@@ -397,7 +398,7 @@
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
             if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert("Нежна створити чат з самим собою!");
+                alert("Не можна створити чат з самим собою!");
                 return;
             }
 
@@ -416,23 +417,25 @@
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({ action: "check_user", targetUser: targetNick })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("Помилка сервера Google");
+                return res.json();
+            })
             .then(data => {
                 searchInput.disabled = false;
                 searchInput.placeholder = "Введіть нікнейм...";
 
-                if (data.status === 'success' && data.exists) {
+                if (data && data.status === 'success' && data.exists) {
                     activeChats.push(targetNick);
                     localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
                     
-                    // Синхронізація контакт-листа з хмарою Google Таблиць
                     syncContactsWithCloud();
 
                     searchInput.value = '';
                     searchFrame.classList.remove('active');
                     openChatWith(targetNick);
                 } else {
-                    alert(data.message || "Користувача не знайдено в базі даних!");
+                    alert((data && data.message) || "Користувача не знайдено в базі даних!");
                 }
             })
             .catch(err => {
@@ -457,6 +460,7 @@
     }
 
     function renderChatsList() {
+        if (!chatsList) return;
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
             chatsList.innerHTML = '<div style="padding: 20px; color: var(--text-muted); font-size: 14px; text-align: center; line-height: 1.5;">Список порожній.<br>Натисніть на 🔍 вгорі</div>';
@@ -464,6 +468,7 @@
         }
 
         activeChats.forEach(user => {
+            if (!user) return;
             const item = document.createElement('div');
             item.className = 'chat-item';
             if (currentActiveChatPartner === user) item.classList.add('active');
@@ -480,12 +485,13 @@
     }
 
     function openChatWith(user) {
+        if (!user) return;
         currentActiveChatPartner = user;
         currentRoom = [myNick, user].sort().join('_');
 
-        chatPlaceholder.style.display = 'none';
-        chatArea.style.display = 'flex';
-        chatHeader.textContent = `Диалог з: ${user}`;
+        if (chatPlaceholder) chatPlaceholder.style.display = 'none';
+        if (chatArea) chatArea.style.display = 'flex';
+        if (chatHeader) chatHeader.textContent = `Діалог з: ${user}`;
 
         socket.emit('join room', user);
         loadMessagesHistory();
@@ -493,7 +499,10 @@
     }
 
     socket.on('force join room', (roomName) => {
-        const partner = roomName.replace(myNick, '').replace('_', '');
+        if (!roomName) return;
+        const partner = roomName.toString().replace(myNick, '').replace('_', '');
+        if (!partner) return;
+
         if (!activeChats.includes(partner)) {
             activeChats.push(partner);
             localStorage.setItem(CHAT_LIST_KEY, JSON.stringify(activeChats));
@@ -511,30 +520,39 @@
         }
     }
 
-    button.onclick = sendMessage;
-    input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    if (button) button.onclick = sendMessage;
+    if (input) input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
     socket.on('chat message', (data) => {
-        if (!savedMessages[data.room]) savedMessages[data.room] = [];
-        savedMessages[data.room].push(data);
+        if (!data || !data.room) return;
+        
+        const roomKey = data.room.toString();
+        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+        savedMessages[roomKey].push(data);
         localStorage.setItem(MSG_HISTORY_KEY, JSON.stringify(savedMessages));
 
-        if (data.room === currentRoom) {
+        if (roomKey === currentRoom) {
             displaySingleMessage(data);
         }
     });
 
     function loadMessagesHistory() {
+        if (!messagesContainer) return;
         messagesContainer.innerHTML = '';
-        if (savedMessages[currentRoom]) {
+        if (currentRoom && savedMessages[currentRoom]) {
             savedMessages[currentRoom].forEach(displaySingleMessage);
         }
     }
 
     function displaySingleMessage(data) {
+        if (!messagesContainer || !data) return;
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
-        item.innerHTML = `<strong>${data.user}</strong> ${data.text}`;
+        
+        const userDisplay = data.user ? data.user.toString() : 'User';
+        const textDisplay = data.text ? data.text.toString() : '';
+
+        item.innerHTML = `<strong>${userDisplay}</strong> ${textDisplay}`;
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
