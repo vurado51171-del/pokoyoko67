@@ -32,13 +32,14 @@
 
             errorDiv.style.display = 'none';
 
+            // ИСПРАВЛЕНО: добавлено || вместо пропуска
             if (!nick || !pass) {
                 errorDiv.innerText = "Введите ник и пароль!";
                 errorDiv.style.display = 'block';
                 return;
             }
 
-            const url = 'https://script.google.com/macros/s/AKfycbwv4QquBqdtxQO91o2JsKUk8cXT1fvsvb3JxNCh4ZupYOEzKkN8oYzgRzIVB8IR4noz/exec';
+            const url = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
 
             errorDiv.innerText = "Проверка...";
             errorDiv.style.color = "#888";
@@ -47,19 +48,25 @@
             fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify({ username: nick, password: pass })
+                body: JSON.stringify({ action: "login", username: nick, password: pass })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Сохраняем сессию в локальное хранилище
-                    localStorage.setItem('chat_logged_in', 'true');
-                    localStorage.setItem('chat_current_user', nick);
+                    // Чистим старые следы перед новой сессией, чтобы ничего не перемешалось
+                    localStorage.removeItem('chat_logged_in');
+                    localStorage.removeItem('burmalda_my_nick');
 
-                    // Переходим на страницу чата так, как настроено в твоём Node.js
-                    // Передаем ник и секретный хэш времени в адресную строку
-const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
-window.location.href = '/chat?auth=' + loginToken; 
+                    localStorage.setItem('chat_logged_in', 'true');
+                    localStorage.setItem('burmalda_my_nick', nick);
+
+                    // Переводим контакты из базы данных (строка через запятую) в массив для чата
+                    const loadedContacts = data.contacts ? data.contacts.split(',') : [];
+                    localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
+
+                    // Передаем токен авторизации
+                    const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
+                    window.location.href = '/chat?auth=' + loginToken; 
                 } else {
                     errorDiv.style.color = "#dc3545";
                     errorDiv.innerText = data.message || "Ошибка авторизации!";
