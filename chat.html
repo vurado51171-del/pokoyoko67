@@ -3,16 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Burmalda Messenger</title>
-    <script>
-        // СТРОГАЯ ЗАЩИТА: Проверяем сессию ДО прогрузки страницы
-        (function() {
-            const isLoggedIn = sessionStorage.getItem('chat_logged_in');
-            if (isLoggedIn !== 'true') {
-                alert('Доступ заблокирован! Пожалуйста, сначала авторизуйтесь.');
-                window.location.href = './index.html'; // Выкидываем на точный файл входа
-            }
-        })();
-    </script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; }
         
@@ -61,9 +51,7 @@
         .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
     </style>
 </head>
-<body>
-
-<div id="sidebar">
+<body id="main-body" style="display: none;"> <div id="sidebar">
     <div class="sidebar-header">
         <div class="my-profile" id="my-profile-name">Загрузка...</div>
         <div class="header-controls">
@@ -97,17 +85,25 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    // МЯГКАЯ ПРОВЕРКА АВТОРИЗАЦИИ
+    const isLoggedIn = localStorage.getItem('chat_logged_in');
+    const myNick = localStorage.getItem('chat_current_user');
+
+    if (isLoggedIn !== 'true' || !myNick) {
+        alert('Доступ заблокирован! Пожалуйста, войдите в аккаунт.');
+        window.location.href = '/'; // Перенаправляем на главную страницу входа сервера Render
+    } else {
+        // Если авторизован — показываем интерфейс чата
+        document.getElementById('main-body').style.display = 'flex';
+    }
+
     const socket = io();
-    
-    // Безопасно вытаскиваем никнейм из сессии
-    const myNick = sessionStorage.getItem('chat_current_user') || 'Аноним';
     document.getElementById('my-profile-name').textContent = "Я: " + myNick;
 
     let currentRoom = null;
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    // Подгружаем сохраненную историю
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
 
@@ -123,7 +119,6 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
-    // Авторизация на сокет-сервере
     socket.emit('store user', myNick);
 
     socket.on('online users', (users) => {
@@ -241,10 +236,10 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Функция безопасного разлогина
     function logout() {
-        sessionStorage.clear();
-        window.location.href = './index.html';
+        localStorage.removeItem('chat_logged_in');
+        localStorage.removeItem('chat_current_user');
+        window.location.href = '/';
     }
 
     renderChatsList();
