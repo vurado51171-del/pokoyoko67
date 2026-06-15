@@ -57,7 +57,9 @@
                     localStorage.setItem('chat_current_user', nick);
 
                     // Переходим на страницу чата так, как настроено в твоём Node.js
-                    window.location.href = '/chat'; 
+                    // Передаем ник и секретный хэш времени в адресную строку
+const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
+window.location.href = '/chat?auth=' + loginToken; 
                 } else {
                     errorDiv.style.color = "#dc3545";
                     errorDiv.innerText = data.message || "Ошибка авторизации!";
