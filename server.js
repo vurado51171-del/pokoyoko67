@@ -3,60 +3,84 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-// Пам'ять сервера для збереження людей в онлайні: { id_сокета: "Нік" }
-const activeUsers = {};
+// Если твои HTML-файлы лежат в папке public — оставляем.
+// Если файлы лежат прямо в корне проекта (рядом с этим сервером), эту строку можно удалить:
+app.use(express.static(__dirname + '/public'));
 
-// 1. Головна сторінка — показує реєстрацію та введення пароля
+// Хранилище пользователей онлайн (для вывода статусов)
+let onlineUsers = {};
+
+// 1. РОУТ: Главная страница (Форма входа)
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/register.html');
+    // Если файлы в корне, замени на: res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/public/index.html');
 });
 
-// 2. Сторінка чату — сюди перекидає після успішної авторизації
+// 2. РОУТ: Страница чата (САМ МЕССЕНДЖЕР)
+// Теперь сервер будет отдавать именно chat.html, никаких накладок!
 app.get('/chat', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    // Если файлы в корне, замени на: res.sendFile(__dirname + '/chat.html');
+    res.sendFile(__dirname + '/public/chat.html');
 });
 
-// Логіка WebSocket з'єднань
+// 3. РАБОТА С ВЕБ-СОКЕТАМИ (Socket.io)
 io.on('connection', (socket) => {
-    console.log('Пользователь подключился');
+    
+    // Когда пользователь успешно заходит в чат и передает свой ник
+    socket.on('store user', (username) => {
+        if (!username) return;
+        
+        socket.username = username;
+        onlineUsers[username] = socket.id; // Привязываем ник к ID сокета
 
-    // Коли користувач входить у чат, прив'язуємо його нік до сокета
-    socket.on('store user', (nick) => {
-        activeUsers[socket.id] = nick;
-        io.emit('online users', Object.values(activeUsers)); // Розсилаємо всім список онлайн
+        // Отправляем всем обновленный список людей онлайн
+        io.emit('online users', Object.keys(onlineUsers));
+        console.log(`[Burmalda] Пользователь ${username} вошел в сеть.`);
     });
 
-    // Створення приватної кімнати між двома користувачами
-    socket.on('join room', (targetNick) => {
-        const myNick = activeUsers[socket.id];
-        if (!myNick) return;
+    // Обработка входа в приватную комнату
+    socket.on('join room', (partnerName) => {
+        if (!socket.username || !partnerName) return;
 
-        // Генеруємо унікальну назву кімнати (наприклад, "Andriy_Burmalda")
-        const roomName = [myNick, targetNick].sort().join('_');
+        // Создаем уникальное имя комнаты (сортируем ники, чтобы у обоих была одна комната)
+        const roomName = [socket.username, partnerName].sort().join('_');
         socket.join(roomName);
 
-        // Шукаємо сокет нашого друга, щоб автоматично підключити його до цієї ж кімнати
-        const targetSocketId = Object.keys(activeUsers).find(key => activeUsers[key] === targetNick);
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('force join room', roomName);
+        // Магия: принудительно подключаем собеседника к этой же комнате, если он онлайн
+        const partnerSocketId = onlineUsers[partnerName];
+        if (partnerSocketId) {
+            io.to(partnerSocketId).emit('force join room', roomName);
         }
     });
 
-    // Пересилання повідомлення СУТО всередині приватної кімнати
-    socket.on('private chat message', ({ room, text }) => {
-        const sender = activeUsers[socket.id] || 'Аноним';
-        io.to(room).emit('chat message', { room, user: sender, text: text });
+    // Получение и пересылка приватного сообщения
+    socket.on('private chat message', (data) => {
+        if (!socket.username || !data.room || !data.text) return;
+
+        const messageData = {
+            room: data.room,
+            user: socket.username,
+            text: data.text,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        // Отправляем сообщение строго внутри приватной комнаты
+        io.to(data.room).emit('chat message', messageData);
     });
 
+    // Отключение пользователя от сети
     socket.on('disconnect', () => {
-        delete activeUsers[socket.id];
-        io.emit('online users', Object.values(activeUsers));
-        console.log('Пользователь отключился');
+        if (socket.username) {
+            console.log(`[Burmalda] Пользователь ${socket.username} отключился.`);
+            delete onlineUsers[socket.username];
+            // Обновляем список онлайн для всех оставшихся
+            io.emit('online users', Object.keys(onlineUsers));
+        }
     });
 });
 
-// Стартуємо сервер
+// Запуск сервера на порту Render или локальном 3000
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-    console.log(`Сервер запущен! Порт: ${PORT}`);
+    console.log(`========= BURMALDA SERVER RUNNING ON PORT ${PORT} =========`);
 });
