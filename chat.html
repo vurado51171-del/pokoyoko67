@@ -13,8 +13,8 @@
         .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
         .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
         .header-controls { display: flex; gap: 5px; align-items: center; }
-        .search-trigger-btn, .logout-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
-        .search-trigger-btn:hover { color: #fff; }
+        .search-trigger-btn, .settings-btn, .logout-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
+        .search-trigger-btn:hover, .settings-btn:hover { color: #fff; }
         .logout-btn:hover { color: #dc3545; }
 
         /* Поле поиска друзей */
@@ -33,7 +33,7 @@
         .status-dot.online { color: #28a745; font-weight: bold; }
 
         /* Главная зона чата (Правая сторона) */
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; }
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
         #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; }
         
         /* Сообщения */
@@ -49,13 +49,30 @@
         
         /* Заглушка, когда чат не выбран */
         .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
+
+        /* МОДАЛЬНОЕ ОКНО НАСТРОЕК */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 350px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; color: #007bff; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
+        .modal-close:hover { color: #fff; }
+        
+        /* Свойства аккаунта в настройках */
+        .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
+        .account-property strong { color: #fff; }
+        .settings-logout-btn { width: 100%; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
+        .settings-logout-btn:hover { background: #bd2130; }
     </style>
 </head>
-<body id="main-body" style="display: none;"> <div id="sidebar">
+<body id="main-body" style="display: none;">
+
+<div id="sidebar">
     <div class="sidebar-header">
         <div class="my-profile" id="my-profile-name">Загрузка...</div>
         <div class="header-controls">
             <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск людей">🔍</button>
+            <button class="settings-btn" id="settings-toggle-btn" title="Настройки аккаунта">⚙️</button>
             <button class="logout-btn" onclick="logout()" title="Выйти из аккаунта">🚪</button>
         </div>
     </div>
@@ -83,6 +100,22 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="settings-modal">
+    <div class="modal-content">
+        <div class="modal-title">
+            <span>⚙️ Настройки</span>
+            <button class="modal-close" id="settings-close-btn">&times;</button>
+        </div>
+        <div id="account-info">
+            <div class="account-property">Профиль: <strong id="info-nick">...</strong></div>
+            <div class="account-property">Статус: <strong style="color: #28a745;">В сети (Online)</strong></div>
+            <div class="account-property">Авторизация: <strong style="color: #007bff;">Токен защиты валиден</strong></div>
+            <div class="account-property">Время входа: <small id="info-login-time" style="color: #888;"></small></div>
+        </div>
+        <button class="settings-logout-btn" onclick="logout()">Выйти из профиля 🚪</button>
+    </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     // 1. ДЕКОДИРОВАНИЕ URL-ТОКЕНА И ПРОВЕРКА АВТОРИЗАЦИИ
@@ -90,6 +123,7 @@
     const authToken = urlParams.get('auth');
     let myNick = 'Аноним';
     let authorized = false;
+    let sessionTimeString = 'Неизвестно';
 
     if (authToken) {
         try {
@@ -98,6 +132,11 @@
             const parts = decoded.split('_');
             myNick = parts[0];
             const loginTime = parseInt(parts[1]);
+            
+            // Форматируем время входа для вывода в настройках
+            if (!isNaN(loginTime)) {
+                sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
+            }
             
             // Если токен существует и создан меньше суток назад (86400000 мс) — пускаем в систему
             if (Date.now() - loginTime < 86400000 && myNick) {
@@ -120,6 +159,10 @@
     // 2. РАБОТА С СЕТЕВЫМИ СОКЕТАМИ И ИНТЕРФЕЙСОМ
     const socket = io();
     document.getElementById('my-profile-name').textContent = "Я: " + myNick;
+    
+    // Заполняем свойства в панели настроек
+    document.getElementById('info-nick').textContent = myNick;
+    document.getElementById('info-login-time').textContent = sessionTimeString;
 
     let currentRoom = null;
     let currentActiveChatPartner = null;
@@ -141,12 +184,29 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
 
+    // ЭЛЕМЕНТЫ ОКНА НАСТРОЕК
+    const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsCloseBtn = document.getElementById('settings-close-btn');
+
+    // Логика открытия/закрытия настроек
+    settingsToggleBtn.onclick = () => {
+        settingsModal.classList.add('active');
+    };
+    settingsCloseBtn.onclick = () => {
+        settingsModal.classList.remove('active');
+    };
+    // Закрытие кликом по фону вне окошка
+    settingsModal.onclick = (e) => {
+        if (e.target === settingsModal) settingsModal.classList.remove('active');
+    };
+
     // Регистрируем наш никнейм на сервере Node.js
     socket.emit('store user', myNick);
 
     // Слушаем обновление списка пользователей онлайн
     socket.on('online users', (users) => {
-        onlineUsers = users;
+        onlineUsers = Array.isArray(users) ? users : [];
         renderChatsList();
     });
 
@@ -164,7 +224,7 @@
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
-            if (targetNick === myNick) {
+            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
                 alert("Нельзя создать чат с самим собой!");
                 return;
             }
@@ -189,6 +249,7 @@
         }
 
         activeChats.forEach(user => {
+            if (!user) return;
             const item = document.createElement('div');
             item.className = 'chat-item';
             if (currentActiveChatPartner === user) item.classList.add('active');
@@ -206,6 +267,7 @@
 
     // Открытие окна переписки
     function openChatWith(user) {
+        if (!user) return;
         currentActiveChatPartner = user;
         currentRoom = [myNick, user].sort().join('_');
 
@@ -220,7 +282,11 @@
 
     // Принудительное подключение к комнате, если собеседник написал первый
     socket.on('force join room', (roomName) => {
-        const partner = roomName.replace(myNick, '').replace('_', '');
+        if (!roomName) return;
+        const cleanRoomName = String(roomName);
+        const partner = cleanRoomName.replace(myNick, '').replace('_', '');
+        if (!partner) return;
+
         if (!activeChats.includes(partner)) {
             activeChats.push(partner);
             localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
@@ -241,13 +307,16 @@
     button.onclick = sendMessage;
     input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-    // Получение входящих сообщений от сокета
+    // Получение входящих сообщений от сокета (с защитой типа данных комнаты)
     socket.on('chat message', (data) => {
-        if (!savedMessages[data.room]) savedMessages[data.room] = [];
-        savedMessages[data.room].push(data);
+        if (!data || !data.room) return;
+        const roomKey = String(data.room);
+
+        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+        savedMessages[roomKey].push(data);
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
-        if (data.room === currentRoom) {
+        if (roomKey === currentRoom) {
             displaySingleMessage(data);
         }
     });
@@ -255,16 +324,21 @@
     // Загрузка локальной истории сообщений конкретной комнаты
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
-        if (savedMessages[currentRoom]) {
+        if (currentRoom && savedMessages[currentRoom]) {
             savedMessages[currentRoom].forEach(displaySingleMessage);
         }
     }
 
     // Добавление сообщения в блок UI
     function displaySingleMessage(data) {
+        if (!messagesContainer || !data) return;
         const item = document.createElement('li');
         if (data.user === myNick) item.classList.add('my-msg');
-        item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+        
+        const userDisplay = data.user ? String(data.user) : 'User';
+        const textDisplay = data.text ? String(data.text) : '';
+
+        item.innerHTML = `<strong>${userDisplay}:</strong> ${textDisplay}`;
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
