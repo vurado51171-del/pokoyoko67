@@ -2,12 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Burmalda Messenger</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; }
         
         /* Левая панель (Главное меню чатов) */
-        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; }
+        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
         
         /* Шапка с ником и кнопками */
         .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
@@ -19,7 +21,7 @@
         /* Поле поиска друзей */
         .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
         .search-container.active { display: block; }
-        .search-container input { width: calc(100% - 24px); padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; }
+        .search-container input { width: 100%; padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
 
         .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
         
@@ -33,8 +35,12 @@
 
         /* Главная зона чата (Правая сторона) */
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
-        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; }
+        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 12px; }
         
+        /* Кнопка «Назад» для мобильной версии (по умолчанию скрыта на ПК) */
+        .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .back-btn:hover { background: #3a3a3a; }
+
         /* Сообщения */
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
         #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; }
@@ -42,26 +48,42 @@
         
         /* Нижняя панель ввода текста */
         #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
-        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 15px; }
-        #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
+        #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0; }
         #button:disabled { background: #444; cursor: not-allowed; }
         
         /* Заглушка, когда чат не выбран */
         .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
 
         /* МОДАЛЬНОЕ ОКНО НАСТРОЕК */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 350px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 100%; max-width: 350px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; color: #007bff; display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: none; border: none; color: #888; font-size: 20px; cursor: pointer; }
+        .modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; outline: none; }
         .modal-close:hover { color: #fff; }
         
         /* Свойства аккаунта в настройках */
         .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
         .account-property strong { color: #fff; }
-        .settings-logout-btn { width: 100%; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
+        .settings-logout-btn { width: 100%; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; font-size: 15px; }
         .settings-logout-btn:hover { background: #bd2130; }
+
+        /* УНИВЕРСАЛЬНЫЙ АДАПТИВ ДЛЯ ТЕЛЕФОНОВ */
+        @media (max-width: 768px) {
+            #sidebar { width: 100%; display: flex; }
+            #chat-main { display: none; width: 100%; }
+            
+            /* Если открыт чат на мобилке, скрываем боковую панель, показываем чат и кнопку Назад */
+            body.chat-opened #sidebar { display: none; }
+            body.chat-opened #chat-main { display: flex; }
+            body.chat-opened .back-btn { display: block; }
+            
+            #messages li { max-width: 80%; }
+            .no-chat-selected { display: none; } /* На смартфонах пустая заглушка не имеет смысла */
+            #form { padding: 10px; }
+            #button { padding: 12px 18px; margin-left: 6px; }
+        }
     </style>
 </head>
 <body id="main-body" style="display: none;">
@@ -89,7 +111,10 @@
     </div>
     
     <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
-        <div id="chat-header">Чат</div>
+        <div id="chat-header">
+            <button class="back-btn" onclick="closeChatMobile()">⬅ Назад</button>
+            <span id="chat-title-text">Чат</span>
+        </div>
         <ul id="messages"></ul>
         <div id="form">
             <input id="input" autocomplete="off" placeholder="Напишите сообщение..." />
@@ -170,7 +195,7 @@
     
     const chatPlaceholder = document.getElementById('no-chat-placeholder');
     const chatArea = document.getElementById('chat-area');
-    const chatHeader = document.getElementById('chat-header');
+    const chatTitleText = document.getElementById('chat-title-text');
     const messagesContainer = document.getElementById('messages');
     const input = document.getElementById('input');
     const button = document.getElementById('button');
@@ -256,10 +281,21 @@
 
         chatPlaceholder.style.display = 'none';
         chatArea.style.display = 'flex';
-        chatHeader.textContent = `Диалог с: ${user}`;
+        chatTitleText.textContent = `Диалог с: ${user}`;
+
+        // Добавляем класс для переключения на полный экран в мобильной версии
+        document.body.classList.add('chat-opened');
 
         socket.emit('join room', user);
         loadMessagesHistory();
+        renderChatsList();
+    }
+
+    // Функция для кнопки «Назад» на телефонах
+    function closeChatMobile() {
+        document.body.classList.remove('chat-opened');
+        currentActiveChatPartner = null;
+        currentRoom = null;
         renderChatsList();
     }
 
