@@ -3,546 +3,565 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BurmaldoGram</title>
+    <title id="t-title">Burmalda Messenger - Чат</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; position: relative; }
         
-        /* Левая панель (Главное меню чатов) */
-        #sidebar { width: 320px; background: #1e1e1e; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.2s; }
+        body, html {
+            margin: 0; padding: 0;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0b0d16;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- ШАПКА ХЕДЕРА --- */
+        .header {
+            background: #16192b;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #252943;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .header-user:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4facfe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.4);
+            object-fit: cover;
+        }
+
+        .user-info h3 { margin: 0; font-size: 16px; color: #fff; }
+        .user-info span { font-size: 12px; color: #00f2fe; }
+
+        .logout-btn {
+            background: #ff4a4a;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .logout-btn:hover { background: #e03e3e; }
+
+        /* --- ОБЛАСТЬ СООБЩЕНИЙ --- */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0b0d16;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .msg.incoming {
+            background: #1c2038;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #2a2f52;
+        }
+
+        .msg.outgoing {
+            background: linear-gradient(135deg, #1d78c2 0%, #00f2fe 100%);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 242, 254, 0.2);
+        }
+
+        .msg-sender {
+            color: #00f2fe;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .msg.outgoing .msg-sender {
+            color: #ffffff;
+        }
+
+        .msg-meta {
+            font-size: 10px;
+            margin-top: 5px;
+            display: block;
+            text-align: right;
+            opacity: 0.6;
+        }
+
+        /* --- ПАНЕЛЬ ВВОДА --- */
+        .input-panel {
+            background: #16192b;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-top: 1px solid #252943;
+        }
+
+        .input-panel input {
+            flex: 1;
+            background: #20243e;
+            border: 1px solid #2d335c;
+            padding: 14px;
+            color: white;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-panel input:focus { border-color: #00f2fe; }
+
+        .send-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .send-btn:active { transform: scale(0.95); }
+
+        /* --- ВСПЛЫВАЮЩЕЕ ОКНО ПРОФИЛЯ --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .profile-card {
+            background: #16192b;
+            border: 1px solid #252943;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 320px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: scaleUp 0.2s ease;
+        }
+
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .profile-card .large-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #4facfe;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            object-fit: cover;
+        }
+
+        .profile-card h2 { margin: 0 0 5px 0; font-size: 22px; color: #fff; }
+        .profile-card .prof-username { font-size: 14px; color: #00f2fe; margin-bottom: 5px; }
+        .profile-card .prof-regdate { font-size: 11px; color: #858aa0; margin-bottom: 15px; }
         
-        /* Шапка с ником и кнопками */
-        .sidebar-header { padding: 15px; background: #262626; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-        .my-profile { font-weight: bold; color: #007bff; font-size: 16px; }
-        .header-controls { display: flex; gap: 8px; align-items: center; }
-        .search-trigger-btn, .settings-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #888; transition: color 0.2s; padding: 5px; outline: none; }
-        .search-trigger-btn:hover, .settings-btn:hover { color: #fff; }
+        .upload-btn {
+            background: linear-gradient(135deg, #1d78c2 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 20px;
+            transition: opacity 0.2s;
+        }
+        .upload-btn:hover { opacity: 0.9; }
 
-        /* Поле поиска друзей */
-        .search-container { padding: 10px 15px; background: #2d2d2d; border-bottom: 1px solid #333; display: none; }
-        .search-container.active { display: block; }
-        .search-container input { width: 100%; padding: 8px 10px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
+        .profile-card .bio-box {
+            background: #20243e;
+            border: 1px solid #2d335c;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #b3b9d1;
+            text-align: left;
+            margin-bottom: 25px;
+            word-wrap: break-word;
+        }
 
-        .section-title { padding: 10px 15px; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .close-prof-btn {
+            background: #20243e;
+            border: 1px solid #2d335c;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .close-prof-btn:hover { background: #2d335c; }
+
+        /* --- ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКОВ --- */
+        .lang-container {
+            display: flex;
+            justify-content: center;
+            background: #0b0d16;
+            padding: 10px 0;
+            border-top: 1px solid #16192b;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 5px;
+            background: #16192b;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid #252943;
+        }
         
-        /* Список добавленных чатов */
-        #chats-list { flex-grow: 1; overflow-y: auto; }
-        .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
-        .chat-item:hover { background: #262626; }
-        .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
-        .status-dot { font-size: 11px; color: #888; }
-        .status-dot.online { color: #28a745; font-weight: bold; }
-
-        /* Главная зона чата (Правая сторона) */
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #141414; position: relative; }
-        #chat-header { padding: 16px; background: #1e1e1e; border-bottom: 1px solid #2d2d2d; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-        .header-meta { display: flex; align-items: center; gap: 12px; }
+        .lang-btn {
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            color: #858aa0;
+            padding: 5px 12px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
         
-        /* Индикатор печати в шапке */
-        .typing-indicator { font-size: 13px; color: #28a745; font-weight: normal; font-style: italic; display: none; }
+        .lang-btn.active {
+            background: #20243e;
+            color: #00f2fe;
+            border: 1px solid rgba(0, 242, 254, 0.3);
+        }
 
-        /* Кнопка «Назад» для mobile */
-        .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
-        .back-btn:hover { background: #3a3a3a; }
-
-        /* Сообщения */
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 35px; }
-        
-        /* Галочки */
-        .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
-        .msg-status.read { color: #00d4ff; }
-
-        /* Форма ввода */
-        #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; }
-        #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
-        #button { padding: 12px 25px; margin-left: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0; }
-        #button:disabled { background: #444; cursor: not-allowed; }
-        
-        .no-chat-selected { margin: auto; text-align: center; color: #555; font-size: 18px; line-height: 1.6; }
-
-        /* Контекстное меню */
-        .context-menu { position: fixed; background: #262626; border: 1px solid #444; border-radius: 5px; display: none; z-index: 2000; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 160px; }
-        .context-menu button { background: none; border: none; color: #fff; width: 100%; text-align: left; padding: 10px 15px; font-size: 14px; cursor: pointer; outline: none; }
-        .context-menu button:hover { background: #333; }
-        .context-menu button.delete-btn { color: #dc3545; font-weight: bold; border-top: 1px solid #333; }
-
-        /* Модалка настроек */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 100%; max-width: 350px; border: 1px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; color: #007bff; display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; outline: none; }
-        .modal-close:hover { color: #fff; }
-        
-        .account-property { margin-bottom: 12px; font-size: 14px; color: #bbb; }
-        .account-property strong { color: #fff; }
-        
-        /* Выбор языка */
-        .lang-select-container { margin-top: 15px; margin-bottom: 15px; }
-        .lang-select-container label { display: block; font-size: 13px; color: #888; margin-bottom: 5px; }
-        .lang-select { width: 100%; padding: 8px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 14px; cursor: pointer; }
-
-        .settings-logout-btn { width: 100%; padding: 12px; background: #dc3545; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 5px; transition: background 0.2s; font-size: 15px; }
-        .settings-logout-btn:hover { background: #bd2130; }
-
-        @media (max-width: 768px) {
-            #sidebar { width: 100%; display: flex; }
-            #chat-main { display: none; width: 100%; }
-            body.chat-opened #sidebar { display: none; }
-            body.chat-opened #chat-main { display: flex; }
-            body.chat-opened .back-btn { display: block; }
-            #messages li { max-width: 80%; }
-            .no-chat-selected { display: none; }
-            #form { padding: 10px; position: relative; z-index: 10; background: #1e1e1e; }
-            #button { padding: 12px 18px; margin-left: 6px; }
-            #input { font-size: 16px !important; opacity: 1 !important; visibility: visible !important; display: block !important; -webkit-appearance: none; appearance: none; }
-            body.chat-opened #chat-main { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; }
-            #input:focus { border-color: #28a745; outline: none; }
+        .footer-text {
+            text-align: center;
+            font-size: 11px;
+            color: #4a4f73;
+            padding: 5px;
+            background: #0b0d16;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
 </head>
-<body id="main-body" style="display: none;">
+<body>
 
-<div id="sidebar">
-    <div class="sidebar-header">
-        <div class="my-profile" id="my-profile-name">...</div>
-        <div class="header-controls">
-            <button class="search-trigger-btn" id="search-toggle-btn" title="Поиск">🔍</button>
-            <button class="settings-btn" id="settings-toggle-btn" title="Настройки">⚙️</button>
-        </div>
-    </div>
-    
-    <div class="search-container" id="search-frame">
-        <input type="text" id="search-input" placeholder="">
-    </div>
-    
-    <div class="section-title" id="lbl-dialogs">Диалоги</div>
-    <div id="chats-list"></div>
-</div>
-
-<div id="chat-main">
-    <div id="no-chat-placeholder" class="no-chat-selected">
-        <p id="placeholder-text">Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
-    </div>
-    
-    <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
-        <div id="chat-header">
-            <div class="header-meta">
-                <button class="back-btn" id="btn-back">⬅ Назад</button>
-                <span id="chat-title-text">Чат</span>
+    <!-- Шапка чата -->
+    <div class="header">
+        <div class="header-user" onclick="openProfile(myNickname)">
+            <img id="user-avatar-img" class="user-avatar" src="" alt="" style="display:none;">
+            <div id="user-avatar-letter" class="user-avatar">U</div>
+            
+            <div class="user-info">
+                <h3 id="user-display-name">Username</h3>
+                <span id="t-status">онлайн</span>
             </div>
-            <div id="chat-typing-status" class="typing-indicator"></div>
         </div>
-        <ul id="messages"></ul>
-        <div id="form">
-            <input id="input" autocomplete="off" placeholder="" />
-            <button id="button">Отправить</button>
+        <button class="logout-btn" id="t-logout" onclick="logout()">Выйти</button>
+    </div>
+
+    <!-- Модальное окно просмотра профиля (твоего или собеседника) -->
+    <div class="modal-overlay" id="profile-modal" onclick="closeProfileViaOverlay(event)">
+        <div class="profile-card">
+            <!-- Аватарка -->
+            <img id="modal-avatar-img" class="large-avatar" src="" alt="" style="display:none;">
+            <div id="modal-avatar-letter" class="large-avatar">U</div>
+
+            <!-- Имя (юз при регистрации) -->
+            <h2 id="modal-name">Username</h2>
+            <div class="prof-username" id="modal-user-tag">@username</div>
+            
+            <!-- Дата регистрации -->
+            <div class="prof-regdate" id="modal-regdate">Регистрация: --.--.----</div>
+            
+            <!-- СКРЫТЫЙ ИНПУТ ДЛЯ ЗАГРУЗКИ (Показывается только в своём профиле) -->
+            <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(event)">
+            <button class="upload-btn" id="t-upload-btn" onclick="document.getElementById('avatar-input').click()">
+                📁 Загрузить из устройства
+            </button>
+            
+            <!-- Описание профиля -->
+            <div class="bio-box" id="modal-bio">Пользователь Burmalda Messenger.</div>
+
+            <button class="close-prof-btn" id="t-close-prof" onclick="closeProfile()">Закрыть</button>
         </div>
     </div>
-</div>
 
-<div class="modal-overlay" id="settings-modal">
-    <div class="modal-content">
-        <div class="modal-title">
-            <span id="modal-title-text">⚙️ Настройки</span>
-            <button class="modal-close" id="settings-close-btn">&times;</button>
-        </div>
-        <div id="account-info">
-            <div class="account-property"><span id="lbl-profile">Профиль:</span> <strong id="info-nick">...</strong></div>
-            <div class="account-property"><span id="lbl-status">Статус:</span> <strong style="color: #28a745;" id="lbl-online-status">В сети</strong></div>
-            <div class="account-property"><span id="lbl-time">Время входа:</span> <small id="info-login-time" style="color: #888;"></small></div>
-        </div>
-        
-        <div class="lang-select-container">
-            <label id="lbl-lang-select" for="lang-select">Язык / Мова / Language</label>
-            <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
-                <option value="ru">Русский</option>
-                <option value="uk">Українська</option>
-                <option value="en">English</option>
-            </select>
-        </div>
+    <!-- Окно сообщений -->
+    <div class="chat-area" id="chat-box"></div>
 
-        <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Выйти из профиля 🚪</button>
+    <!-- Панель отправки -->
+    <div class="input-panel">
+        <input type="text" id="msg-input" placeholder="Напишите сообщение..." autocomplete="off">
+        <button class="send-btn" id="t-send" onclick="sendMessage()">Отправить</button>
     </div>
-</div>
 
-<div class="context-menu" id="global-context-menu"></div>
+    <!-- Переключатель языков -->
+    <div class="lang-container">
+        <div class="lang-switch">
+            <div class="lang-btn" onclick="setLang('uk')" id="btn-uk">UK</div>
+            <div class="lang-btn active" onclick="setLang('ru')" id="btn-ru">RU</div>
+            <div class="lang-btn" onclick="setLang('en')" id="btn-en">EN</div>
+        </div>
+    </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    const translations = {
-        ru: {
-            searchPlaceholder: "Введите имя и нажмите Enter...",
-            dialogsTitle: "Ваши диалоги",
-            placeholderText: "Бурмалда Мессенджер<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
-            backBtn: "⬅ Назад",
-            dialogWith: "Диалог с: ",
-            inputPlaceholder: "Напишите сообщение...",
-            btnSend: "Отправить",
-            settingsTitle: "⚙️ Настройки",
-            profile: "Профиль:",
-            status: "Статус:",
-            online: "В сети (Online)",
-            loginTime: "Время входа:",
-            logoutBtn: "Выйти из профиля 🚪",
-            emptyList: "Список пуст.<br>Нажмите на 🔍 вверху",
-            selfChatError: "Нельзя создать чат с самим собой!",
-            ctxDeleteChat: "Удалить чат 🗑",
-            chatStatusOnline: "● онлайн",
-            chatStatusOffline: "офлайн",
-            meLabel: "Я",
-            typingText: "печатает..."
-        },
-        uk: {
-            searchPlaceholder: "Введіть ім'я та натисніть Enter...",
-            dialogsTitle: "Ваші діалоги",
-            placeholderText: "Бурмалда Месенджер<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
-            backBtn: "⬅ Назад",
-            dialogWith: "Діалог з: ",
-            inputPlaceholder: "Напишіть повідомлення...",
-            btnSend: "Надіслати",
-            settingsTitle: "⚙️ Налаштування",
-            profile: "Профіль:",
-            status: "Статус:",
-            online: "В мережі (Online)",
-            loginTime: "Час входу:",
-            logoutBtn: "Вийти з профілю 🚪",
-            emptyList: "Список порожній.<br>Натиніть на 🔍 вгорі",
-            selfChatError: "Не можна створити чат із самим собою!",
-            ctxDeleteChat: "Видалити чат 🗑",
-            chatStatusOnline: "● онлайн",
-            chatStatusOffline: "офлайн",
-            meLabel: "Я",
-            typingText: "пише..."
-        },
-        en: {
-            searchPlaceholder: "Type name and press Enter...",
-            dialogsTitle: "Your dialogs",
-            placeholderText: "Burmalda Messenger<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
-            backBtn: "⬅ Back",
-            dialogWith: "Chat with: ",
-            inputPlaceholder: "Write a message...",
-            btnSend: "Send",
-            settingsTitle: "⚙️ Settings",
-            profile: "Profile:",
-            status: "Status:",
-            online: "Online",
-            loginTime: "Login time:",
-            logoutBtn: "Log out 🚪",
-            emptyList: "List is empty.<br>Click 🔍 above",
-            selfChatError: "You can't chat with yourself!",
-            ctxDeleteChat: "Delete chat 🗑",
-            chatStatusOnline: "● online",
-            chatStatusOffline: "offline",
-            meLabel: "Me",
-            typingText: "is typing..."
-        }
-    };
+    <div class="footer-text">остап пушка дєвки ловушка</div>
 
-    let currentLang = localStorage.getItem('burmalda_lang') || 'ru';
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const authToken = urlParams.get('auth');
-    let myNick = 'Аноним';
-    let authorized = false;
-    let sessionTimeString = 'Неизвестно';
-
-    if (authToken) {
-        try {
-            const decoded = decodeURIComponent(atob(authToken));
-            const parts = decoded.split('_');
-            myNick = parts[0];
-            const loginTime = parseInt(parts[1]);
-            if (!isNaN(loginTime)) {
-                sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
+    <script>
+        const i18n = {
+            ru: {
+                title: "Burmalda Messenger - Чат",
+                status: "онлайн",
+                logout: "Выйти",
+                placeholder: "Напишите сообщение...",
+                send: "Отправить",
+                closeProf: "Закрыть",
+                uploadBtn: "📁 Загрузить из устройства",
+                regDate: "Регистрация: ",
+                defaultBio: "Пользователь Burmalda Messenger. Статус не установлен."
+            },
+            uk: {
+                title: "Burmalda Messenger - Чат",
+                status: "онлайн",
+                logout: "Вийти",
+                placeholder: "Напішіть повідомлення...",
+                send: "Надіслати",
+                closeProf: "Закрити",
+                uploadBtn: "📁 Завантажити з пристрою",
+                regDate: "Реєстрація: ",
+                defaultBio: "Користувач Burmalda Messenger. Статус не встановлено."
+            },
+            en: {
+                title: "Burmalda Messenger - Chat",
+                status: "online",
+                logout: "Logout",
+                placeholder: "Type a message...",
+                send: "Send",
+                closeProf: "Close",
+                uploadBtn: "📁 Upload from device",
+                regDate: "Registered: ",
+                defaultBio: "Burmalda Messenger user. Status is not set."
             }
-            if (Date.now() - loginTime < 86400000 && myNick) authorized = true;
-        } catch (e) { console.error(e); }
-    }
+        };
 
-    if (!authorized) {
-        alert('Доступ заблокирован!'); window.location.href = '/'; 
-    } else {
-        document.getElementById('main-body').style.display = 'flex';
-    }
+        let currentLang = 'ru';
+        let myNickname = "User";
 
-    const socket = io();
-    let currentRoom = null;
-    let currentActiveChatPartner = null;
-    let onlineUsers = [];
-
-    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
-    let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
-    let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
-
-    const searchToggleBtn = document.getElementById('search-toggle-btn');
-    const searchFrame = document.getElementById('search-frame');
-    const searchInput = document.getElementById('search-input');
-    const chatsList = document.getElementById('chats-list');
-    const chatPlaceholder = document.getElementById('no-chat-placeholder');
-    const chatArea = document.getElementById('chat-area');
-    const chatTitleText = document.getElementById('chat-title-text');
-    const typingStatusEl = document.getElementById('chat-typing-status');
-    const messagesContainer = document.getElementById('messages');
-    const input = document.getElementById('input');
-    const button = document.getElementById('button');
-    const contextMenu = document.getElementById('global-context-menu');
-
-    const settingsToggleBtn = document.getElementById('settings-toggle-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const settingsCloseBtn = document.getElementById('settings-close-btn');
-    settingsToggleBtn.onclick = () => { settingsModal.classList.add('active'); };
-    settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
-
-    // Навешиваем событие на родную кнопку "Назад" в интерфейсе
-    document.getElementById('btn-back').onclick = () => {
-        if (document.body.classList.contains('chat-opened')) {
-            window.history.back(); // Вызываем системный шаг назад
-        }
-    };
-
-    // Главный обработчик аппаратной кнопки назад и жестов свайпа
-    window.onpopstate = function(event) {
-        if (document.body.classList.contains('chat-opened')) {
-            // Если чат открыт и нажали системную "Назад", закрываем его без перезагрузки страницы
-            document.body.classList.remove('chat-opened');
-            currentActiveChatPartner = null;
-            currentRoom = null;
-            renderChatsList();
-        }
-    };
-
-    function applyLanguage() {
-        const t = translations[currentLang];
-        document.getElementById('lang-select').value = currentLang;
-        
-        document.getElementById('my-profile-name').textContent = (currentLang === 'en' ? "Me: " : "Я: ") + myNick;
-        document.getElementById('info-nick').textContent = myNick;
-        document.getElementById('info-login-time').textContent = sessionTimeString;
-        
-        searchInput.placeholder = t.searchPlaceholder;
-        document.getElementById('lbl-dialogs').textContent = t.dialogsTitle;
-        document.getElementById('placeholder-text').innerHTML = t.placeholderText;
-        document.getElementById('btn-back').textContent = t.backBtn;
-        input.placeholder = t.inputPlaceholder;
-        button.textContent = t.btnSend;
-        
-        document.getElementById('modal-title-text').textContent = t.settingsTitle;
-        document.getElementById('lbl-profile').textContent = t.profile;
-        document.getElementById('lbl-status').textContent = t.status;
-        document.getElementById('lbl-online-status').textContent = t.online;
-        document.getElementById('lbl-time').textContent = t.loginTime;
-        document.getElementById('btn-logout').textContent = t.logoutBtn;
-        
-        if (currentActiveChatPartner) {
-            chatTitleText.textContent = t.dialogWith + currentActiveChatPartner;
-        }
-        renderChatsList();
-        loadMessagesHistory();
-    }
-
-    function changeLanguage(lang) {
-        currentLang = lang;
-        localStorage.setItem('burmalda_lang', lang);
-        applyLanguage();
-    }
-
-    socket.emit('store user', myNick);
-    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
-
-    input.oninput = () => {
-        if (currentRoom) {
-            socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
-        }
-    };
-
-    let remoteTypingTimer = null;
-    socket.on('chat message', (data) => {
-        if (!data || !data.room) return;
-        const roomKey = String(data.room);
-
-        if (data.text === '[TYPING_SIGNAL]') {
-            if (roomKey === currentRoom && data.user !== myNick) {
-                typingStatusEl.textContent = translations[currentLang].typingText;
-                typingStatusEl.style.display = 'block';
-                
-                clearTimeout(remoteTypingTimer);
-                remoteTypingTimer = setTimeout(() => { typingStatusEl.style.display = 'none'; }, 250);
-            }
-            return;
-        }
-
-        if (data.text === '[READ_SIGNAL]') {
-            if (roomKey === currentRoom && data.user !== myNick) {
-                const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
-                systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
-                if (savedMessages[roomKey]) {
-                    savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
-                    localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-                }
-            }
-            return;
-        }
-
-        if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
-
-        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
-        if (roomKey === currentRoom && data.user !== myNick) {
-            setTimeout(sendReadSignal, 300);
-            typingStatusEl.style.display = 'none';
-        }
-
-        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
-            savedMessages[roomKey].push(data);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
-
-        if (roomKey === currentRoom) displaySingleMessage(data);
-    });
-
-    searchToggleBtn.onclick = function(e) {
-        e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
-    };
-
-    searchInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            const targetNick = searchInput.value.trim();
-            if (!targetNick) return;
-            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert(translations[currentLang].selfChatError);
+        function initChat() {
+            if (localStorage.getItem('chat_logged_in') !== 'true') {
+                window.location.href = '/';
                 return;
             }
-            if (!activeChats.includes(targetNick)) { activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); }
-            searchInput.value = ''; searchFrame.classList.remove('active'); openChatWith(targetNick);
-        }
-    };
 
-    function renderChatsList() {
-        chatsList.innerHTML = '';
-        const t = translations[currentLang];
-        if (activeChats.length === 0) {
-            chatsList.innerHTML = `<div style="padding:15px;color:#555;text-align:center;">${t.emptyList}</div>`; return;
-        }
-        activeChats.forEach(user => {
-            if (!user) return;
-            const item = document.createElement('div'); item.className = 'chat-item';
-            if (currentActiveChatPartner === user) item.classList.add('active');
-            const isOnline = onlineUsers.includes(user);
-            item.innerHTML = `<span>${user}</span><span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>`;
-            item.onclick = () => openChatWith(user);
-            item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showChatContextMenu(e.clientX, e.clientY, user); };
-            let chatTimer;
-            item.ontouchstart = (e) => { chatTimer = window.setTimeout(() => { showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, user); }, 600); };
-            item.ontouchend = () => { clearTimeout(chatTimer); };
-            chatsList.appendChild(item);
-        });
-    }
+            myNickname = localStorage.getItem('burmalda_my_nick') || "User";
+            document.getElementById('user-display-name').innerText = myNickname;
 
-    function openChatWith(user) {
-        if (!user) return;
-        currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
-        chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
-        chatTitleText.textContent = translations[currentLang].dialogWith + user;
-        typingStatusEl.style.display = 'none';
-        
-        // Добавляем искусственное состояние в историю браузера, чтобы кнопка Назад работала на мобильных
-        if (!document.body.classList.contains('chat-opened')) {
-            window.history.pushState({ chatOpened: true }, "");
-        }
-        
-        document.body.classList.add('chat-opened');
-        socket.emit('join room', user);
-        loadMessagesHistory(); renderChatsList(); sendReadSignal();
-        setTimeout(() => { input.focus(); input.click(); }, 300);
-    }
+            // Если у нашего юзера нет сохраненной даты регистрации — генерируем её
+            if (!localStorage.getItem(`regdate_${myNickname}`)) {
+                const today = new Date().toLocaleDateString();
+                localStorage.setItem(`regdate_${myNickname}`, today);
+            }
 
-    // Эта функция теперь корректно синхронизирована с системной кнопкой Назад
-    function closeChatMobile() { 
-        if (document.body.classList.contains('chat-opened')) {
-            window.history.back();
-        }
-    }
+            renderAvatar();
 
-    socket.on('force join room', (roomName) => {
-        if (!roomName) return;
-        const partner = String(roomName).replace(myNick, '').replace('_', '');
-        if (!partner) return;
-        if (!activeChats.includes(partner)) {
-            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList();
-        }
-        socket.emit('join room', partner);
-    });
+            const savedLang = localStorage.getItem('burmalda_lang') || 'ru';
+            setLang(savedLang);
 
-    function sendMessage() {
-        const text = input.value.trim();
-        if (text && currentRoom) {
-            const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
-            socket.emit('private chat message', { room: currentRoom, text: text, user: myNick, msgId: generatedId });
+            // Фейковые сообщения собеседников для теста кликов по профилю
+            appendMessage("Burmalda System", "Добро пожаловать в чат!", "incoming");
+            appendMessage("Gamer2026", "Привет! Зацени мой новый статус в профиле!", "incoming");
+            
+            // Зададим фейку дату регистрации и описание ради демонстрации
+            if (!localStorage.getItem("regdate_Gamer2026")) {
+                localStorage.setItem("regdate_Gamer2026", "12.02.2026");
+                localStorage.setItem("bio_Gamer2026", "Люблю кодить на Python и настраивать сервера! 🛠️");
+            }
+        }
+
+        function renderAvatar() {
+            const savedAvatar = localStorage.getItem(`avatar_${myNickname}`);
+            const headerImg = document.getElementById('user-avatar-img');
+            const headerLetter = document.getElementById('user-avatar-letter');
+
+            if (savedAvatar) {
+                headerImg.src = savedAvatar;
+                headerImg.style.display = 'block';
+                headerLetter.style.display = 'none';
+            } else {
+                headerLetter.innerText = myNickname.charAt(0).toUpperCase();
+                headerImg.style.display = 'none';
+                headerLetter.style.display = 'flex';
+            }
+        }
+
+        function uploadAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                localStorage.setItem(`avatar_${myNickname}`, base64Image);
+                renderAvatar();
+                openProfile(myNickname); // Перерисовываем открытое окно
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- ДИНАМИЧЕСКОЕ ОТКРЫТИЕ ЛЮБОГО ПРОФИЛЯ ---
+        function openProfile(username) {
+            document.getElementById('modal-name').innerText = username;
+            document.getElementById('modal-user-tag').innerText = '@' + username.toLowerCase();
+            
+            // Вытягиваем дату регистрации из хранилища
+            const regDate = localStorage.getItem(`regdate_${username}`) || new Date().toLocaleDateString();
+            document.getElementById('modal-regdate').innerText = i18n[currentLang].regDate + regDate;
+
+            // Вытягиваем био / описание
+            const userBio = localStorage.getItem(`bio_${username}`) || i18n[currentLang].defaultBio;
+            document.getElementById('modal-bio').innerText = userBio;
+
+            // Логика отображения аватарки для выбранного юзера
+            const modalImg = document.getElementById('modal-avatar-img');
+            const modalLetter = document.getElementById('modal-avatar-letter');
+            const targetAvatar = localStorage.getItem(`avatar_${username}`);
+
+            if (targetAvatar) {
+                modalImg.src = targetAvatar;
+                modalImg.style.display = 'block';
+                modalLetter.style.display = 'none';
+            } else {
+                modalLetter.innerText = username.charAt(0).toUpperCase();
+                modalImg.style.display = 'none';
+                modalLetter.style.display = 'flex';
+            }
+
+            // Прячем кнопку загрузки, если смотрим ЧУЖОЙ профиль
+            const uploadBtn = document.getElementById('t-upload-btn');
+            if (username === myNickname) {
+                uploadBtn.style.display = 'block';
+            } else {
+                uploadBtn.style.display = 'none';
+            }
+
+            document.getElementById('profile-modal').style.display = 'flex';
+        }
+
+        function closeProfile() {
+            document.getElementById('profile-modal').style.display = 'none';
+        }
+
+        function closeProfileViaOverlay(e) {
+            if (e.target.id === 'profile-modal') closeProfile();
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('burmalda_lang', lang);
+
+            document.getElementById('btn-uk').classList.remove('active');
+            document.getElementById('btn-ru').classList.remove('active');
+            document.getElementById('btn-en').classList.remove('active');
+            document.getElementById(`btn-${lang}`).classList.add('active');
+
+            document.getElementById('t-title').innerText = i18n[lang].title;
+            document.getElementById('t-status').innerText = i18n[lang].status;
+            document.getElementById('t-logout').innerText = i18n[lang].logout;
+            document.getElementById('msg-input').placeholder = i18n[lang].placeholder;
+            document.getElementById('t-send').innerText = i18n[lang].send;
+            document.getElementById('t-close-prof').innerText = i18n[lang].closeProf;
+            document.getElementById('t-upload-btn').innerText = i18n[lang].uploadBtn;
+            
+            // Если модалка открыта во время переключения языков — обновляем текст даты
+            const openName = document.getElementById('modal-name').innerText;
+            if(document.getElementById('profile-modal').style.display === 'flex') {
+                const regDate = localStorage.getItem(`regdate_${openName}`) || new Date().toLocaleDateString();
+                document.getElementById('modal-regdate').innerText = i18n[lang].regDate + regDate;
+            }
+        }
+
+        function appendMessage(sender, text, type) {
+            const chatBox = document.getElementById('chat-box');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg', type);
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Оборачиваем имя отправителя в класс .msg-sender с событием onclick
+            msgDiv.innerHTML = `
+                <strong class="msg-sender" onclick="openProfile('${sender}')">${sender}</strong>: ${text}
+                <span class="msg-meta">${time}</span>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            appendMessage(myNickname, text, 'outgoing');
             input.value = '';
         }
-    }
 
-    function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
-    button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+        document.getElementById('msg-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
 
-    function loadMessagesHistory() {
-        messagesContainer.innerHTML = '';
-        if (currentRoom && savedMessages[currentRoom]) {
-            const filtered = savedMessages[currentRoom].filter(m => !deletedMessageIds.includes(m.msgId));
-            filtered.forEach(displaySingleMessage);
+        function logout() {
+            localStorage.removeItem('chat_logged_in');
+            window.location.href = '/';
         }
-    }
 
-    function displaySingleMessage(data) {
-        if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
-        
-        const item = document.createElement('li');
-        item.id = data.msgId || ('msg-' + Date.now());
-        const t = translations[currentLang];
-        
-        if (data.user === myNick) {
-            item.classList.add('my-msg');
-            const checkRead = data.isRead ? '✓✓' : '✓';
-            const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `<strong>${t.meLabel}:</strong> ${data.text} <span class="${readClass}">${checkRead}</span>`;
-        } else {
-            item.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
-        }
-        
-        messagesContainer.appendChild(item);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    function showChatContextMenu(x, y, partnerNick) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `
-            <button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>
-        `;
-        contextMenu.style.display = 'block';
-    }
-
-    document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
-
-    window.executeDeleteChat = function(partnerNick) {
-        const generatedRoom = [myNick, partnerNick].sort().join('_');
-        if (savedMessages[generatedRoom]) delete savedMessages[generatedRoom];
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-
-        activeChats = activeChats.filter(c => c !== partnerNick);
-        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-
-        if (generatedRoom === currentRoom) {
-            currentActiveChatPartner = null; currentRoom = null;
-            chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
-            closeChatMobile();
-        }
-        renderChatsList();
-    };
-
-    function logout() { window.location.href = '/'; }
-    applyLanguage();
-</script>
+        window.addEventListener('DOMContentLoaded', initChat);
+    </script>
 </body>
 </html>
