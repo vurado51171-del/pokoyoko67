@@ -386,7 +386,6 @@
         document.getElementById('lbl-upload-btn').style.display = 'inline-block';
         
         const myData = localProfiles[myNick] || { avatar: '', bio: '', displayName: '' };
-        
         const nameInput = document.getElementById('profile-display-name');
         nameInput.disabled = false;
         nameInput.value = myData.displayName || myNick;
@@ -418,7 +417,6 @@
         document.getElementById('lbl-upload-btn').style.display = 'none';
         
         const partnerData = localProfiles[currentActiveChatPartner] || { avatar: '', bio: '', displayName: '' };
-        
         const nameInput = document.getElementById('profile-display-name');
         nameInput.disabled = true;
         nameInput.value = partnerData.displayName || currentActiveChatPartner;
@@ -459,7 +457,6 @@
             if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
             localProfiles[myNick].avatar = base64Img;
             localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
-            
             document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
             document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
             renderChatsList();
@@ -490,7 +487,6 @@
         document.getElementById('lbl-status').textContent = t.status;
         document.getElementById('lbl-time').textContent = t.loginTime;
         document.getElementById('btn-logout').textContent = t.logoutBtn;
-        
         if (currentActiveChatPartner) {
             chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${getVisibleName(currentActiveChatPartner)}</span>`;
         }
@@ -504,9 +500,10 @@
         applyLanguage();
     }
 
+    // Инициализация
     socket.emit('store user', myNick);
-    socket.emit('request profiles'); 
-
+    socket.emit('request profiles');
+    
     socket.on('broadcast profile update', (packet) => {
         if (packet && packet.user && packet.data) {
             localProfiles[packet.user] = packet.data;
@@ -517,7 +514,7 @@
             }
         }
     });
-
+    
     socket.on('all profiles data', (serverProfiles) => {
         if (serverProfiles) {
             localProfiles = { ...localProfiles, ...serverProfiles };
@@ -525,12 +522,9 @@
             applyLanguage();
         }
     });
-
-    socket.on('online users', (users) => { 
-        onlineUsers = Array.isArray(users) ? users : []; 
-        renderChatsList(); 
-    });
-
+    
+    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
+    
     input.oninput = () => {
         if (currentRoom) {
             socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
@@ -574,18 +568,14 @@
             typingStatusEl.style.display = 'none';
         }
 
-        // Обновляем или добавляем в массив истории сообщений
-        const existingMsgIndex = savedMessages[roomKey].findIndex(m => m.msgId === data.msgId);
-        if (existingMsgIndex > -1) {
-            savedMessages[roomKey][existingMsgIndex] = data;
-        } else {
+        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
             savedMessages[roomKey].push(data);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
         if (roomKey === currentRoom) displaySingleMessage(data);
     });
-
+    
     searchToggleBtn.onclick = function(e) {
         e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
     };
@@ -610,7 +600,7 @@
             openChat(targetNick);
         }
     };
-
+    
     function renderChatsList() {
         chatsList.innerHTML = '';
         if (activeChats.length === 0) {
@@ -674,7 +664,7 @@
     function sendMessage() {
         const text = input.value.trim();
         if (!text || !currentRoom) return;
-
+        
         const msgData = {
             room: currentRoom,
             text: text,
@@ -682,7 +672,7 @@
             msgId: Date.now().toString() + Math.random().toString(36).substr(2, 5),
             isRead: false
         };
-
+        
         if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
         savedMessages[currentRoom].push(msgData);
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -697,25 +687,27 @@
     function displaySingleMessage(data) {
         const isMe = data.user === myNick;
         
-        // Перевіряємо чи повідомлення вже існує в DOM-дереві
-        const existingLi = messagesContainer.querySelector(`li[data-id="${data.msgId}"]`);
+        // ПЕРЕВІРКА: Шукаємо, чи вже рендерилось це повідомлення на екрані
+        const existingNode = messagesContainer.querySelector(`li[data-id="${data.msgId}"]`);
         
-        if (existingLi) {
-            // Якщо існує, просто оновлюємо статус його галочок
+        if (existingNode) {
+            // Якщо повідомлення вже є на екрані (наприклад, воно твоє), просто оновлюємо статус галочок
             if (isMe) {
-                const statusSpan = existingLi.querySelector('.msg-status');
+                const statusSpan = existingNode.querySelector('.msg-status');
                 if (statusSpan) {
                     statusSpan.className = 'msg-status' + (data.isRead ? ' read' : '');
                     statusSpan.textContent = data.isRead ? '✓✓' : '✓';
                 }
             }
-            return;
+            return; // Перериваємо, щоб не додавати копію
         }
 
-        // Якщо повідомлення нове — створюємо елемент
+        // Якщо повідомлення нове — створюємо елемент списку
         const li = document.createElement('li');
         li.setAttribute('data-id', data.msgId);
         if (isMe) li.classList.add('my-msg');
+        
+        // Спочатку записуємо чистий текст, щоб галочки не затирались через textContent
         li.textContent = data.text;
 
         if (isMe) {
@@ -755,11 +747,10 @@
     }
 
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
-
+    
     function deleteChat(partner) {
         activeChats = activeChats.filter(c => c !== partner);
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        
         if (currentActiveChatPartner === partner) {
             currentActiveChatPartner = null;
             currentRoom = null;
