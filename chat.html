@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Burmalda Messenger</title>
+    <title>BurmaldaGram</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; margin: 0; padding: 0; background: #121212; color: white; display: flex; height: 100vh; overflow: hidden; position: relative; }
@@ -114,7 +114,7 @@
 
 <div id="chat-main">
     <div id="no-chat-placeholder" class="no-chat-selected">
-        <p id="placeholder-text">Бурмалда Мессенджер<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
+        <p id="placeholder-text">BurmaldaGram<br><span style="font-size: 14px; color: #444;">Выберите чат или нажмите 🔍, чтобы добавить друга</span></p>
     </div>
     
     <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
@@ -176,7 +176,7 @@
         ru: {
             searchPlaceholder: "Введите имя и нажмите Enter...",
             dialogsTitle: "Ваши диалоги",
-            placeholderText: "Бурмалда Мессенджер<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишите сообщение...",
             btnSend: "Отправить",
@@ -200,7 +200,7 @@
         uk: {
             searchPlaceholder: "Введіть ім'я та натисніть Enter...",
             dialogsTitle: "Ваші діалоги",
-            placeholderText: "Бурмалда Месенджер<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишіть повідомлення...",
             btnSend: "Надіслати",
@@ -224,7 +224,7 @@
         en: {
             searchPlaceholder: "Type name and press Enter...",
             dialogsTitle: "Your dialogs",
-            placeholderText: "Burmalda Messenger<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
             backBtn: "⬅ Back",
             inputPlaceholder: "Write a message...",
             btnSend: "Send",
@@ -278,8 +278,18 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
-    let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
+    // БЕЗОПАСНОЕ ЧТЕНИЕ ИСТОРИИ ИЗ ЛОКАЛЬНОЙ ПАМЯТИ
+    let savedMessages = {};
+    try {
+        const rawHistory = localStorage.getItem('burmalda_msg_history');
+        if (rawHistory) {
+            savedMessages = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory;
+        }
+    } catch (e) {
+        console.error("Сброс поврежденного кэша истории:", e);
+        savedMessages = {};
+    }
+
     let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
 
@@ -303,14 +313,14 @@
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
-    // Кнопка «⬅ Назад» на самом экране чата
+    // Кнопка назад на самом экране чата
     document.getElementById('btn-back').onclick = () => {
         if (document.body.classList.contains('chat-opened')) {
-            window.history.back(); // Симулируем жест/кнопку назад браузера
+            window.history.back(); 
         }
     };
 
-    // ОБРАБОТЧИК КНОПКИ НАЗАД НА СМАРТФОНЕ
+    // Аппаратная кнопка назад на телефоне
     window.onpopstate = function(event) {
         if (document.body.classList.contains('chat-opened')) {
             document.body.classList.remove('chat-opened');
@@ -318,6 +328,10 @@
             currentRoom = null; 
             chatArea.style.display = 'none'; 
             chatPlaceholder.style.display = 'block'; 
+            
+            const cleanUrl = window.location.pathname + '?auth=' + urlParams.get('auth');
+            window.history.replaceState({}, "", cleanUrl);
+            
             renderChatsList();
         }
     };
@@ -450,6 +464,9 @@
     };
 
     let remoteTypingTimer = null;
+    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
+
+    // ИСПРАВЛЕННЫЙ ПРИЕМ СООБЩЕНИЙ ЧЕРЕЗ СОКЕТЫ
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
         const roomKey = String(data.room);
@@ -476,20 +493,33 @@
             return;
         }
 
-        if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
+        // Если это наше собственное сообщение — мы его уже отрисовали локально в sendMessage()
+        if (data.user === myNick) return;
+
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
         
-        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
+        // Защита от дублей при перекрестной или одновременной отправке
+        const isDuplicate = savedMessages[roomKey].some(m => m.msgId === data.msgId);
+        if (!isDuplicate) {
             savedMessages[roomKey].push(data);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
 
         if (roomKey === currentRoom) {
-            if (data.user !== myNick) {
-                setTimeout(sendReadSignal, 300); typingStatusEl.style.display = 'none';
-            }
+            setTimeout(sendReadSignal, 300); 
+            typingStatusEl.style.display = 'none';
             displaySingleMessage(data);
         }
+    });
+
+    // ПРИЕМ ОФИЦИАЛЬНОЙ ИСТОРИИ С СЕРВЕРА ПРИ ОТКРЫТИИ ЧАТА
+    socket.on('server history', (serverMessages) => {
+        const roomKey = currentRoom;
+        if (!roomKey || !Array.isArray(serverMessages)) return;
+
+        savedMessages[roomKey] = serverMessages;
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        loadMessagesHistory();
     });
 
     searchToggleBtn.onclick = function(e) {
@@ -527,17 +557,19 @@
         });
     }
 
-    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ОТКРЫТИЯ ЧАТА (С ПРАВИЛЬНЫМ PUSHSTATE)
     function openChatWith(user) {
         if (!user) return;
         currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
         
+        // Виртуальный безопасный URL-параметр для корректного хэндлинга кнопки назад на смартфонах
         if (!document.body.classList.contains('chat-opened')) {
-            window.history.pushState({ chatOpened: true }, "");
+            const newUrl = window.location.pathname + window.location.search + '&chat=' + encodeURIComponent(user);
+            window.history.pushState({ chatOpened: true, partner: user }, "", newUrl);
         }
         document.body.classList.add('chat-opened');
+        
         socket.emit('join room', user);
         loadMessagesHistory(); renderChatsList(); sendReadSignal();
         setTimeout(() => { input.focus(); }, 100);
@@ -553,6 +585,7 @@
         socket.emit('join room', partner);
     });
 
+    // МОМЕНТАЛЬНАЯ ЛОКАЛЬНАЯ ОТПРАВКА СООБЩЕНИЙ БЕЗ ЗАВИСАНИЙ
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
@@ -563,9 +596,18 @@
                 text: text,
                 user: myNick,
                 msgId: generatedId,
-                isRead: false
+                isRead: false,
+                time: Date.now()
             };
             
+            // Сразу пушим в свою историю на экране, не ожидая пинга от сервера
+            if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
+            savedMessages[currentRoom].push(msgPacket);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+            
+            displaySingleMessage(msgPacket);
+            
+            // Пуляем в сеть
             socket.emit('private chat message', msgPacket);
             input.value = '';
             input.focus();
@@ -578,14 +620,16 @@
 
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
-        if (currentRoom && savedMessages[currentRoom]) {
-            const filtered = savedMessages[currentRoom].filter(m => !deletedMessageIds.includes(m.msgId));
-            filtered.forEach(displaySingleMessage);
+        if (currentRoom && savedMessages && savedMessages[currentRoom]) {
+            const historyArray = savedMessages[currentRoom];
+            if (Array.isArray(historyArray)) {
+                historyArray.forEach(displaySingleMessage);
+            }
         }
     }
 
     function displaySingleMessage(data) {
-        if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
+        if (!messagesContainer || !data) return;
         
         const existingEl = document.getElementById(data.msgId);
         if (existingEl) {
