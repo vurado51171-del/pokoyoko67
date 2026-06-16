@@ -163,7 +163,6 @@
     </div>
 </div>
 
-<!-- Модальное Окно Настроек и Профилей -->
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
@@ -210,7 +209,7 @@
 <script>
     const translations = {
         ru: {
-            searchPlaceholder: "Введите юзернейм и нажмите Enter...",
+            searchPlaceholder: "Введите имя и нажмите Enter...",
             dialogsTitle: "Ваши диалоги",
             placeholderText: "Бурмалда Мессенджер<br><span style='font-size: 14px; color: #444;'>Выберите чат или нажмите 🔍, чтобы добавить друга</span>",
             backBtn: "⬅ Назад",
@@ -234,7 +233,7 @@
             bioPlaceholder: "Ничего не указано"
         },
         uk: {
-            searchPlaceholder: "Введіть юзернейм та натисніть Enter...",
+            searchPlaceholder: "Введіть ім'я та натисніть Enter...",
             dialogsTitle: "Ваші діалоги",
             placeholderText: "Бурмалда Месенджер<br><span style='font-size: 14px; color: #444;'>Оберіть чат або натисніть 🔍, щоб додати друга</span>",
             backBtn: "⬅ Назад",
@@ -258,7 +257,7 @@
             bioPlaceholder: "Нічого не вказано"
         },
         en: {
-            searchPlaceholder: "Type username and press Enter...",
+            searchPlaceholder: "Type name and press Enter...",
             dialogsTitle: "Your dialogs",
             placeholderText: "Burmalda Messenger<br><span style='font-size: 14px; color: #444;'>Select a chat or click 🔍 to add a friend</span>",
             backBtn: "⬅ Back",
@@ -356,7 +355,6 @@
         }
     };
 
-    // Функция получения Красивого Имени (если оно настроено, иначе возвращает Юзернейм)
     function getVisibleName(username) {
         const uData = localProfiles[username];
         if (uData && uData.displayName && uData.displayName.trim() !== '') {
@@ -379,7 +377,7 @@
     function openMyProfile() {
         const t = translations[currentLang];
         document.getElementById('modal-title-text').textContent = t.settingsTitle;
-        document.getElementById('info-nick').textContent = myNick; // Здесь всегда пишем исходный логин/ID
+        document.getElementById('info-nick').textContent = myNick;
         document.getElementById('lbl-online-status').textContent = t.online;
         document.getElementById('lbl-online-status').style.color = '#28a745';
         
@@ -390,7 +388,6 @@
         
         const myData = localProfiles[myNick] || { avatar: '', bio: '', displayName: '' };
         
-        // Поле ввода отображаемого Ника
         const nameInput = document.getElementById('profile-display-name');
         nameInput.disabled = false;
         nameInput.value = myData.displayName || myNick;
@@ -436,7 +433,6 @@
         settingsModal.classList.add('active');
     }
 
-    // Сохранение Отображаемого Ника
     function saveMyDisplayName(newName) {
         if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
         localProfiles[myNick].displayName = newName;
@@ -447,7 +443,6 @@
         socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
     }
 
-    // Сохранение и отправка описания на сервер
     function saveMyBio(text) {
         if (!localProfiles[myNick]) localProfiles[myNick] = { avatar: '', bio: '', displayName: '' };
         localProfiles[myNick].bio = text;
@@ -456,7 +451,6 @@
         socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
     }
 
-    // Загрузка и отправка аватарки на сервер
     function handleAvatarUpload(inputEl) {
         const file = inputEl.files[0];
         if (!file) return;
@@ -499,7 +493,6 @@
         document.getElementById('btn-logout').textContent = t.logoutBtn;
         
         if (currentActiveChatPartner) {
-            // В шапке пишем чисто Кастомное Имя (без лишних "Диалог с:")
             chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${getVisibleName(currentActiveChatPartner)}</span>`;
         }
         renderChatsList();
@@ -512,11 +505,10 @@
         applyLanguage();
     }
 
-    // Инициализация соединения и запрос базы данных аватарок
+    // Инициализация
     socket.emit('store user', myNick);
     socket.emit('request profiles'); 
 
-    // Получение обновлений профилей в реальном времени
     socket.on('broadcast profile update', (packet) => {
         if (packet && packet.user && packet.data) {
             localProfiles[packet.user] = packet.data;
@@ -528,7 +520,6 @@
         }
     });
 
-    // Загрузка всех профилей, сохраненных на сервере
     socket.on('all profiles data', (serverProfiles) => {
         if (serverProfiles) {
             localProfiles = { ...localProfiles, ...serverProfiles };
@@ -593,6 +584,8 @@
         e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
     };
 
+    // --- ВОССТАНОВЛЕННАЯ ЛОГИКА (добавлено всё, что обрывалось) ---
+
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
@@ -601,144 +594,173 @@
                 alert(translations[currentLang].selfChatError);
                 return;
             }
-            if (!activeChats.includes(targetNick)) { activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); }
-            searchInput.value = ''; searchFrame.classList.remove('active'); openChatWith(targetNick);
+            
+            // Добавляем в список чатов
+            if (!activeChats.includes(targetNick)) {
+                activeChats.push(targetNick);
+                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            }
+            
+            searchFrame.classList.remove('active');
+            searchInput.value = '';
+            renderChatsList();
+            openChat(targetNick);
         }
     };
 
     function renderChatsList() {
         chatsList.innerHTML = '';
-        const t = translations[currentLang];
         if (activeChats.length === 0) {
-            chatsList.innerHTML = `<div style="padding:15px;color:#555;text-align:center;">${t.emptyList}</div>`; return;
+            chatsList.innerHTML = `<div style="padding: 15px; text-align: center; color: #666; font-size: 13px;">${translations[currentLang].emptyList}</div>`;
+            return;
         }
-        activeChats.forEach(user => {
-            if (!user) return;
-            const item = document.createElement('div'); item.className = 'chat-item';
-            if (currentActiveChatPartner === user) item.classList.add('active');
-            const isOnline = onlineUsers.includes(user);
+        
+        activeChats.forEach(partner => {
+            const isOnline = onlineUsers.includes(partner);
+            const statusDot = isOnline ? `<span class="status-dot online">●</span>` : `<span class="status-dot">○</span>`;
             
-            // Сайдбар выводит Кастомное Имя (getVisibleName)
-            item.innerHTML = `
+            const div = document.createElement('div');
+            div.className = 'chat-item' + (currentActiveChatPartner === partner ? ' active' : '');
+            div.innerHTML = `
                 <div class="chat-info-block">
-                    ${getAvatarHTML(user)}
-                    <span>${getVisibleName(user)}</span>
+                    ${getAvatarHTML(partner)}
+                    <div>
+                        <div style="font-weight: bold; font-size: 14px; color: #eee;">${getVisibleName(partner)}</div>
+                        ${statusDot}
+                    </div>
                 </div>
-                <span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>
             `;
             
-            item.onclick = () => openChatWith(user);
-            item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showChatContextMenu(e.clientX, e.clientY, user); };
-            let chatTimer;
-            item.ontouchstart = (e) => { chatTimer = window.setTimeout(() => { showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, user); }, 600); };
-            item.ontouchend = () => { clearTimeout(chatTimer); };
-            chatsList.appendChild(item);
+            div.onclick = () => openChat(partner);
+            
+            // Контекстное меню для удаления чата
+            div.oncontextmenu = (e) => {
+                e.preventDefault();
+                showContextMenu(e.pageX, e.pageY, partner);
+            };
+            
+            chatsList.appendChild(div);
         });
     }
 
-    function openChatWith(user) {
-        if (!user) return;
-        currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
-        chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
-        
-        // В шапке пишется чисто Отображаемый Ник друга
-        chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
-        typingStatusEl.style.display = 'none';
-        
-        if (!document.body.classList.contains('chat-opened')) {
-            window.history.pushState({ chatOpened: true }, "");
-        }
-        
+    function openChat(partner) {
+        currentActiveChatPartner = partner;
         document.body.classList.add('chat-opened');
-        socket.emit('join room', user);
-        loadMessagesHistory(); renderChatsList(); sendReadSignal();
-        setTimeout(() => { input.focus(); input.click(); }, 300);
+        chatPlaceholder.style.display = 'none';
+        chatArea.style.display = 'flex';
+
+        // Генерируем уникальную комнату (сортируем Ники по алфавиту)
+        const roomArr = [myNick, partner].sort();
+        const newRoom = roomArr[0] + "_" + roomArr[1];
+
+        if (currentRoom) {
+            socket.emit('leave room', currentRoom);
+        }
+        currentRoom = newRoom;
+        socket.emit('join room', currentRoom);
+
+        chatTitleText.innerHTML = `${getAvatarHTML(partner)} <span>${getVisibleName(partner)}</span>`;
+        renderChatsList();
+        loadMessagesHistory();
+        setTimeout(sendReadSignal, 300);
     }
 
-    function closeChatMobile() { 
-        if (document.body.classList.contains('chat-opened')) {
-            window.history.back();
-        }
-    }
-
-    socket.on('force join room', (roomName) => {
-        if (!roomName) return;
-        const partner = String(roomName).replace(myNick, '').replace('_', '');
-        if (!partner) return;
-        if (!activeChats.includes(partner)) {
-            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList();
-        }
-        socket.emit('join room', partner);
-    });
+    button.onclick = sendMessage;
+    input.onkeypress = (e) => {
+        if (e.key === 'Enter') sendMessage();
+    };
 
     function sendMessage() {
         const text = input.value.trim();
-        if (text && currentRoom) {
-            const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
-            socket.emit('private chat message', { room: currentRoom, text: text, user: myNick, msgId: generatedId });
-            input.value = '';
-        }
-    }
+        if (!text || !currentRoom) return;
 
-    function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
-    button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+        const msgData = {
+            room: currentRoom,
+            text: text,
+            user: myNick,
+            msgId: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+            isRead: false
+        };
 
-    function loadMessagesHistory() {
-        messagesContainer.innerHTML = '';
-        if (currentRoom && savedMessages[currentRoom]) {
-            const filtered = savedMessages[currentRoom].filter(m => !deletedMessageIds.includes(m.msgId));
-            filtered.forEach(displaySingleMessage);
-        }
+        // Сохраняем сообщение локально, чтобы оно отобразилось сразу
+        if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
+        savedMessages[currentRoom].push(msgData);
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+
+        displaySingleMessage(msgData);
+        socket.emit('chat message', msgData);
+
+        input.value = '';
+        input.focus();
     }
 
     function displaySingleMessage(data) {
-        if (!messagesContainer || !data || (data.msgId && deletedMessageIds.includes(data.msgId))) return;
+        const li = document.createElement('li');
+        const isMe = data.user === myNick;
         
-        const item = document.createElement('li');
-        item.id = data.msgId || ('msg-' + Date.now());
-        
-        // Внутри сообщений ПОЛНОСТЬЮ убран вывод имен/ников, остался только чистый текст
-        if (data.user === myNick) {
-            item.classList.add('my-msg');
-            const checkRead = data.isRead ? '✓✓' : '✓';
-            const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `${data.text} <span class="${readClass}">${checkRead}</span>`;
-        } else {
-            item.innerHTML = `${data.text}`;
+        if (isMe) li.classList.add('my-msg');
+        li.textContent = data.text;
+
+        if (isMe) {
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'msg-status' + (data.isRead ? ' read' : '');
+            statusSpan.textContent = data.isRead ? '✓✓' : '✓';
+            li.appendChild(statusSpan);
         }
-        
-        messagesContainer.appendChild(item);
+
+        messagesContainer.appendChild(li);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    function showChatContextMenu(x, y, partnerNick) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `
-            <button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>
-        `;
+    function loadMessagesHistory() {
+        messagesContainer.innerHTML = '';
+        if (!currentRoom || !savedMessages[currentRoom]) return;
+        
+        savedMessages[currentRoom].forEach(msg => {
+            if (!deletedMessageIds.includes(msg.msgId)) {
+                displaySingleMessage(msg);
+            }
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function sendReadSignal() {
+        if (currentRoom) {
+            socket.emit('chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick });
+        }
+    }
+
+    function showContextMenu(x, y, partner) {
+        contextMenu.innerHTML = `<button class="delete-btn" onclick="deleteChat('${partner}')">${translations[currentLang].ctxDeleteChat}</button>`;
+        contextMenu.style.left = x + 'px';
+        contextMenu.style.top = y + 'px';
         contextMenu.style.display = 'block';
     }
 
     document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
 
-    window.executeDeleteChat = function(partnerNick) {
-        const generatedRoom = [myNick, partnerNick].sort().join('_');
-        if (savedMessages[generatedRoom]) delete savedMessages[generatedRoom];
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-
-        activeChats = activeChats.filter(c => c !== partnerNick);
+    function deleteChat(partner) {
+        activeChats = activeChats.filter(c => c !== partner);
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-
-        if (generatedRoom === currentRoom) {
-            currentActiveChatPartner = null; currentRoom = null;
-            chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
-            closeChatMobile();
+        
+        if (currentActiveChatPartner === partner) {
+            currentActiveChatPartner = null;
+            currentRoom = null;
+            document.body.classList.remove('chat-opened');
+            chatArea.style.display = 'none';
+            chatPlaceholder.style.display = 'flex';
         }
         renderChatsList();
-    };
+    }
 
-    function logout() { window.location.href = '/'; }
+    function logout() {
+        localStorage.removeItem('burmalda_chat_list');
+        window.location.href = '/';
+    }
+
+    // Запускаем применение языка при загрузке
     applyLanguage();
+
 </script>
 </body>
 </html>
