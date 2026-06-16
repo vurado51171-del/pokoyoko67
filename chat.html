@@ -25,6 +25,12 @@
         .chat-item { padding: 15px; border-bottom: 1px solid #252525; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
         .chat-item:hover { background: #262626; }
         .chat-item.active { background: #2d2d2d; border-left: 4px solid #007bff; }
+        
+        /* Стили для закрепленных чатов */
+        .chat-item.pinned { background: #1c2530 !important; border-left: 4px solid #ffc107 !important; }
+        .pin-badge { color: #ffc107; font-size: 14px; margin-left: 5px; }
+        .unread-badge { background: #007bff; color: white; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+
         .chat-info-block { display: flex; align-items: center; gap: 10px; }
         .status-dot { font-size: 11px; color: #888; }
         .status-dot.online { color: #28a745; font-weight: bold; }
@@ -61,6 +67,12 @@
         /* Ответ в сообщении (Цитата) */
         .reply-quote { background: rgba(0,0,0,0.2); border-left: 3px solid #00d4ff; padding: 4px 8px; border-radius: 4px; font-size: 13px; margin-bottom: 4px; color: #ccc; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .my-msg .reply-quote { border-left-color: #fff; background: rgba(255,255,255,0.15); color: #fff; }
+
+        /* Пересланное сообщение подпись */
+        .forwarded-label { font-size: 11px; color: rgba(255, 255, 255, 0.4); font-style: italic; margin-bottom: 2px; }
+
+        /* Аудиоплеер */
+        .audio-msg-player { background: #1a1a1a; padding: 5px; border-radius: 8px; margin-top: 5px; max-width: 240px; outline: none; }
 
         /* Медиа файлы в чате */
         .chat-media-img { max-width: 250px; max-height: 250px; border-radius: 8px; margin-top: 5px; display: block; cursor: pointer; }
@@ -180,6 +192,9 @@
                     📎
                     <input type="file" id="media-file-input" accept="image/*" style="display: none;" onchange="uploadMediaFile(this)">
                 </label>
+                
+                <button type="button" class="media-btn-label" id="audio-record-btn" onclick="toggleAudioRecord()" style="background:none; border:none; font-size:18px;">🎙</button>
+                
                 <input id="input" autocomplete="off" />
                 <button id="button">Отправить</button>
             </div>
@@ -328,14 +343,21 @@
             replyPrefix: "Reply to: "
         }
     };
-
+    
     let currentLang = localStorage.getItem('burmalda_lang') || 'ru';
     const urlParams = new URLSearchParams(window.location.search);
     const authToken = urlParams.get('auth');
-    let myNick = 'Аноним'; 
+    let myNick = 'Аноним';
     let authorized = false;
     let sessionTimeString = 'Неизвестно';
-    let replyTargetMsgId = null; // Хранилище ID сообщения для ответа
+    let replyTargetMsgId = null;
+
+    // --- НОВЫЕ СТРУКТУРЫ ДАННЫХ ДЛЯ ФИЧ ---
+    let pinnedChats = JSON.parse(localStorage.getItem('burmalda_pinned_chats')) || [];
+    let unreadChats = JSON.parse(localStorage.getItem('burmalda_unread_chats')) || {};
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
 
     if (authToken) {
         try {
@@ -374,6 +396,14 @@
 
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
 
+    // Автоматическое добавление Заметок для себя в список чатов
+    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
+    const notesKey = myNick + "_notes";
+    if (!activeChats.includes(notesKey)) {
+        activeChats.unshift(notesKey);
+        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+    }
+
     const searchToggleBtn = document.getElementById('search-toggle-btn');
     const searchFrame = document.getElementById('search-frame');
     const searchInput = document.getElementById('search-input');
@@ -392,6 +422,11 @@
 
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
+
+    searchToggleBtn.onclick = () => {
+        searchFrame.classList.toggle('active');
+        if (searchFrame.classList.contains('active')) searchInput.focus();
+    };
 
     document.getElementById('btn-back').onclick = () => {
         if (document.body.classList.contains('chat-opened')) {
@@ -413,13 +448,17 @@
     };
 
     function getVisibleName(username) {
+        if (username && username.endsWith("_notes")) return currentLang === 'uk' ? "📓 Мої Нотатки" : "📓 Мои Заметки";
         const uData = localProfiles[username];
         if (uData && uData.displayName && uData.displayName.trim() !== '') return uData.displayName.trim();
         return username;
     }
 
-    // ЗАЩИЩЕННАЯ ФУНКЦИЯ АВАТАРОК — Больше никогда не пропадают
     function getAvatarHTML(username, cssClass = 'avatar') {
+        if (username && username.endsWith("_notes")) {
+            const pClass = cssClass === 'avatar' ? 'avatar-placeholder' : 'modal-avatar-placeholder';
+            return `<div class="${pClass}" style="background-color: #6c757d">📓</div>`;
+        }
         const uData = localProfiles[username];
         if (uData && uData.avatar && uData.avatar.startsWith('data:image')) {
             return `<img src="${uData.avatar}" class="${cssClass}" id="av-node-${username}" alt="">`;
@@ -430,7 +469,8 @@
         
         const colors = ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6610f2', '#e83e8c'];
         let charCodeSum = 0;
-        for (let i = 0; i < username.length; i++) charCodeSum += username.charCodeAt(i);
+        const nameStr = username || '';
+        for (let i = 0; i < nameStr.length; i++) charCodeSum += nameStr.charCodeAt(i);
         const pickedColor = colors[charCodeSum % colors.length];
 
         return `<div class="${placeholderClass}" id="av-node-${username}" style="background-color: ${pickedColor}">${firstLetter}</div>`;
@@ -480,43 +520,38 @@
         document.getElementById('profile-desc').disabled = false;
         document.getElementById('profile-desc').value = myData.bio || '';
         document.getElementById('profile-desc').placeholder = t.bioEmpty;
-
         document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
         document.getElementById('info-login-time').textContent = sessionTimeString;
         document.getElementById('lbl-upload-btn').style.display = 'block';
         document.getElementById('btn-logout').style.display = 'block';
         document.getElementById('lang-select-block').style.display = 'block';
         document.getElementById('login-time-block').style.display = 'block';
-
         applyLanguage();
         settingsModal.classList.add('active');
     }
 
     function openPartnerProfile() {
         if (!currentActiveChatPartner) return;
+        if (currentActiveChatPartner.endsWith("_notes")) return;
         const t = translations[currentLang];
-        document.getElementById('info-nick').textContent = currentActiveChatPartner; 
-
+        document.getElementById('info-nick').textContent = currentActiveChatPartner;
         const partnerData = localProfiles[currentActiveChatPartner] || { avatar: '', bio: '', displayName: '' };
         document.getElementById('profile-display-name').disabled = true;
         document.getElementById('profile-display-name').value = partnerData.displayName || currentActiveChatPartner;
-        
-        document.getElementById('profile-desc').disabled = true; 
+        document.getElementById('profile-desc').disabled = true;
         document.getElementById('profile-desc').value = partnerData.bio || '';
         document.getElementById('profile-desc').placeholder = t.bioEmpty;
         document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(currentActiveChatPartner, 'modal-avatar');
-
         document.getElementById('lbl-upload-btn').style.display = 'none';
         document.getElementById('btn-logout').style.display = 'none';
         document.getElementById('lang-select-block').style.display = 'none';
-        document.getElementById('login-time-block').style.display = 'none'; 
-
+        document.getElementById('login-time-block').style.display = 'none';
         applyLanguage();
         settingsModal.classList.add('active');
     }
 
     function changeLanguage(lang) {
-        currentLang = lang; 
+        currentLang = lang;
         localStorage.setItem('burmalda_lang', lang);
         applyLanguage();
     }
@@ -553,9 +588,416 @@
         reader.readAsDataURL(file);
     }
 
+    // --- ФИЧА 1: ЗАКРЕПЛЕНИЕ ЧАТОВ ---
+    function togglePinChat(partner, event) {
+        if (event) event.stopPropagation();
+        const index = pinnedChats.indexOf(partner);
+        if (index > -1) {
+            pinnedChats.splice(index, 1);
+        } else {
+            pinnedChats.push(partner);
+        }
+        localStorage.setItem('burmalda_pinned_chats', JSON.stringify(pinnedChats));
+        renderChatsList();
+    }
+
+    // --- ФИЧА 2: ЛОКАЛЬНОЕ И ГЛОБАЛЬНОЕ УДАЛЕНИЕ ---
+    function executeMessageDeletion(room, msgId) {
+        if (savedMessages[room]) {
+            savedMessages[room] = savedMessages[room].filter(m => m.msgId !== msgId);
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        }
+        if (room === currentRoom) {
+            loadMessagesHistory();
+        }
+    }
+
+    // Рендеринг списка чатов со всеми фиксами (закрепление, счетчики)
+    function renderChatsList() {
+        chatsList.innerHTML = '';
+        const t = translations[currentLang];
+        
+        if (activeChats.length === 0) {
+            chatsList.innerHTML = `<div style="padding:20px; text-align:center; color:#666;">${t.emptyList}</div>`;
+            return;
+        }
+
+        // Сортировка: сначала закрепленные, потом остальные
+        const sortedChats = [...activeChats].sort((a, b) => {
+            const aPinned = pinnedChats.includes(a) ? 1 : 0;
+            const bPinned = pinnedChats.includes(b) ? 1 : 0;
+            return bPinned - aPinned;
+        });
+
+        sortedChats.forEach(partner => {
+            const isPinned = pinnedChats.includes(partner);
+            const isNotes = partner.endsWith("_notes");
+            
+            let displayName = getVisibleName(partner);
+            let roomKey = isNotes ? partner : [myNick, partner].sort().join('_');
+            
+            const isOnline = onlineUsers.includes(partner) && !isNotes;
+            const unreadCount = unreadChats[roomKey] || 0;
+            
+            const chatItem = document.createElement('div');
+            chatItem.className = `chat-item ${currentActiveChatPartner === partner ? 'active' : ''} ${isPinned ? 'pinned' : ''}`;
+            
+            chatItem.onclick = () => openChatWithUser(partner);
+            
+            // Зажатие / правая кнопка для закрепления
+            chatItem.oncontextmenu = (e) => {
+                e.preventDefault();
+                togglePinChat(partner, e);
+            };
+
+            chatItem.innerHTML = `
+                <div class="chat-info-block">
+                    ${getAvatarHTML(partner)}
+                    <div>
+                        <div style="font-weight:bold; display:flex; align-items:center; gap:5px;">
+                            ${displayName} ${isPinned ? '<span class="pin-badge">📌</span>' : ''}
+                        </div>
+                        <span class="status-dot ${isOnline ? 'online' : ''}">
+                            ${isNotes ? '' : (isOnline ? t.chatStatusOnline : t.chatStatusOffline)}
+                        </span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : ''}
+                    <span style="cursor:pointer; font-size:12px; color:#555;" onclick="deleteChatLocally('${partner}', event)">🗑</span>
+                </div>
+            `;
+            chatsList.appendChild(chatItem);
+        });
+    }
+
+    function deleteChatLocally(partner, event) {
+        if(event) event.stopPropagation();
+        if(confirm(currentLang === 'uk' ? "Видалити цей чат зі списку?" : "Удалить этот чат из списка?")) {
+            activeChats = activeChats.filter(c => c !== partner);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            const generatedRoom = partner.endsWith("_notes") ? partner : [myNick, partner].sort().join('_');
+            if (generatedRoom === currentRoom) {
+                currentActiveChatPartner = null; 
+                currentRoom = null;
+                chatArea.style.display = 'none'; 
+                chatPlaceholder.style.display = 'block'; 
+            }
+            renderChatsList();
+        }
+    }
+
+    // --- ФИЧА 3: СВОБОДНЫЙ ПОИСК / СВЯЗЬ С ЛЮБЫМ КОНТАКТОМ ---
+    searchInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            const targetUser = searchInput.value.trim();
+            if (!targetUser) return;
+            
+            if (targetUser === myNick) {
+                alert(translations[currentLang].selfChatError);
+                return;
+            }
+
+            if (!activeChats.includes(targetUser)) {
+                activeChats.push(targetUser);
+                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            }
+            
+            searchInput.value = '';
+            searchFrame.classList.remove('active');
+            openChatWithUser(targetUser);
+        }
+    };
+
+    function openChatWithUser(partner) {
+        currentActiveChatPartner = partner;
+        const isNotes = partner.endsWith("_notes");
+        currentRoom = isNotes ? partner : [myNick, partner].sort().join('_');
+        
+        // Сброс непрочитанных при открытии чата
+        unreadChats[currentRoom] = 0;
+        localStorage.setItem('burmalda_unread_chats', JSON.stringify(unreadChats));
+        
+        if (!isNotes) {
+            socket.emit('join room', partner);
+        }
+
+        document.body.classList.add('chat-opened');
+        chatPlaceholder.style.display = 'none';
+        chatArea.style.display = 'flex';
+        
+        chatTitleText.innerHTML = `${getAvatarHTML(partner)} <span>${getVisibleName(partner)}</span>`;
+        
+        const cleanUrl = window.location.pathname + '?auth=' + urlParams.get('auth') + '&room=' + currentRoom;
+        window.history.pushState({room: currentRoom}, "", cleanUrl);
+        
+        renderChatsList();
+        loadMessagesHistory();
+        sendReadSignal();
+    }
+
+    function sendReadSignal() {
+        if (currentRoom && !currentRoom.endsWith("_notes")) {
+            socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick });
+        }
+    }
+
+    function loadMessagesHistory() {
+        messagesContainer.innerHTML = '';
+        if (!currentRoom) return;
+        const history = savedMessages[currentRoom] || [];
+        history.forEach(msg => displaySingleMessage(msg));
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // --- ФИЧА 4: ОТПРАВКА КАРТИНОК И АУДИО КАК ПОЛНОЦЕННЫХ СООБЩЕНИЙ ---
+    function sendCustomMessage({ type, data, replyToId = null, isAnonymous = false }) {
+        if (!currentRoom) return;
+
+        const msgPayload = {
+            room: currentRoom,
+            msgId: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            user: isAnonymous ? "Аноним" : myNick,
+            text: type === 'text' ? data : '',
+            mediaType: type, // 'text', 'image', 'audio'
+            mediaData: type !== 'text' ? data : null,
+            time: Date.now(),
+            replyTo: replyToId,
+            isRead: false
+        };
+
+        // Запись в локальную историю отправителя
+        if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
+        const localCopy = { ...msgPayload, senderWasMe: true };
+        savedMessages[currentRoom].push(localCopy);
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        
+        displaySingleMessage(localCopy);
+
+        // Пересылка по сокетам (если это не одиночные заметки)
+        if (!currentRoom.endsWith("_notes")) {
+            socket.emit('private chat message', msgPayload);
+        }
+        
+        cancelReply();
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Обновленный обработчик клика отправки
+    button.onclick = () => {
+        const txt = input.value.trim();
+        if (!txt) return;
+        sendCustomMessage({ type: 'text', data: txt, replyToId: replyTargetMsgId });
+        input.value = '';
+    };
+
+    input.onkeypress = (e) => {
+        if (e.key === 'Enter') button.click();
+    };
+
+    function uploadMediaFile(inputEl) {
+        const file = inputEl.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            sendCustomMessage({ type: 'image', data: e.target.result });
+        };
+        reader.readAsDataURL(file);
+        inputEl.value = '';
+    }
+
+    // --- ФИЧА 5: ЗАПИСЬ ГОЛОСОВЫХ СООБЩЕНИЙ ---
+    async function toggleAudioRecord() {
+        const recordBtn = document.getElementById('audio-record-btn');
+        if (!isRecording) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert(currentLang === 'uk' ? "Ваш браузер не підтримує запис звуку." : "Ваш браузер не поддерживает запись аудио.");
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        sendCustomMessage({ type: 'audio', data: reader.result });
+                    };
+                    reader.readAsDataURL(audioBlob);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.textContent = "🛑";
+                recordBtn.style.color = "#dc3545";
+            } catch (err) {
+                alert("Error mic: " + err.message);
+            }
+        } else {
+            if(mediaRecorder) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            isRecording = false;
+            recordBtn.textContent = "🎙";
+            recordBtn.style.color = "#aaa";
+        }
+    }
+
+    // --- МОДИФИЦИРОВАННЫЙ СИНГЛ-РЕНДЕР КАРТОЧЕК СООБЩЕНИЙ ---
+    function displaySingleMessage(data) {
+        if (!currentRoom || String(data.room) !== String(currentRoom)) return;
+        if (data.text === '[TYPING_SIGNAL]' || data.text === '[READ_SIGNAL]') return;
+
+        // Если прилетел сигнал анонимного удаления от собеседника
+        if (data.text === '[DELETE_SIGNAL]' && data.targetMsgId) {
+            executeMessageDeletion(currentRoom, data.targetMsgId);
+            return;
+        }
+
+        const isMe = data.user === myNick || data.senderWasMe;
+
+        const li = document.createElement('li');
+        li.className = isMe ? 'my-msg' : '';
+        li.setAttribute('data-msg-id', data.msgId);
+
+        const container = document.createElement('div');
+        container.className = `msg-container ${isMe ? 'my-wrapper' : ''}`;
+
+        // Метка если сообщение анонимно переслано
+        if (data.user === "Аноним") {
+            const fwdLabel = document.createElement('div');
+            fwdLabel.className = 'forwarded-label';
+            fwdLabel.textContent = currentLang === 'uk' ? '🕵️‍♂️ Переслано анонімно' : '🕵️‍♂️ Переслано анонимно';
+            li.appendChild(fwdLabel);
+        }
+
+        // Рендер цитаты (Ответа)
+        if (data.replyTo) {
+            const history = savedMessages[currentRoom] || [];
+            const parentMsg = history.find(m => m.msgId === data.replyTo);
+            const quoteDiv = document.createElement('div');
+            quoteDiv.className = 'reply-quote';
+            if (parentMsg) {
+                quoteDiv.textContent = parentMsg.mediaType && parentMsg.mediaType !== 'text' ? `[${parentMsg.mediaType}]` : parentMsg.text;
+            } else {
+                quoteDiv.textContent = translations[currentLang].replyPrefix + "...";
+            }
+            li.appendChild(quoteDiv);
+        }
+
+        // Рендер по типу медиа-контента
+        if (data.mediaType === 'image' || (data.mediaData && data.mediaData.startsWith('data:image'))) {
+            const img = document.createElement('img');
+            img.src = data.mediaData;
+            img.className = 'chat-media-img';
+            img.onclick = () => window.open(img.src, '_blank');
+            li.appendChild(img);
+        } else if (data.mediaType === 'audio' || (data.mediaData && data.mediaData.startsWith('data:audio'))) {
+            const audio = document.createElement('audio');
+            audio.src = data.mediaData;
+            audio.controls = true;
+            audio.className = 'audio-msg-player';
+            li.appendChild(audio);
+        } else {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = data.text;
+            li.appendChild(textSpan);
+        }
+
+        // Мета-данные времени и статуса
+        const metaLine = document.createElement('div');
+        metaLine.className = 'msg-meta-line';
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'msg-time';
+        timeSpan.textContent = new Date(data.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        const statusSpan = document.createElement('span');
+        statusSpan.className = `msg-status ${data.isRead ? 'read' : ''}`;
+        statusSpan.textContent = data.isRead ? '✓✓' : '✓';
+
+        metaLine.appendChild(timeSpan);
+        if (isMe) metaLine.appendChild(statusSpan);
+        li.appendChild(metaLine);
+
+        // Реализация контекстного меню по клику правой кнопкой / тачу
+        li.oncontextmenu = (e) => {
+            e.preventDefault();
+            showMsgContextMenu(e, data);
+        };
+
+        container.appendChild(li);
+        messagesContainer.appendChild(container);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // --- ФИЧА 6: КОНТЕКСТНОЕ МЕНЮ (АНOНИМНОЕ УДАЛЕНИЕ И ПЕРЕСЫЛКА) ---
+    function showMsgContextMenu(e, msgData) {
+        contextMenu.innerHTML = '';
+        contextMenu.style.display = 'block';
+        contextMenu.style.top = e.pageY + 'px';
+        contextMenu.style.left = e.pageX + 'px';
+
+        // 1. Ответить
+        const replyBtn = document.createElement('button');
+        replyBtn.textContent = translations[currentLang].ctxReply;
+        replyBtn.onclick = () => {
+            replyTargetMsgId = msgData.msgId;
+            const bar = document.getElementById('reply-preview-bar');
+            const previewText = document.getElementById('reply-preview-text');
+            bar.style.display = 'flex';
+            previewText.textContent = msgData.mediaType && msgData.mediaType !== 'text' ? `[${msgData.mediaType}]` : msgData.text;
+            contextMenu.style.display = 'none';
+            input.focus();
+        };
+        contextMenu.appendChild(replyBtn);
+
+        // 2. Анонимно переслать
+        const forwardBtn = document.createElement('button');
+        forwardBtn.textContent = currentLang === 'uk' ? "🕵️‍♂️ Переслати анонімно" : "🕵️‍♂️ Переслать анонимно";
+        forwardBtn.onclick = () => {
+            // Отправляем в текущий чат как скрытого автора
+            sendCustomMessage({
+                type: msgData.mediaType || 'text',
+                data: msgData.mediaType && msgData.mediaType !== 'text' ? msgData.mediaData : msgData.text,
+                isAnonymous: true
+            });
+            contextMenu.style.display = 'none';
+        };
+        contextMenu.appendChild(forwardBtn);
+
+        // 3. Анонимное полное удаление "Для всех"
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = currentLang === 'uk' ? "🗑 Видалити для обох" : "🗑 Удалить для обоих";
+        deleteBtn.onclick = () => {
+            if (!currentRoom.endsWith("_notes")) {
+                socket.emit('private chat message', {
+                    room: currentRoom,
+                    text: '[DELETE_SIGNAL]',
+                    targetMsgId: msgData.msgId
+                });
+            }
+            executeMessageDeletion(currentRoom, msgData.msgId);
+            contextMenu.style.display = 'none';
+        };
+        contextMenu.appendChild(deleteBtn);
+    }
+
+    function cancelReply() {
+        replyTargetMsgId = null;
+        document.getElementById('reply-preview-bar').style.display = 'none';
+    }
+
+    document.addEventListener('click', () => { contextMenu.style.display = 'none'; });
+
     socket.emit('store user', myNick);
     socket.emit('request profiles');
-    
+
     socket.on('broadcast profile update', (packet) => {
         if (packet && packet.user && packet.data) {
             localProfiles[packet.user] = packet.data;
@@ -575,18 +1017,29 @@
         }
     });
 
-    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
-    
+    socket.on('online users', (users) => {
+        onlineUsers = Array.isArray(users) ? users : [];
+        renderChatsList();
+    });
+
     input.oninput = () => {
-        if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+        if (currentRoom && !currentRoom.endsWith("_notes")) {
+            socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+        }
     };
 
     let remoteTypingTimer = null;
-    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
-    
+
+    // --- ФИЧА 7: СЧЕТЧИК НЕПРОЧИТАННЫХ ДЛЯ ДРУГИХ ЧАТОВ В РЕАЛЬНОМ ВРЕМЕНИ ---
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
         const roomKey = String(data.room);
+
+        // Глобальный перехват сигнала удаления
+        if (data.text === '[DELETE_SIGNAL]' && data.targetMsgId) {
+            executeMessageDeletion(roomKey, data.targetMsgId);
+            return;
+        }
 
         if (data.text === '[TYPING_SIGNAL]') {
             if (roomKey === currentRoom && data.user !== myNick) {
@@ -601,7 +1054,10 @@
         if (data.text === '[READ_SIGNAL]') {
             if (roomKey === currentRoom && data.user !== myNick) {
                 const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
-                systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
+                systemStatuses.forEach(span => {
+                    span.textContent = '✓✓';
+                    span.classList.add('read');
+                });
                 if (savedMessages[roomKey]) {
                     savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
                     localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -611,13 +1067,11 @@
         }
 
         if (data.user === myNick) return;
-        
-        // Автоматически добавляем входящий диалог в список, если его там нет
+
         const potentialPartner = data.user;
         if (!activeChats.includes(potentialPartner)) {
             activeChats.push(potentialPartner);
             localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-            renderChatsList();
         }
 
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
@@ -627,7 +1081,12 @@
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
 
-        if (roomKey === currentRoom) {
+        // Наращиваем счетчик, если сообщение пришло в закрытый на данный момент чат
+        if (roomKey !== currentRoom) {
+            unreadChats[roomKey] = (unreadChats[roomKey] || 0) + 1;
+            localStorage.setItem('burmalda_unread_chats', JSON.stringify(unreadChats));
+            renderChatsList();
+        } else {
             setTimeout(sendReadSignal, 300);
             typingStatusEl.style.display = 'none';
             displaySingleMessage(data);
@@ -649,385 +1108,17 @@
         });
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
         renderChatsList();
-        serverDialogs.forEach(partner => { socket.emit('join room', partner); });
+        serverDialogs.forEach(partner => {
+            socket.emit('join room', partner);
+        });
     });
 
-    socket.on('update_message_data', (data) => {
-        const { room, msgId, reactions } = data;
-        if (room !== currentRoom) return;
-        if (savedMessages[room]) {
-            const localMsg = savedMessages[room].find(m => m.msgId === msgId);
-            if (localMsg) localMsg.reactions = reactions;
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
-    
-        const holder = document.getElementById('reactions-holder-' + msgId);
-        if (holder) renderReactions(msgId, reactions, holder);
-    });
-
-    searchToggleBtn.onclick = function(e) {
-        e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
-    };
-
-    // Нормальный поиск с валидацией
-    searchInput.onkeypress = (e) => {
-        if (e.key === 'Enter') {
-            const targetNick = searchInput.value.trim();
-            if (!targetNick) return;
-            if (targetNick.toLowerCase() === myNick.toLowerCase()) {
-                alert(translations[currentLang].selfChatError);
-                return;
-            }
-            if (!activeChats.includes(targetNick)) { 
-                activeChats.push(targetNick); 
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); 
-            }
-            searchInput.value = ''; 
-            searchFrame.classList.remove('active'); 
-            openChatWith(targetNick);
-        }
-    };
-
-    function renderChatsList() {
-        chatsList.innerHTML = '';
-        const t = translations[currentLang];
-        if (activeChats.length === 0) {
-            chatsList.innerHTML = `<div style="padding:15px;color:#555;text-align:center;">${t.emptyList}</div>`;
-            return;
-        }
-        activeChats.forEach(user => {
-            if (!user) return;
-            const item = document.createElement('div'); item.className = 'chat-item';
-            if (currentActiveChatPartner === user) item.classList.add('active');
-            const isOnline = onlineUsers.includes(user);
-            item.innerHTML = `
-                <div class="chat-info-block">${getAvatarHTML(user)}<span>${getVisibleName(user)}</span></div>
-                <span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>
-            `;
-            item.onclick = () => openChatWith(user);
-            
-            // Контекстное меню
-            item.oncontextmenu = (e) => { 
-                e.preventDefault(); 
-                e.stopPropagation(); 
-                showChatContextMenu(e.clientX, e.clientY, user); 
-            };
-            
-            // Долгое нажатие (long press) на мобильных устройствах
-            let touchTimer;
-            item.addEventListener('touchstart', (e) => {
-                touchTimer = setTimeout(() => {
-                    showChatContextMenu(e.touches[0].clientX, e.touches[0].clientY, user);
-                }, 600);
-            });
-            item.addEventListener('touchend', () => clearTimeout(touchTimer));
-            
-            chatsList.appendChild(item);
-        });
+    function logout() { 
+        localStorage.removeItem('burmalda_auth_token'); 
+        window.location.href = '/'; 
     }
 
-    function openChatWith(user) {
-        if (!user) return;
-        currentActiveChatPartner = user;
-        currentRoom = [myNick, user].sort().join('_');
-        chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
-        chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
-        if (!document.body.classList.contains('chat-opened')) {
-            const newUrl = window.location.pathname + window.location.search + '&chat=' + encodeURIComponent(user);
-            window.history.pushState({ chatOpened: true, partner: user }, "", newUrl);
-        }
-        document.body.classList.add('chat-opened');
-        socket.emit('join room', user);
-        cancelReply(); // Сбросить ответ при переходе в другой чат
-        loadMessagesHistory(); renderChatsList(); sendReadSignal();
-        setTimeout(() => { input.focus(); }, 100);
-    }
-
-    socket.on('force join room', (roomName) => {
-        if (!roomName) return;
-        const partner = String(roomName).replace(myNick, '').replace('_', '');
-        if (!partner) return;
-        if (!activeChats.includes(partner)) {
-            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList();
-        }
-        socket.emit('join room', partner);
-    });
-
-    // Функция отправки сообщений (включая ответы и медиа)
-    function sendMessage() {
-        const text = input.value.trim();
-        if ((text || currentMsgMediaData) && currentRoom) {
-            const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
-            
-            // Сборка объекта ответа
-            let replyQuoteData = null;
-            if (replyTargetMsgId) {
-                const roomArr = savedMessages[currentRoom] || [];
-                const foundOrig = roomArr.find(m => m.msgId === replyTargetMsgId);
-                if (foundOrig) {
-                    replyQuoteData = {
-                        msgId: foundOrig.msgId,
-                        user: foundOrig.user,
-                        text: foundOrig.media ? "[Изображение]" : foundOrig.text
-                    };
-                }
-            }
-
-            const msgPacket = {
-                room: currentRoom, 
-                text: text, 
-                user: myNick, 
-                msgId: generatedId, 
-                isRead: false, 
-                time: Date.now(), 
-                reactions: {},
-                replyTo: replyQuoteData,
-                media: currentMsgMediaData || null
-            };
-
-            if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
-            savedMessages[currentRoom].push(msgPacket);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-            
-            displaySingleMessage(msgPacket);
-            socket.emit('private chat message', msgPacket);
-            
-            input.value = ''; 
-            cancelReply();
-            currentMsgMediaData = null;
-            input.focus();
-        }
-    }
-
-    // Обработка медиа-файлов (Base64 картинки)
-    let currentMsgMediaData = null;
-    function uploadMediaFile(inputEl) {
-        const file = inputEl.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            currentMsgMediaData = e.target.result;
-            // Отправляем медиа-файл моментально при выборе
-            sendMessage();
-            inputEl.value = ""; // Сбросить поле выбора файла
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Инициация ответа на сообщение
-    function initiateReply(msgId) {
-        if (!currentRoom || !savedMessages[currentRoom]) return;
-        const found = savedMessages[currentRoom].find(m => m.msgId === msgId);
-        if (!found) return;
-
-        replyTargetMsgId = msgId;
-        const bar = document.getElementById('reply-preview-bar');
-        const txt = document.getElementById('reply-preview-text');
-        
-        txt.textContent = `${translations[currentLang].replyPrefix} ${getVisibleName(found.user)}: ${found.text || '[Медиа]'}`;
-        bar.style.display = 'flex';
-        input.focus();
-    }
-
-    function cancelReply() {
-        replyTargetMsgId = null;
-        document.getElementById('reply-preview-bar').style.display = 'none';
-    }
-
-    function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
-    button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-    
-    function loadMessagesHistory() {
-        messagesContainer.innerHTML = '';
-        if (currentRoom && savedMessages && savedMessages[currentRoom]) {
-            const historyArray = savedMessages[currentRoom];
-            if (Array.isArray(historyArray)) historyArray.forEach(displaySingleMessage);
-        }
-    }
-
-    function renderReactions(msgId, reactions, holderElement) {
-        holderElement.innerHTML = '';
-        if (!reactions) return;
-        Object.keys(reactions).forEach(emoji => {
-            const voters = reactions[emoji];
-            if (!Array.isArray(voters) || voters.length === 0) return;
-            const hasMyVote = voters.includes(myNick);
-            const chip = document.createElement('div');
-            chip.className = 'reaction-chip' + (hasMyVote ? ' active-my' : '');
-            chip.innerHTML = `${emoji} <span>${voters.length}</span>`;
-            chip.onclick = (e) => {
-                e.stopPropagation();
-                socket.emit('message_reaction', {
-                    room: currentRoom, msgId: msgId, reaction: hasMyVote ? null : emoji, username: myNick
-                });
-            };
-            holderElement.appendChild(chip);
-        });
-    }
-
-    function displaySingleMessage(data) {
-        if (!messagesContainer || !data) return;
-        let wrapper = document.getElementById('wrapper-' + data.msgId);
-        if (wrapper) {
-            if (data.isRead) {
-                const existingStatus = wrapper.querySelector('.msg-status');
-                if (existingStatus) { existingStatus.textContent = '✓✓'; existingStatus.classList.add('read'); }
-            }
-            return;
-        }
-        
-        const msgTime = data.time ? new Date(data.time) : new Date();
-        const hours = String(msgTime.getHours()).padStart(2, '0');
-        const minutes = String(msgTime.getMinutes()).padStart(2, '0');
-        const timeString = `${hours}:${minutes}`;
-        
-        wrapper = document.createElement('div');
-        wrapper.id = 'wrapper-' + data.msgId;
-        wrapper.className = 'msg-container' + (data.user === myNick ? ' my-wrapper' : '');
-        
-        // Рендеринг панели емодзи (реакций)
-        const picker = document.createElement('div');
-        picker.className = 'reaction-picker';
-        const emojis = ['👍', '🔥', '❤️', '😂', '😮'];
-        emojis.forEach(emoji => {
-            const span = document.createElement('span');
-            span.textContent = emoji;
-            span.onclick = (e) => {
-                e.stopPropagation(); picker.style.display = 'none';
-                const currentReactions = data.reactions || {};
-                const alreadyHasIt = currentReactions[emoji] && currentReactions[emoji].includes(myNick);
-                socket.emit('message_reaction', {
-                    room: currentRoom, msgId: data.msgId, reaction: alreadyHasIt ? null : emoji, username: myNick
-                });
-            };
-            picker.appendChild(span);
-        });
-
-        const item = document.createElement('li');
-        item.id = data.msgId;
-
-        // Если это ответ — строим блок цитаты внутри сообщения
-        if (data.replyTo) {
-            const quoteDiv = document.createElement('div');
-            quoteDiv.className = 'reply-quote';
-            quoteDiv.textContent = `↩ ${getVisibleName(data.replyTo.user)}: ${data.replyTo.text}`;
-            item.appendChild(quoteDiv);
-        }
-
-        // Рендеринг медиа-файла (картинки), если она прикреплена
-        if (data.media) {
-            const img = document.createElement('img');
-            img.src = data.media;
-            img.className = 'chat-media-img';
-            item.appendChild(img);
-        }
-
-        // Текст сообщения
-        if (data.text) {
-            const txtSpan = document.createElement('span');
-            txtSpan.textContent = data.text;
-            item.appendChild(txtSpan);
-        }
-
-        // Строка метаданных (время + галочки) — зафиксировано наложение
-        const metaLine = document.createElement('div');
-        metaLine.className = 'msg-meta-line';
-        
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'msg-time';
-        timeSpan.textContent = timeString;
-        metaLine.appendChild(timeSpan);
-
-        if (data.user === myNick) {
-            item.classList.add('my-msg');
-            const statusSpan = document.createElement('span');
-            statusSpan.className = data.isRead ? 'msg-status read' : 'msg-status';
-            statusSpan.textContent = data.isRead ? '✓✓' : '✓';
-            metaLine.appendChild(statusSpan);
-        }
-
-        item.appendChild(metaLine);
-
-        // Открытие меню сообщения по клику
-        item.onclick = (e) => {
-            e.stopPropagation();
-            const currentDisplay = picker.style.display;
-            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-            picker.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
-        };
-
-        // Правый клик / лонгтап по сообщению вызывает контекстное меню с кнопкой "Ответить"
-        item.oncontextmenu = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showMsgContextMenu(e.clientX, e.clientY, data.msgId);
-        };
-
-        let msgTouchTimer;
-        item.addEventListener('touchstart', (e) => {
-            msgTouchTimer = setTimeout(() => {
-                showMsgContextMenu(e.touches[0].clientX, e.touches[0].clientY, data.msgId);
-            }, 600);
-        });
-        item.addEventListener('touchend', () => clearTimeout(msgTouchTimer));
-        
-        const reactionsHolder = document.createElement('div');
-        reactionsHolder.id = 'reactions-holder-' + data.msgId;
-        reactionsHolder.className = 'reactions-holder';
-
-        wrapper.appendChild(picker); wrapper.appendChild(item); wrapper.appendChild(reactionsHolder);
-        messagesContainer.appendChild(wrapper);
-        renderReactions(data.msgId, data.reactions, reactionsHolder);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-        contextMenu.style.display = 'none';
-    });
-
-    // Меню для элементов чата (левая колонка)
-    function showChatContextMenu(x, y, partnerNick) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>`;
-        contextMenu.style.display = 'block';
-    }
-
-    // Меню для сообщений (Ответ)
-    function showMsgContextMenu(x, y, msgId) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="initiateReply('${msgId}')">${translations[currentLang].ctxReply}</button>`;
-        contextMenu.style.display = 'block';
-    }
-
-    // ПОЛНОЕ ЛОКАЛЬНОЕ УДАЛЕНИЕ ЧАТА — Стирает чат отовсюду и очищает окно
-    window.executeDeleteChat = function(partnerNick) {
-        const generatedRoom = [myNick, partnerNick].sort().join('_');
-        
-        // 1. Очищаем историю сообщений в памяти и localStorage
-        if (savedMessages[generatedRoom]) {
-            delete savedMessages[generatedRoom];
-        }
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        
-        // 2. Полностью убираем чат из списка активных диалогов
-        activeChats = activeChats.filter(c => c !== partnerNick);
-        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        
-        // 3. Очищаем центральный экран, если этот чат был открыт
-        if (generatedRoom === currentRoom) {
-            currentActiveChatPartner = null; 
-            currentRoom = null;
-            chatArea.style.display = 'none'; 
-            chatPlaceholder.style.display = 'block'; 
-        }
-        
-        renderChatsList();
-    };
-
-    function logout() { localStorage.removeItem('burmalda_auth_token'); window.location.href = '/'; }
-
-    // АДАПТИВНАЯ КЛАВИАТУРА МОБИЛЬНЫХ УСТРОЙСТВ (Visual Viewport FIX)
+    // АДАПТИВНАЯ КЛАВИАТУРА МОБИЛЬНЫХ УСТРОЙСТВ
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
             const containerEl = document.getElementById('input-panel-container');
@@ -1045,6 +1136,7 @@
         });
     }
 
+    // Первый запуск локализации
     applyLanguage();
 </script>
 </body>
