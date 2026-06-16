@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 let userProfiles = {};
 let onlineUsers = [];
 
-// Раздаем статические файлы (стили, картинки) прямо из корня проекта
+// Раздаем статические файлы из корня проекта
 app.use(express.static(__dirname));
 
 // Главная страница авторизации
@@ -38,13 +38,16 @@ io.on('connection', (socket) => {
         io.emit('online users', onlineUsers);
     });
 
+    // ИСПРАВЛЕНО: Теперь при входе в комнату сервер не спамит всех остальных!
     socket.on('join room', (partnerName) => {
         if (!socket.username || !partnerName) return;
         const roomName = [socket.username, partnerName].sort().join('_');
+        
+        // Пользователь просто заходит в комнату для общения
         socket.join(roomName);
-        socket.broadcast.emit('force join room', roomName);
     });
 
+    // Улучшенная отправка сообщений
     socket.on('private chat message', (data) => {
         if (!data) return;
         const room = data.room;
@@ -56,7 +59,16 @@ io.on('connection', (socket) => {
         if (!room || !text) return;
 
         const packetToSend = { room, text, user, msgId, isRead };
+        
+        // Отправляем сообщение строго внутрь этой комнаты (только двум участникам)
         io.to(room).emit('chat message', packetToSend);
+
+        // Умный force join: если это реальное текстовое сообщение (а не сервисный сигнал печати или прочтения),
+        // отправляем сигнал «создать чат» второму участнику, если у него его ещё нет.
+        if (text !== '[TYPING_SIGNAL]' && text !== '[READ_SIGNAL]') {
+            // Рассылаем ТОЛЬКО в эту комнату. У тех, кто в ней сидит, чат обновится.
+            socket.to(room).emit('force join room', room);
+        }
     });
 
     socket.on('request profiles', () => {
