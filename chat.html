@@ -43,8 +43,8 @@
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; position: relative; user-select: none; color: white; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; padding-right: 42px; }
+        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; user-select: none; color: white; display: block; position: relative; }
+        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
         
         .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
         .msg-status.read { color: #00d4ff; }
@@ -278,7 +278,7 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    // БЕЗОПАСНОЕ ЧТЕНИЕ ИСТОРИИ ИЗ ЛОКАЛЬНОЙ ПАМЯТИ
+    // Безопасное чтение истории из локальной памяти
     let savedMessages = {};
     try {
         const rawHistory = localStorage.getItem('burmalda_msg_history');
@@ -313,14 +313,12 @@
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
-    // Кнопка назад на самом экране чата
     document.getElementById('btn-back').onclick = () => {
         if (document.body.classList.contains('chat-opened')) {
             window.history.back(); 
         }
     };
 
-    // Аппаратная кнопка назад на телефоне
     window.onpopstate = function(event) {
         if (document.body.classList.contains('chat-opened')) {
             document.body.classList.remove('chat-opened');
@@ -466,7 +464,6 @@
     let remoteTypingTimer = null;
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
 
-    // ИСПРАВЛЕННЫЙ ПРИЕМ СООБЩЕНИЙ ЧЕРЕЗ СОКЕТЫ
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
         const roomKey = String(data.room);
@@ -493,12 +490,10 @@
             return;
         }
 
-        // Если это наше собственное сообщение — мы его уже отрисовали локально в sendMessage()
         if (data.user === myNick) return;
 
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
         
-        // Защита от дублей при перекрестной или одновременной отправке
         const isDuplicate = savedMessages[roomKey].some(m => m.msgId === data.msgId);
         if (!isDuplicate) {
             savedMessages[roomKey].push(data);
@@ -512,7 +507,6 @@
         }
     });
 
-    // ПРИЕМ ОФИЦИАЛЬНОЙ ИСТОРИИ С СЕРВЕРА ПРИ ОТКРЫТИИ ЧАТА
     socket.on('server history', (serverMessages) => {
         const roomKey = currentRoom;
         if (!roomKey || !Array.isArray(serverMessages)) return;
@@ -520,6 +514,24 @@
         savedMessages[roomKey] = serverMessages;
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         loadMessagesHistory();
+    });
+
+    // ЛОВИМ СПИСОК ДИАЛОГОВ ОТ СЕРВЕРА ПРИ ВХОДЕ
+    socket.on('server dialogs list', (serverDialogs) => {
+        if (!Array.isArray(serverDialogs)) return;
+        
+        serverDialogs.forEach(partner => {
+            if (!activeChats.includes(partner)) {
+                activeChats.push(partner);
+            }
+        });
+        
+        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+        renderChatsList();
+
+        serverDialogs.forEach(partner => {
+            socket.emit('join room', partner);
+        });
     });
 
     searchToggleBtn.onclick = function(e) {
@@ -563,7 +575,6 @@
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
         
-        // Виртуальный безопасный URL-параметр для корректного хэндлинга кнопки назад на смартфонах
         if (!document.body.classList.contains('chat-opened')) {
             const newUrl = window.location.pathname + window.location.search + '&chat=' + encodeURIComponent(user);
             window.history.pushState({ chatOpened: true, partner: user }, "", newUrl);
@@ -585,7 +596,6 @@
         socket.emit('join room', partner);
     });
 
-    // МОМЕНТАЛЬНАЯ ЛОКАЛЬНАЯ ОТПРАВКА СООБЩЕНИЙ БЕЗ ЗАВИСАНИЙ
     function sendMessage() {
         const text = input.value.trim();
         if (text && currentRoom) {
@@ -600,14 +610,12 @@
                 time: Date.now()
             };
             
-            // Сразу пушим в свою историю на экране, не ожидая пинга от сервера
             if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
             savedMessages[currentRoom].push(msgPacket);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
             
             displaySingleMessage(msgPacket);
             
-            // Пуляем в сеть
             socket.emit('private chat message', msgPacket);
             input.value = '';
             input.focus();
@@ -640,14 +648,35 @@
             return;
         }
         
+        // Форматирование Unix-времени в ДД.ММ.ГГГГ ЧЧ:ММ
+        const msgTime = data.time ? new Date(data.time) : new Date();
+        const day = String(msgTime.getDate()).padStart(2, '0');
+        const month = String(msgTime.getMonth() + 1).padStart(2, '0');
+        const year = msgTime.getFullYear();
+        const hours = String(msgTime.getHours()).padStart(2, '0');
+        const minutes = String(msgTime.getMinutes()).padStart(2, '0');
+        
+        const dateTimeString = `${day}.${month}.${year} ${hours}:${minutes}`;
         const item = document.createElement('li'); item.id = data.msgId || ('msg-' + Date.now());
+        
+        const timeHtml = `<span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 10px; float: right; margin-top: 5px;">${dateTimeString}</span>`;
+        
         if (data.user === myNick) {
             item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
-            item.innerHTML = `${data.text} <span class="${readClass}">${checkRead}</span>`;
+            
+            item.innerHTML = `
+                <span style="display: inline-block; vertical-align: middle;">${data.text}</span>
+                ${timeHtml}
+                <span class="${readClass}" style="position: absolute; bottom: 2px; right: 6px; font-size: 10px;">${checkRead}</span>
+            `;
+            item.style.paddingRight = "45px";
         } else {
-            item.innerHTML = `${data.text}`;
+            item.innerHTML = `
+                <span style="display: inline-block; vertical-align: middle;">${data.text}</span>
+                ${timeHtml}
+            `;
         }
         messagesContainer.appendChild(item);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
