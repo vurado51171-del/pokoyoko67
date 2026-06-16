@@ -505,7 +505,7 @@
         applyLanguage();
     }
 
-    // Инициализация
+    // Инициализация сокетов
     socket.emit('store user', myNick);
     socket.emit('request profiles'); 
 
@@ -528,7 +528,10 @@
         }
     });
 
-    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
+    socket.on('online users', (users) => { 
+        onlineUsers = Array.isArray(users) ? users : []; 
+        renderChatsList(); 
+    });
 
     input.oninput = () => {
         if (currentRoom) {
@@ -547,7 +550,7 @@
                 typingStatusEl.style.display = 'block';
                 
                 clearTimeout(remoteTypingTimer);
-                remoteTypingTimer = setTimeout(() => { typingStatusEl.style.display = 'none'; }, 250);
+                remoteTypingTimer = setTimeout(() => { typingStatusEl.style.display = 'none'; }, 500);
             }
             return;
         }
@@ -567,6 +570,7 @@
         if (data.msgId && deletedMessageIds.includes(data.msgId)) return;
 
         if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
+        
         if (roomKey === currentRoom && data.user !== myNick) {
             setTimeout(sendReadSignal, 300);
             typingStatusEl.style.display = 'none';
@@ -584,8 +588,6 @@
         e.preventDefault(); searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus();
     };
 
-    // --- ВОССТАНОВЛЕННАЯ ЛОГИКА (добавлено всё, что обрывалось) ---
-
     searchInput.onkeypress = (e) => {
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
@@ -595,7 +597,6 @@
                 return;
             }
             
-            // Добавляем в список чатов
             if (!activeChats.includes(targetNick)) {
                 activeChats.push(targetNick);
                 localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
@@ -633,7 +634,6 @@
             
             div.onclick = () => openChat(partner);
             
-            // Контекстное меню для удаления чата
             div.oncontextmenu = (e) => {
                 e.preventDefault();
                 showContextMenu(e.pageX, e.pageY, partner);
@@ -649,7 +649,6 @@
         chatPlaceholder.style.display = 'none';
         chatArea.style.display = 'flex';
 
-        // Генерируем уникальную комнату (сортируем Ники по алфавиту)
         const roomArr = [myNick, partner].sort();
         const newRoom = roomArr[0] + "_" + roomArr[1];
 
@@ -682,7 +681,6 @@
             isRead: false
         };
 
-        // Сохраняем сообщение локально, чтобы оно отобразилось сразу
         if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
         savedMessages[currentRoom].push(msgData);
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -695,9 +693,31 @@
     }
 
     function displaySingleMessage(data) {
-        const li = document.createElement('li');
         const isMe = data.user === myNick;
         
+        // Предотвращаем дублирование рендеринга входящих сообщений
+        if (!isMe) {
+            const existingItems = messagesContainer.querySelectorAll('li:not(.my-msg)');
+            for (let item of existingItems) {
+                if (item.getAttribute('data-id') === data.msgId) return;
+            }
+        } else {
+            const existingMyItems = messagesContainer.querySelectorAll('li.my-msg');
+            for (let item of existingMyItems) {
+                if (item.getAttribute('data-id') === data.msgId) {
+                    // Обновляем статус галочек если пришел сигнал
+                    const statusSpan = item.querySelector('.msg-status');
+                    if (statusSpan) {
+                        statusSpan.className = 'msg-status' + (data.isRead ? ' read' : '');
+                        statusSpan.textContent = data.isRead ? '✓✓' : '✓';
+                    }
+                    return;
+                }
+            }
+        }
+
+        const li = document.createElement('li');
+        li.setAttribute('data-id', data.msgId);
         if (isMe) li.classList.add('my-msg');
         li.textContent = data.text;
 
@@ -758,9 +778,7 @@
         window.location.href = '/';
     }
 
-    // Запускаем применение языка при загрузке
     applyLanguage();
-
 </script>
 </body>
 </html>
