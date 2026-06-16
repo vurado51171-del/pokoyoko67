@@ -450,7 +450,7 @@
             chatStatusOnline: "online",
             chatStatusOffline: "offline",
             typingText: "is typing...",
-            uploadBtn: "📁 Photo",
+            uploadBtn: "Photo",
             bioPlaceholder: "About me:",
             bioEmpty: "Nothing specified",
             searchPlaceholder: "Search or new username...",
@@ -541,38 +541,42 @@
         }
     };
 
-    // ФІКС БАГУ ЧАТІВ ТА ОНЛАЙНУ: Автоматична перереєстрація при з'єднанні/реконнекті
+    // АРХІТЕКТУРНИЙ ФІКС: Підключаємося до правильних комбінованих кімнат
     socket.on('connect', () => {
         socket.emit('store user', myNick);
         socket.emit('request profiles'); 
-        activeChats.forEach(p => { socket.emit('join room', p); });
+        activeChats.forEach(p => { 
+            const roomName = [myNick, p].sort().join('_');
+            socket.emit('join room', roomName); 
+        });
     });
 
-    // Логіка швидкого пошуку та беззапитного додавання
     searchInput.oninput = function() {
         const val = this.value.trim().toLowerCase();
         renderChatsList(val);
         
         if (val.length > 0 && val !== myNick.toLowerCase() && !activeChats.some(c => c.toLowerCase() === val)) {
-            quickAddContainer.innerHTML = `<button class="quick-add-btn" onclick="addNewContactViaSearch('${this.value.trim()}')">➕ Додати "@${this.value.trim()}"</button>`;
+            quickAddContainer.innerHTML = `<button class="quick-add-btn" onclick="window.addNewContactViaSearch('${this.value.replace(/'/g, "\\'")}')">➕ Додати "@${this.value.trim()}"</button>`;
             quickAddContainer.style.display = 'block';
         } else {
             quickAddContainer.style.display = 'none';
         }
     };
 
-    function addNewContactViaSearch(username) {
+    // ФІКС ПОШУКУ ТА ДОДАВАННЯ: Робимо функцію глобальною для inline HTML подій
+    window.addNewContactViaSearch = function(username) {
         const cleanName = username.trim();
         if(!cleanName || cleanName === myNick) return;
         if (!activeChats.includes(cleanName)) {
             activeChats.push(cleanName);
             localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
         }
-        socket.emit('join room', cleanName);
+        const roomName = [myNick, cleanName].sort().join('_');
+        socket.emit('join room', roomName);
         searchInput.value = '';
         quickAddContainer.style.display = 'none';
         openChatWith(cleanName);
-    }
+    };
 
     function getVisibleName(username) {
         const uData = localProfiles[username];
@@ -610,13 +614,13 @@
 
         if (settingsModal.classList.contains('active')) {
             const openedNick = document.getElementById('info-nick').textContent;
-            const isMe = (openedNick === myNick);
+            const tNickLower = openedNick.toLowerCase();
+            const isMe = (tNickLower === myNick.toLowerCase());
             document.getElementById('modal-title-text').textContent = isMe ? t.settingsTitle : t.profileTitle;
             
-            const isOnline = onlineUsers.includes(openedNick) || openedNick === myNick;
+            const isOnline = onlineUsers.map(u => u.toLowerCase()).includes(tNickLower) || isMe;
             const statusLabel = document.getElementById('lbl-online-status');
             statusLabel.textContent = isOnline ? t.online : t.offline;
-            // ВИПРАВЛЕНО СИНТАКСИС: Тепер змінні оформлені рядками, скрипт більше не падає!
             statusLabel.style.color = isOnline ? 'var(--text-main)' : 'var(--text-secondary)';
         }
         renderChatsList(searchInput.value.trim().toLowerCase()); 
@@ -770,7 +774,6 @@
             if (!activeChats.includes(data.user)) {
                 activeChats.push(data.user);
                 localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-                renderChatsList(searchInput.value.trim().toLowerCase());
             }
         }
 
@@ -825,7 +828,8 @@
         filtered.forEach((user) => {
             const item = document.createElement('div'); 
             item.className = 'chat-item' + (currentActiveChatPartner === user ? ' active' : '');
-            const isOnline = onlineUsers.includes(user);
+            // РЕГІСТРОНЕЗАЛЕЖНИЙ ОНЛАЙН СИНК
+            const isOnline = onlineUsers.map(u => u.toLowerCase()).includes(user.toLowerCase());
             item.innerHTML = `
                 <div class="chat-info-block">${getAvatarHTML(user)}<span>${getVisibleName(user)}</span></div>
                 <span class="status-dot ${isOnline?'online':''}">${isOnline ? t.chatStatusOnline : t.chatStatusOffline}</span>
@@ -840,7 +844,9 @@
         if (!user) return;
         currentActiveChatPartner = user;
         currentRoom = [myNick, user].sort().join('_');
-        socket.emit('join room', user);
+        
+        // ФІКС КІМНАТИ: Клієнт приєднується саме до кімнати повідомлень
+        socket.emit('join room', currentRoom);
 
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
@@ -1054,7 +1060,7 @@
 
     function showChatContextMenu(x, y, partnerNick) {
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>`;
+        contextMenu.innerHTML = `<button onclick="window.executeDeleteChat('${partnerNick.replace(/'/g, "\\'")}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>`;
         contextMenu.style.display = 'block';
     }
 
