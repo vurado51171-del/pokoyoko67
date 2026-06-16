@@ -3,106 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BurmaldaGram Classic</title>
+    <title>BurmaldaGram Premium Neon</title>
     <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #17212b; }
-        ::-webkit-scrollbar-thumb { background: #24303f; border-radius: 4px; }
-
-        body { margin: 0; padding: 0; background: #0e1621; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        /* Глобальні налаштування та фікс синього екрана на мовлках */
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease, opacity 0.3s ease;
+            -webkit-tap-highlight-color: transparent; /* Виправляє синю штуку при кліці на телефоні */
+        }
         
-        /* Ліва панель (Sidebar) */
-        #sidebar { width: 320px; background: #17212b; border-right: 1px solid #101921; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 14px; background: #17212b; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #101921; }
-        .my-profile { font-weight: bold; color: #5288c1; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .header-controls { display: flex; gap: 6px; }
-        .control-btn { background: #24303f; border: none; font-size: 16px; cursor: pointer; color: #7f91a4; padding: 6px 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        .control-btn:hover { color: #fff; background: #2f3e50; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #070a13; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
 
-        .section-title { padding: 10px 14px 4px 14px; font-size: 12px; color: #7f91a4; font-weight: bold; text-transform: uppercase; }
-        #chats-list { flex-grow: 1; overflow-y: auto; padding: 5px; }
-        .chat-item { padding: 10px 12px; margin-bottom: 3px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-        .chat-item:hover { background: #202b36; }
-        .chat-item.active { background: #2b394a; }
-        .chat-info-block { display: flex; align-items: center; gap: 10px; }
-        .chat-info-block span { font-weight: 500; font-size: 14px; }
-        .status-dot { font-size: 11px; color: #7f91a4; }
-        .status-dot.online { color: #40a7e3; font-weight: bold; }
-
-        .avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-        .avatar-placeholder { width: 38px; height: 38px; border-radius: 50%; background: #5288c1; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; text-transform: uppercase; flex-shrink: 0; }
-
-        /* Права панель чату */
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #0e1621; position: relative; }
-        #chat-header { padding: 10px 20px; background: #17212b; border-bottom: 1px solid #101921; font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; height: 57px; }
-        .header-meta { display: flex; align-items: center; gap: 10px; }
-        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; color: #fff; }
-        .typing-indicator { font-size: 12px; color: #40a7e3; font-weight: normal; font-style: italic; display: none; }
-
-        .back-btn { display: none; background: #24303f; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        body { margin: 0; padding: 0; background: #040711; color: #f3f4f6; display: flex; height: 100vh; overflow: hidden; position: relative; }
         
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; background: #0e1621; }
+        /* ЛІВА ПАНЕЛЬ (Ефект розмитого скла) */
+        #sidebar { 
+            width: 340px; 
+            background: rgba(13, 19, 33, 0.75); 
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.06); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            z-index: 10;
+        }
         
-        .msg-container { position: relative; margin-bottom: 8px; display: flex; flex-direction: column; max-width: 70%; width: fit-content; }
+        .sidebar-header { 
+            padding: 16px 14px; 
+            background: rgba(19, 27, 46, 0.4); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06); 
+        }
+        
+        .my-profile { 
+            font-weight: 600; 
+            color: #3b82f6; 
+            font-size: 15px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            background: rgba(59, 130, 246, 0.08); 
+            border: 1px solid rgba(59, 130, 246, 0.15); 
+        }
+        .my-profile:hover { background: rgba(59, 130, 246, 0.2); transform: scale(1.02); }
+        
+        .header-controls { display: flex; gap: 8px; align-items: center; }
+        
+        .control-btn { 
+            background: rgba(30, 41, 59, 0.6); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+            font-size: 16px; 
+            cursor: pointer; 
+            color: #94a3b8; 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            outline: none; 
+        }
+        .control-btn:hover { color: #fff; background: #3b82f6; transform: rotate(15deg) scale(1.1); }
+
+        /* Пошуковий блок */
+        .search-container { padding: 10px 14px; background: rgba(0,0,0,0.15); border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+        .search-input { 
+            width: 100%; 
+            padding: 10px 14px; 
+            background: rgba(30, 41, 59, 0.5); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 12px; 
+            color: white; 
+            outline: none; 
+            font-size: 14px; 
+        }
+        .search-input:focus { border-color: #3b82f6; background: rgba(30, 41, 59, 0.8); box-shadow: 0 0 10px rgba(59,130,246,0.2); }
+
+        .section-title { padding: 12px 16px 6px 16px; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        
+        /* Списко чатів з анімацією появи елементів */
+        #chats-list { flex-grow: 1; overflow-y: auto; padding: 0 8px 10px 8px; }
+        .chat-item { 
+            padding: 12px 14px; 
+            margin-bottom: 6px; 
+            border-radius: 14px; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            user-select: none; 
+            border: 1px solid transparent; 
+            animation: itemIn 0.3s ease both;
+        }
+        @keyframes itemIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        
+        .chat-item:hover { background: rgba(255, 255, 255, 0.04); transform: translateY(-1px); }
+        .chat-item.active { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); }
+        
+        .chat-info-block { display: flex; align-items: center; gap: 12px; }
+        .chat-info-block span { font-weight: 500; font-size: 14px; color: #e2e8f0; }
+        
+        .status-dot { font-size: 11px; color: #64748b; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.2); }
+        .status-dot.online { color: #10b981; background: rgba(16, 185, 129, 0.12); font-weight: 600; }
+
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+        .avatar-placeholder { 
+            width: 40px; height: 40px; border-radius: 50%; 
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 700; font-size: 14px; text-transform: uppercase; flex-shrink: 0; 
+        }
+
+        /* ПРАВА ПАНЕЛЬ ЧАТУ */
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: #080c14; position: relative; }
+        #chat-header { 
+            padding: 14px 20px; 
+            background: rgba(13, 19, 33, 0.6); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06); 
+            display: flex; align-items: center; justify-content: space-between; height: 60px; z-index: 5;
+        }
+        .header-meta { display: flex; align-items: center; gap: 12px; }
+        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 10px; color: #f1f5f9; font-weight: 600; }
+        #chat-title-text:hover { color: #3b82f6; }
+        .typing-indicator { font-size: 13px; color: #10b981; font-style: italic; display: none; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .back-btn { 
+            display: none; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.08); 
+            color: white; padding: 6px 12px; border-radius: 14px; cursor: pointer; font-size: 13px; font-weight: 600; 
+        }
+        
+        #messages { 
+            list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; 
+            display: flex; flex-direction: column; 
+            background-image: radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 0); background-size: 20px 20px; 
+        }
+        
+        /* Плавна анімація появи повідомлень */
+        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 65%; width: fit-content; animation: msgFadeIn 0.25s cubic-bezier(0.1, 0.8, 0.3, 1) both; }
         .msg-container.my-wrapper { align-self: flex-end; }
+        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        #messages li { padding: 8px 12px; background: #182533; border-radius: 10px; word-break: break-word; user-select: none; color: #f5f5f5; position: relative; cursor: pointer; width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-size: 14px; }
-        #messages li.my-msg { background: #2b5278; color: #fff; }
+        #messages li { 
+            padding: 10px 14px; background: rgba(26, 35, 54, 0.85); border-radius: 16px; 
+            border-top-left-radius: 4px; word-break: break-word; user-select: none; color: #e2e8f0; 
+            position: relative; cursor: pointer; width: 100%; box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+        }
+        #messages li.my-msg { 
+            background: linear-gradient(135deg, #1d4ed8, #1e40af); 
+            border-radius: 16px; border-top-right-radius: 4px; color: #fff; 
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25); 
+        }
         
-        .msg-status { position: absolute; bottom: 2px; right: 6px; font-size: 10px; color: rgba(255, 255, 255, 0.4); }
-        .msg-status.read { color: #40a7e3; }
+        .msg-status { position: absolute; bottom: 3px; right: 8px; font-size: 10px; color: rgba(255, 255, 255, 0.4); font-weight: bold; }
+        .msg-status.read { color: #38bdf8; }
 
-        /* Реакції */
-        .reaction-picker { position: absolute; top: -38px; left: 5px; background: #17212b; border: 1px solid #24303f; border-radius: 20px; padding: 4px 8px; display: none; gap: 8px; z-index: 50; box-shadow: 0 5px 15px rgba(0,0,0,0.5); user-select: none; }
-        .msg-container.my-wrapper .reaction-picker { left: auto; right: 5px; }
-        .reaction-picker span { font-size: 18px; cursor: pointer; }
-        .reaction-picker span:hover { transform: scale(1.2); }
+        /* ПАНЕЛЬ РЕАКЦІЙ */
+        .reaction-picker { 
+            position: absolute; top: -42px; left: 6px; background: #131b2e; 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; padding: 4px 10px; 
+            display: none; gap: 8px; z-index: 50; box-shadow: 0 8px 24px rgba(0,0,0,0.4); 
+            animation: scaleUp 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28) both; 
+        }
+        .msg-container.my-wrapper .reaction-picker { left: auto; right: 6px; }
+        .reaction-picker span { font-size: 19px; cursor: pointer; transition: transform 0.15s; }
+        .reaction-picker span:hover { transform: scale(1.35); }
+        @keyframes scaleUp { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .reactions-holder { display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap; }
-        .reaction-chip { background: #17212b; border: 1px solid #24303f; border-radius: 12px; padding: 1px 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #7f91a4; }
-        .reaction-chip.active-my { background: rgba(82, 136, 193, 0.2); border-color: #5288c1; color: #fff; }
+        .reactions-holder { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+        .reaction-chip { background: #0d1321; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #94a3b8; }
+        .reaction-chip.active-my { background: rgba(59, 130, 246, 0.18); border-color: #3b82f6; color: #3b82f6; font-weight: bold; }
 
-        #form { padding: 10px 14px; background: #17212b; display: flex; border-top: 1px solid #101921; gap: 10px; align-items: center; }
-        #input { flex-grow: 1; padding: 10px 14px; background: #24303f; border: none; color: white; border-radius: 8px; outline: none; font-size: 14px; }
-        #button { padding: 10px 18px; background: #5288c1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        #button:hover { background: #6496c8; }
+        /* Форма введення */
+        #form { padding: 12px 18px; background: rgba(13, 19, 33, 0.6); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); display: flex; border-top: 1px solid rgba(255, 255, 255, 0.06); gap: 10px; align-items: center; }
+        #input { flex-grow: 1; padding: 12px 16px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.08); color: white; border-radius: 20px; outline: none; font-size: 14px; }
+        #input:focus { border-color: #3b82f6; background: rgba(30, 41, 59, 0.7); }
+        #button { padding: 11px 22px; background: #2563eb; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
+        #button:hover { background: #3b82f6; transform: translateY(-1px); }
         
-        .no-chat-selected { margin: auto; text-align: center; color: #54677a; font-size: 15px; }
+        .no-chat-selected { margin: auto; text-align: center; color: #475569; font-size: 16px; }
 
         /* Контекстне меню */
-        .context-menu { position: fixed; background: #1c2733; border: 1px solid #283646; border-radius: 8px; display: none; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 150px; padding: 4px; }
-        .context-menu button { background: none; border: none; color: #fff; width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; cursor: pointer; outline: none; border-radius: 4px; }
-        .context-menu button:hover { background: #24303f; }
-        .context-menu button.delete-btn { color: #ec5b5b; }
+        .context-menu { position: fixed; background: #131b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: none; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.4); min-width: 160px; padding: 4px; animation: scaleUp 0.15s ease both; }
+        .context-menu button { background: none; border: none; color: #e2e8f0; width: 100%; text-align: left; padding: 8px 12px; font-size: 13px; cursor: pointer; outline: none; border-radius: 6px; }
+        .context-menu button:hover { background: rgba(255,255,255,0.05); }
+        .context-menu button.delete-btn { color: #ef4444; border-top: 1px solid rgba(255,255,255,0.04); margin-top: 4px; }
+        .context-menu button.delete-btn:hover { background: rgba(239, 68, 68, 0.1); }
 
-        /* Модалки */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+        /* МОДАЛЬНІ ВІКНА (Анімований Glassmorphism) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 4, 10, 0.75); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: #17212b; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; border: 1px solid #101921; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-content { background: rgba(16, 24, 43, 0.9); border: 1px solid rgba(255,255,255,0.08); padding: 22px; border-radius: 20px; width: 100%; max-width: 360px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: modalBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+        @keyframes modalBounce { from { transform: scale(0.9) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
         
-        .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid #24303f; color: #5288c1; display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: none; border: none; color: #7f91a4; font-size: 20px; cursor: pointer; }
-        .modal-close:hover { color: #fff; }
+        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #3b82f6; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: rgba(255,255,255,0.05); border: none; color: #94a3b8; font-size: 18px; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { color: #fff; background: #ef4444; }
         
-        .account-property { margin-bottom: 12px; font-size: 13px; color: #b2c1d1; }
-        .account-property label { display: block; color: #7f91a4; margin-bottom: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .account-property { margin-bottom: 14px; font-size: 13px; color: #cbd5e1; }
+        .account-property label { display: block; color: #64748b; margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
         .account-property strong { color: #fff; }
-        .profile-name-input, .profile-desc-input { width: 100%; padding: 8px 10px; background: #24303f; border: 1px solid #101921; color: white; border-radius: 6px; outline: none; font-size: 13px; margin-top: 3px; }
-        .profile-desc-input { resize: none; height: 60px; }
-        .profile-name-input:disabled, .profile-desc-input:disabled { background: #121921; color: #7f91a4; border-color: transparent; }
+        .profile-name-input, .profile-desc-input { width: 100%; padding: 9px 12px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.08); color: white; border-radius: 8px; outline: none; font-size: 13px; margin-top: 4px; }
+        .profile-name-input:focus, .profile-desc-input:focus { border-color: #3b82f6; background: rgba(30, 41, 59, 0.7); }
+        .profile-desc-input { resize: none; height: 65px; }
+        .profile-name-input:disabled, .profile-desc-input:disabled { background: rgba(0,0,0,0.2); color: #64748b; border-color: transparent; cursor: not-allowed; }
 
-        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 15px; }
-        .modal-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #5288c1; }
-        .modal-avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #5288c1; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; text-transform: uppercase; }
-        .upload-btn { background: #24303f; border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .upload-btn:hover { background: #2f3e50; }
+        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .modal-avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 2px solid #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+        .modal-avatar-placeholder { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; text-transform: uppercase; }
+        .upload-btn { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); color: white; padding: 6px 14px; border-radius: 14px; cursor: pointer; font-size: 12px; }
+        .upload-btn:hover { background: #334155; }
 
-        .lang-select { width: 100%; padding: 8px; background: #24303f; border: 1px solid #101921; color: white; border-radius: 6px; cursor: pointer; }
-        .settings-logout-btn { width: 100%; padding: 10px; background: #a33838; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 13px; }
-        .settings-logout-btn:hover { background: #bd3e3e; }
+        .lang-select { width: 100%; padding: 8px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.08); color: white; border-radius: 8px; cursor: pointer; }
+        .settings-logout-btn { width: 100%; padding: 10px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; font-size: 14px; box-shadow: 0 4px 12px rgba(185,28,28,0.2); }
+        .settings-logout-btn:hover { background: #dc2626; }
 
-        /* Адаптивність для телефонів */
+        /* АДАПТИВНІСТЬ ПІД ТЕЛЕФОНИ */
         @media (max-width: 768px) {
             #sidebar { width: 100%; display: flex; }
             #chat-main { display: none; width: 100%; }
@@ -126,13 +254,19 @@
             <button class="control-btn" id="settings-toggle-btn">⚙️</button>
         </div>
     </div>
+    
+    <!-- Пошук чатів -->
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="Пошук чатів...">
+    </div>
+
     <div class="section-title" id="lbl-dialogs">Діалоги</div>
     <div id="chats-list"></div>
 </div>
 
 <div id="chat-main">
     <div id="no-chat-placeholder" class="no-chat-selected">
-        <p id="placeholder-text">BurmaldaGram<br><span style="font-size: 12px; color: #7f91a4;">Оберіть чат для початку спілкування</span></p>
+        <p id="placeholder-text">BurmaldaGram<br><span style="font-size: 12px; color: #475569;">Оберіть чат для початку спілкування</span></p>
     </div>
     
     <div id="chat-area" style="display: none; flex-direction: column; height: 100%;">
@@ -151,7 +285,7 @@
     </div>
 </div>
 
-<!-- Модалка профілю / налаштувань -->
+<!-- Модалка Профілю та Налаштувань -->
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
@@ -172,11 +306,11 @@
             </div>
             
             <div class="account-property">
-                <span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: #7f91a4;">...</strong>
+                <span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: #94a3b8;">...</strong>
             </div>
             
             <div class="account-property">
-                <span id="lbl-status">Статус:</span> <strong id="lbl-online-status">В мережі</strong>
+                <span id="lbl-status">Статус:</span> <strong id="lbl-online-status">...</strong>
             </div>
             
             <div class="account-property">
@@ -186,12 +320,12 @@
             
             <div class="account-property" id="login-time-block">
                 <label id="lbl-time">Час входу:</label> 
-                <span id="info-login-time" style="font-weight: bold; color: #5288c1;"></span>
+                <span id="info-login-time" style="font-weight: bold; color: #3b82f6;"></span>
             </div>
         </div>
 
         <div class="lang-select-container" id="lang-select-block" style="margin-top: 10px;">
-            <label id="lbl-lang-title" style="display:block; font-size:11px; color:#7f91a4; margin-bottom:4px; font-weight:bold; text-transform:uppercase;">Мова:</label>
+            <label id="lbl-lang-title" style="display:block; font-size:11px; color:#64748b; margin-bottom:4px; font-weight:bold; text-transform:uppercase;">Мова:</label>
             <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
                 <option value="uk">Українська</option>
                 <option value="ru">Русский</option>
@@ -210,17 +344,17 @@
     const translations = {
         uk: {
             dialogsTitle: "Діалоги",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 12px; color: #7f91a4;'>Оберіть чат зі списку зліва</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px; color: #64748b;'>Оберіть чат зі списку для початку розмови</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишіть повідомлення...",
             btnSend: "Надіслати",
             settingsTitle: "⚙️ Налаштування",
-            profileTitle: "👤 Профіль",
+            profileTitle: "👤 Профіль користувача",
             profile: "Юзернейм (ID):",
             profileName: "Ім'я в чаті:",
             status: "Статус:",
-            online: "в мережі",
-            offline: "офлайн",
+            online: "В мережі",
+            offline: "Офлайн",
             loginTime: "Час входу:",
             logoutBtn: "Вийти з профілю 🚪",
             emptyList: "Чати відсутні.",
@@ -231,21 +365,22 @@
             uploadBtn: "📁 Завантажити фото",
             bioPlaceholder: "Про себе / Опис:",
             bioEmpty: "Нічого не вказано",
-            promptAdd: "Введіть точний нікнейм (ID) користувача, з яким хочете почати чат:"
+            promptAdd: "Введіть точний нікнейм (ID) користувача, з яким хочете почати чат:",
+            searchPlaceholder: "Пошук чатів..."
         },
         ru: {
             dialogsTitle: "Диалоги",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 12px; color: #7f91a4;'>Выберите чат из списка слева</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px; color: #64748b;'>Выберите чат из списка для начала разговора</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишите сообщение...",
             btnSend: "Отправить",
             settingsTitle: "⚙️ Настройки",
-            profileTitle: "👤 Профиль",
+            profileTitle: "👤 Профиль пользователя",
             profile: "Юзернейм (ID):",
             profileName: "Имя в чате:",
             status: "Статус:",
-            online: "в сети",
-            offline: "офлайн",
+            online: "В сети",
+            offline: "Оффлайн",
             loginTime: "Время входа:",
             logoutBtn: "Выйти из профиля 🚪",
             emptyList: "Чаты отсутствуют.",
@@ -256,21 +391,22 @@
             uploadBtn: "📁 Загрузить фото",
             bioPlaceholder: "О себе / Описание:",
             bioEmpty: "Ничего не указано",
-            promptAdd: "Введите точный никнейм (ID) пользователя для начала чата:"
+            promptAdd: "Введите точный никнейм (ID) пользователя для начала чата:",
+            searchPlaceholder: "Поиск чатов..."
         },
         en: {
             dialogsTitle: "Dialogs",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 12px; color: #7f91a4;'>Select a chat from the sidebar</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px; color: #64748b;'>Select a chat to start talking</span>",
             backBtn: "⬅ Back",
             inputPlaceholder: "Write a message...",
             btnSend: "Send",
             settingsTitle: "⚙️ Settings",
-            profileTitle: "👤 Profile",
+            profileTitle: "👤 User Profile",
             profile: "Username (ID):",
             profileName: "Display Name:",
             status: "Status:",
-            online: "online",
-            offline: "offline",
+            online: "Online",
+            offline: "Offline",
             loginTime: "Login time:",
             logoutBtn: "Log out 🚪",
             emptyList: "No chats yet.",
@@ -281,7 +417,8 @@
             uploadBtn: "📁 Upload Photo",
             bioPlaceholder: "About me:",
             bioEmpty: "Nothing specified",
-            promptAdd: "Enter the exact username (ID) of the person you want to chat with:"
+            promptAdd: "Enter the exact username (ID) of the person you want to chat with:",
+            searchPlaceholder: "Search chats..."
         }
     };
 
@@ -333,6 +470,7 @@
     const input = document.getElementById('input');
     const button = document.getElementById('button');
     const contextMenu = document.getElementById('global-context-menu');
+    const searchInput = document.getElementById('search-input');
 
     const settingsToggleBtn = document.getElementById('settings-toggle-btn');
     const settingsModal = document.getElementById('settings-modal');
@@ -357,6 +495,11 @@
         }
     };
 
+    // Реалізація Живого Пошуку чатів
+    searchInput.oninput = function() {
+        renderChatsList(this.value.trim().toLowerCase());
+    };
+
     function getVisibleName(username) {
         const uData = localProfiles[username];
         if (uData && uData.displayName && uData.displayName.trim() !== '') return uData.displayName.trim();
@@ -379,6 +522,7 @@
         document.getElementById('lbl-dialogs').textContent = t.dialogsTitle;
         document.getElementById('placeholder-text').innerHTML = t.placeholderText;
         document.getElementById('btn-back').textContent = t.backBtn;
+        searchInput.placeholder = t.searchPlaceholder;
         input.placeholder = t.inputPlaceholder;
         button.textContent = t.btnSend;
 
@@ -394,12 +538,13 @@
             const openedNick = document.getElementById('info-nick').textContent;
             const isMe = (openedNick === myNick);
             document.getElementById('modal-title-text').textContent = isMe ? t.settingsTitle : t.profileTitle;
-            const isOnline = onlineUsers.includes(openedNick);
+            
+            const isOnline = onlineUsers.includes(openedNick) || openedNick === myNick;
             const statusLabel = document.getElementById('lbl-online-status');
             statusLabel.textContent = isOnline ? t.online : t.offline;
-            statusLabel.style.color = isOnline ? '#40a7e3' : '#ec5b5b';
+            statusLabel.style.color = isOnline ? '#10b981' : '#ef4444';
         }
-        renderChatsList(); 
+        renderChatsList(searchInput.value.trim().toLowerCase()); 
         loadMessagesHistory();
     }
 
@@ -422,8 +567,8 @@
         document.getElementById('lang-select-block').style.display = 'block';
         document.getElementById('login-time-block').style.display = 'block';
 
-        applyLanguage();
         settingsModal.classList.add('active');
+        applyLanguage();
     }
 
     function openPartnerProfile() {
@@ -447,8 +592,8 @@
         document.getElementById('lang-select-block').style.display = 'none';
         document.getElementById('login-time-block').style.display = 'none'; 
 
-        applyLanguage();
         settingsModal.classList.add('active');
+        applyLanguage(); // Оновлює та верифікує точний Онлайн/Офлайн статус
     }
 
     function addPerson() {
@@ -456,8 +601,7 @@
         let partner = prompt(t.promptAdd);
         if (partner) {
             partner = partner.trim();
-            if (partner === "") return;
-            if (partner === myNick) return;
+            if (partner === "" || partner === myNick) return;
             if (!activeChats.includes(partner)) {
                 activeChats.push(partner);
                 localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
@@ -478,7 +622,7 @@
         localProfiles[myNick].displayName = newName;
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
         document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
-        renderChatsList();
+        renderChatsList(searchInput.value.trim().toLowerCase());
         socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
     }
 
@@ -498,7 +642,7 @@
             localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
             document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
             document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
-            renderChatsList();
+            renderChatsList(searchInput.value.trim().toLowerCase());
             socket.emit('update profile', { user: myNick, data: localProfiles[myNick] });
         };
         reader.readAsDataURL(file);
@@ -511,9 +655,12 @@
         if (packet && packet.user && packet.data) {
             localProfiles[packet.user] = packet.data;
             localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
-            renderChatsList();
+            renderChatsList(searchInput.value.trim().toLowerCase());
             if (currentActiveChatPartner === packet.user) {
                 chatTitleText.innerHTML = `${getAvatarHTML(packet.user)} <span>${getVisibleName(packet.user)}</span>`;
+            }
+            if (settingsModal.classList.contains('active') && document.getElementById('info-nick').textContent === packet.user) {
+                applyLanguage();
             }
         }
     });
@@ -526,7 +673,13 @@
         }
     });
 
-    socket.on('online users', (users) => { onlineUsers = Array.isArray(users) ? users : []; renderChatsList(); });
+    socket.on('online users', (users) => { 
+        onlineUsers = Array.isArray(users) ? users : []; 
+        renderChatsList(searchInput.value.trim().toLowerCase()); 
+        if (settingsModal.classList.contains('active')) {
+            applyLanguage();
+        }
+    });
 
     input.oninput = () => {
         if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
@@ -591,7 +744,7 @@
             if (!activeChats.includes(partner)) activeChats.push(partner);
         });
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        renderChatsList();
+        renderChatsList(searchInput.value.trim().toLowerCase());
         serverDialogs.forEach(partner => { socket.emit('join room', partner); });
     });
 
@@ -607,14 +760,25 @@
         if (holder) renderReactions(msgId, reactions, holder);
     });
 
-    function renderChatsList() {
+    function renderChatsList(filterText = '') {
         chatsList.innerHTML = ''; const t = translations[currentLang];
-        if (activeChats.length === 0) {
-            chatsList.innerHTML = `<div style="padding:20px;color:#7f91a4;text-align:center;">${t.emptyList}</div>`; return;
+        
+        // Фільтруємо за запитом у пошуку
+        const filtered = activeChats.filter(user => {
+            if (!user) return false;
+            const visibleName = getVisibleName(user).toLowerCase();
+            const username = user.toLowerCase();
+            return visibleName.includes(filterText) || username.includes(filterText);
+        });
+
+        if (filtered.length === 0) {
+            chatsList.innerHTML = `<div style="padding:20px;color:#475569;text-align:center;">${t.emptyList}</div>`; return;
         }
-        activeChats.forEach(user => {
-            if (!user) return;
-            const item = document.createElement('div'); item.className = 'chat-item';
+
+        filtered.forEach((user, index) => {
+            const item = document.createElement('div'); 
+            item.className = 'chat-item';
+            item.style.animationDelay = `${index * 0.03}s`; // Плавний каскад анімації появи
             if (currentActiveChatPartner === user) item.classList.add('active');
             const isOnline = onlineUsers.includes(user);
             item.innerHTML = `
@@ -639,7 +803,7 @@
         }
         document.body.classList.add('chat-opened');
         socket.emit('join room', user);
-        loadMessagesHistory(); renderChatsList(); sendReadSignal();
+        loadMessagesHistory(); renderChatsList(searchInput.value.trim().toLowerCase()); sendReadSignal();
         setTimeout(() => { input.focus(); }, 100);
     }
 
@@ -648,7 +812,7 @@
         const partner = String(roomName).replace(myNick, '').replace('_', '');
         if (!partner) return;
         if (!activeChats.includes(partner)) {
-            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList();
+            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList(searchInput.value.trim().toLowerCase());
         }
         socket.emit('join room', partner);
     });
@@ -787,7 +951,7 @@
             currentActiveChatPartner = null; currentRoom = null;
             chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
         }
-        renderChatsList();
+        renderChatsList(searchInput.value.trim().toLowerCase());
     };
 
     function logout() { localStorage.removeItem('burmalda_auth_token'); window.location.href = '/'; }
