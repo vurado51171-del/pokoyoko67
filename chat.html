@@ -43,11 +43,30 @@
         .back-btn { display: none; background: #2d2d2d; border: 1px solid #444; color: white; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
         
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
-        #messages li { padding: 10px 14px; background: #262626; margin-bottom: 8px; border-radius: 8px; max-width: 60%; width: fit-content; word-break: break-word; user-select: none; color: white; display: block; position: relative; }
-        #messages li.my-msg { background: #007bff; align-self: flex-end; color: white; }
         
-        .msg-status { position: absolute; bottom: 4px; right: 8px; font-size: 11px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
+        /* Контейнеры для сообщений и реакций */
+        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 60%; width: fit-content; }
+        .msg-container.my-wrapper { align-self: flex-end; }
+
+        #messages li { padding: 10px 14px; background: #262626; border-radius: 8px; word-break: break-word; user-select: none; color: white; position: relative; cursor: pointer; transition: background 0.15s; width: 100%; }
+        #messages li:hover { background: #323232; }
+        #messages li.my-msg { background: #007bff; }
+        #messages li.my-msg:hover { background: #0069d9; }
+        
+        .msg-status { position: absolute; bottom: 2px; right: 6px; font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: bold; }
         .msg-status.read { color: #00d4ff; }
+
+        /* Всплывающее окошко выбора реакций */
+        .reaction-picker { position: absolute; top: -42px; left: 10px; background: #252525; border: 1px solid #444; border-radius: 20px; padding: 4px 8px; display: none; gap: 8px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.5); user-select: none; }
+        .msg-container.my-wrapper .reaction-picker { left: auto; right: 10px; }
+        .reaction-picker span { font-size: 18px; cursor: pointer; transition: transform 0.1s; display: inline-block; }
+        .reaction-picker span:hover { transform: scale(1.3); }
+
+        /* Блок отображения реакций под сообщением */
+        .reactions-holder { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .reaction-chip { background: #222; border: 1px solid #3a3a3a; border-radius: 12px; padding: 2px 7px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s; user-select: none; }
+        .reaction-chip:hover { background: #2d2d2d; border-color: #555; }
+        .reaction-chip.active-my { background: rgba(0, 123, 255, 0.15); border-color: #007bff; }
 
         #form { padding: 15px; background: #1e1e1e; display: flex; border-top: 1px solid #2d2d2d; position: relative; z-index: 5; }
         #input { flex-grow: 1; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 5px; outline: none; font-size: 16px; }
@@ -90,7 +109,7 @@
             body.chat-opened #sidebar { display: none; }
             body.chat-opened #chat-main { display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; }
             body.chat-opened .back-btn { display: block; }
-            #messages li { max-width: 80%; }
+            .msg-container { max-width: 80%; }
             .no-chat-selected { display: none; }
         }
     </style>
@@ -278,7 +297,6 @@
     let currentActiveChatPartner = null;
     let onlineUsers = [];
 
-    // Безопасное чтение истории из локальной памяти
     let savedMessages = {};
     try {
         const rawHistory = localStorage.getItem('burmalda_msg_history');
@@ -286,11 +304,10 @@
             savedMessages = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory;
         }
     } catch (e) {
-        console.error("Сброс поврежденного кэша истории:", e);
+        console.error("Сброс кэша истории:", e);
         savedMessages = {};
     }
 
-    let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
 
     const searchToggleBtn = document.getElementById('search-toggle-btn');
@@ -516,7 +533,6 @@
         loadMessagesHistory();
     });
 
-    // ЛОВИМ СПИСОК ДИАЛОГОВ ОТ СЕРВЕРА ПРИ ВХОДЕ
     socket.on('server dialogs list', (serverDialogs) => {
         if (!Array.isArray(serverDialogs)) return;
         
@@ -532,6 +548,25 @@
         serverDialogs.forEach(partner => {
             socket.emit('join room', partner);
         });
+    });
+
+    // НОВОЕ: Ловим обновление реакций с сервера в реальном времени
+    socket.on('update_message_data', (data) => {
+        const { room, msgId, reactions } = data;
+        if (room !== currentRoom) return;
+
+        // Синхронизируем изменения в локальном кэше истории
+        if (savedMessages[room]) {
+            const localMsg = savedMessages[room].find(m => m.msgId === msgId);
+            if (localMsg) localMsg.reactions = reactions;
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        }
+
+        // Обновляем визуал кнопок-реакций прямо на экране
+        const holder = document.getElementById('reactions-holder-' + msgId);
+        if (holder) {
+            renderReactions(msgId, reactions, holder);
+        }
     });
 
     searchToggleBtn.onclick = function(e) {
@@ -607,7 +642,8 @@
                 user: myNick,
                 msgId: generatedId,
                 isRead: false,
-                time: Date.now()
+                time: Date.now(),
+                reactions: {}
             };
             
             if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
@@ -636,29 +672,88 @@
         }
     }
 
+    // НОВОЕ: Функция рендеринга чипсов-реакций под плашкой сообщения
+    function renderReactions(msgId, reactions, holderElement) {
+        holderElement.innerHTML = '';
+        if (!reactions) return;
+
+        Object.keys(reactions).forEach(emoji => {
+            const voters = reactions[emoji];
+            if (!Array.isArray(voters) || voters.length === 0) return;
+
+            const hasMyVote = voters.includes(myNick);
+            const chip = document.createElement('div');
+            chip.className = 'reaction-chip' + (hasMyVote ? ' active-my' : '');
+            chip.innerHTML = `${emoji} <span>${voters.length}</span>`;
+
+            // Повторный клик по кнопке убирает или переключает реакцию
+            chip.onclick = (e) => {
+                e.stopPropagation();
+                socket.emit('message_reaction', {
+                    room: currentRoom,
+                    msgId: msgId,
+                    reaction: hasMyVote ? null : emoji,
+                    username: myNick
+                });
+            };
+
+            holderElement.appendChild(chip);
+        });
+    }
+
     function displaySingleMessage(data) {
         if (!messagesContainer || !data) return;
         
-        const existingEl = document.getElementById(data.msgId);
-        if (existingEl) {
+        let wrapper = document.getElementById('wrapper-' + data.msgId);
+        if (wrapper) {
             if (data.isRead) {
-                const existingStatus = existingEl.querySelector('.msg-status');
+                const existingStatus = wrapper.querySelector('.msg-status');
                 if (existingStatus) { existingStatus.textContent = '✓✓'; existingStatus.classList.add('read'); }
             }
             return;
         }
         
-        // Форматирование Unix-времени в ДД.ММ.ГГГГ ЧЧ:ММ
         const msgTime = data.time ? new Date(data.time) : new Date();
         const day = String(msgTime.getDate()).padStart(2, '0');
         const month = String(msgTime.getMonth() + 1).padStart(2, '0');
         const year = msgTime.getFullYear();
         const hours = String(msgTime.getHours()).padStart(2, '0');
         const minutes = String(msgTime.getMinutes()).padStart(2, '0');
-        
         const dateTimeString = `${day}.${month}.${year} ${hours}:${minutes}`;
-        const item = document.createElement('li'); item.id = data.msgId || ('msg-' + Date.now());
-        
+
+        // Создаем общий контейнер для сообщения, пикера и реакций
+        wrapper = document.createElement('div');
+        wrapper.id = 'wrapper-' + data.msgId;
+        wrapper.className = 'msg-container' + (data.user === myNick ? ' my-wrapper' : '');
+
+        // Конструируем всплывающее меню реакций (пикер)
+        const picker = document.createElement('div');
+        picker.className = 'reaction-picker';
+        const emojis = ['👍', '🔥', '❤️', '😂', '😮'];
+        emojis.forEach(emoji => {
+            const span = document.createElement('span');
+            span.textContent = emoji;
+            span.onclick = (e) => {
+                e.stopPropagation();
+                picker.style.display = 'none';
+                
+                // Проверяем, стояла ли уже эта реакция у нас
+                const currentReactions = data.reactions || {};
+                const alreadyHasIt = currentReactions[emoji] && currentReactions[emoji].includes(myNick);
+
+                socket.emit('message_reaction', {
+                    room: currentRoom,
+                    msgId: data.msgId,
+                    reaction: alreadyHasIt ? null : emoji, // Если кликнули повторно — снимаем
+                    username: myNick
+                });
+            };
+            picker.appendChild(span);
+        });
+
+        // Само облачко сообщения (li)
+        const item = document.createElement('li');
+        item.id = data.msgId;
         const timeHtml = `<span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 10px; float: right; margin-top: 5px;">${dateTimeString}</span>`;
         
         if (data.user === myNick) {
@@ -669,7 +764,7 @@
             item.innerHTML = `
                 <span style="display: inline-block; vertical-align: middle;">${data.text}</span>
                 ${timeHtml}
-                <span class="${readClass}" style="position: absolute; bottom: 2px; right: 6px; font-size: 10px;">${checkRead}</span>
+                <span class="${readClass}">${checkRead}</span>
             `;
             item.style.paddingRight = "45px";
         } else {
@@ -678,9 +773,39 @@
                 ${timeHtml}
             `;
         }
-        messagesContainer.appendChild(item);
+
+        // По клику на сообщение — переключаем видимость меню эмодзи
+        item.onclick = (e) => {
+            e.stopPropagation();
+            const currentDisplay = picker.style.display;
+            // Закрываем все открытые пикеры на странице
+            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+            // Тогглим текущий
+            picker.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
+        };
+
+        // Держатель для чипсов-реакций под сообщением
+        const reactionsHolder = document.createElement('div');
+        reactionsHolder.id = 'reactions-holder-' + data.msgId;
+        reactionsHolder.className = 'reactions-holder';
+
+        // Собираем элементы воедино
+        wrapper.appendChild(picker);
+        wrapper.appendChild(item);
+        wrapper.appendChild(reactionsHolder);
+        
+        messagesContainer.appendChild(wrapper);
+        
+        // Отрисовываем реакции, если они уже были в объекте сообщения
+        renderReactions(data.msgId, data.reactions, reactionsHolder);
+        
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
+
+    // Закрываем меню реакций, если кликнуть в любую пустую область чата
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+    });
 
     function showChatContextMenu(x, y, partnerNick) {
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
@@ -703,7 +828,10 @@
         renderChatsList();
     };
 
-    function logout() { window.location.href = '/'; }
+    function logout() { 
+        localStorage.removeItem('burmalda_auth_token'); 
+        window.location.href = '/'; 
+    }
     applyLanguage();
 </script>
 </body>
