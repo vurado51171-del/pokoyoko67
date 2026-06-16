@@ -2,10 +2,12 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>BurmaldaGram Pro</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
         
         :root {
             --bg-main: #0a0a0a;
@@ -18,19 +20,31 @@
             --my-msg-text: #000000;
             --other-msg: #1a1a1a;
             --other-msg-text: #ffffff;
-            --accent: #ffffff;
         }
 
-        body { background: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
+        body { 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
 
-        /* Анімації */
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
         @keyframes slideInRight {
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
+        }
+        @keyframes slideUpSheet {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
         @keyframes pulse {
             0% { opacity: 0.5; }
@@ -39,23 +53,20 @@
         }
 
         /* Ліва панель */
-        #sidebar { width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); }
+        #sidebar { width: 340px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; transition: transform 0.3s ease; }
         .sidebar-header { padding: 20px 15px; background: rgba(18, 18, 18, 0.8); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .my-profile { font-weight: 600; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: opacity 0.2s; }
-        .my-profile:hover { opacity: 0.8; }
+        .my-profile { font-weight: 600; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         .header-controls { display: flex; gap: 10px; align-items: center; }
-        .header-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); transition: color 0.2s, transform 0.2s; padding: 5px; outline: none; }
-        .header-btn:hover { color: var(--text-main); transform: scale(1.05); }
+        .header-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); padding: 5px; outline: none; }
 
-        .search-container { padding: 12px 15px; background: #161616; border-bottom: 1px solid var(--border-color); display: none; transform-origin: top; animation: fadeInUp 0.2s ease; }
+        .search-container { padding: 12px 15px; background: #161616; border-bottom: 1px solid var(--border-color); display: none; animation: fadeInUp 0.2s ease; }
         .search-container.active { display: block; }
-        .search-container input { width: 100%; padding: 10px 12px; background: #0a0a0a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; font-size: 15px; transition: border-color 0.2s; }
-        .search-container input:focus { border-color: #555; }
+        .search-container input { width: 100%; padding: 10px 12px; background: #0a0a0a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; font-size: 15px; }
 
         .section-title { padding: 15px 15px 5px 15px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        #chats-list { flex-grow: 1; overflow-y: auto; padding: 5px; }
+        #chats-list { flex-grow: 1; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch; }
         
-        .chat-item { padding: 12px 10px; border-radius: 10px; margin-bottom: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; user-select: none; }
+        .chat-item { padding: 12px 10px; border-radius: 10px; margin-bottom: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
         .chat-item:hover { background: #1a1a1a; }
         .chat-item.active { background: #222222; }
         .chat-info-block { display: flex; align-items: center; gap: 12px; }
@@ -67,65 +78,59 @@
         .avatar-placeholder { width: 42px; height: 42px; border-radius: 50%; background: #ffffff; color: #000000; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; }
 
         /* Права панель чату */
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; }
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-chat); position: relative; overflow: hidden; }
         #chat-header { padding: 15px 20px; background: rgba(18, 18, 18, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; min-height: 73px; z-index: 5; }
-        .header-meta { display: flex; align-items: center; gap: 15px; }
-        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
-        .typing-indicator { font-size: 13px; color: var(--text-muted); font-style: italic; margin-left: 5px; animation: pulse 1s infinite; }
+        .header-meta { display: flex; align-items: center; gap: 15px; width: 100%; }
+        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; width: 100%; }
+        .typing-indicator { font-size: 13px; color: var(--text-muted); font-style: italic; margin-left: auto; padding-right: 10px; animation: pulse 1s infinite; }
 
-        .back-btn { display: none; background: #1a1a1a; border: 1px solid var(--border-color); color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
-        .back-btn:hover { background: #252525; }
+        .back-btn { display: none; background: #1a1a1a; border: 1px solid var(--border-color); color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 14px; }
         
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; -webkit-overflow-scrolling: touch; }
         
-        /* Бабли повідомлень із правильним вирівнюванням */
-        .msg-container { position: relative; display: flex; flex-direction: column; max-width: 65%; width: 100%; align-items: flex-start; margin-bottom: 8px; animation: fadeInUp 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); }
+        /* Чітке позиціонування баблів по краях */
+        .msg-container { position: relative; display: flex; flex-direction: column; max-width: 65%; width: 100%; align-items: flex-start; margin-bottom: 6px; animation: fadeInUp 0.2s cubic-bezier(0.1, 0.9, 0.2, 1); }
         .msg-container.my-wrapper { align-self: flex-end; align-items: flex-end; }
 
-        #messages li { padding: 11px 15px; background: var(--other-msg); color: var(--other-msg-text); border-radius: 16px 16px 16px 4px; word-break: break-word; user-select: none; position: relative; cursor: pointer; transition: background 0.15s; width: fit-content; max-width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        #messages li { padding: 11px 15px; background: var(--other-msg); color: var(--other-msg-text); border-radius: 16px 16px 16px 4px; word-break: break-word; position: relative; cursor: pointer; width: fit-content; max-width: 100%; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
         #messages li.my-msg { background: var(--my-msg); color: var(--my-msg-text); border-radius: 16px 16px 4px 16px; padding-right: 45px; }
-        #messages li:hover { filter: brightness(1.1); }
         
-        .msg-status { position: absolute; bottom: 3px; right: 8px; font-size: 10px; color: rgba(0, 0, 0, 0.4); font-weight: bold; }
-        .my-msg .msg-status.read { color: rgba(0, 0, 0, 0.7); }
+        .msg-status { position: absolute; bottom: 3px; right: 8px; font-size: 10px; color: rgba(0, 0, 0, 0.35); font-weight: bold; }
+        .my-msg .msg-status.read { color: rgba(0, 0, 0, 0.65); }
 
-        /* Контент медіа з прихованим кліком */
-        .media-preview-container { margin-top: 5px; max-width: 250px; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid var(--border-color); background: #151515; text-align: center; }
-        .media-blur-box { padding: 20px 10px; font-size: 12px; color: var(--text-muted); background: #1c1c1c; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* Контент медіа */
+        .media-preview-container { margin-top: 5px; max-width: 250px; border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid var(--border-color); background: #151515; text-align: center; }
+        .media-blur-box { padding: 22px 14px; font-size: 12px; color: var(--text-muted); background: #1c1c1c; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .media-blur-box:hover { color: #fff; }
-        .media-content-loaded { width: 100%; max-height: 200px; object-fit: cover; display: block; }
-        .doc-file-loaded { display: flex; align-items: center; gap: 10px; padding: 12px; background: #222; color: #fff; text-decoration: none; font-size: 13px; text-align: left; }
-
-        /* Реакції */
-        .reaction-picker { position: absolute; top: -45px; left: 10px; background: #1a1a1a; border: 1px solid var(--border-color); border-radius: 30px; padding: 5px 10px; display: none; gap: 10px; z-index: 50; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
-        .msg-container.my-wrapper .reaction-picker { left: auto; right: 10px; }
-        .reaction-picker span { font-size: 20px; cursor: pointer; transition: transform 0.1s; display: inline-block; }
-        .reaction-picker span:hover { transform: scale(1.3); }
-
-        .reactions-holder { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-        .reaction-chip { background: #161616; border: 1px solid var(--border-color); border-radius: 20px; padding: 3px 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.1s; }
-        .reaction-chip.active-my { background: #ffffff; color: #000000; border-color: #ffffff; }
+        .media-content-loaded { width: 100%; max-height: 220px; object-fit: cover; display: block; }
+        .doc-file-loaded { display: flex; align-items: center; gap: 10px; padding: 14px; background: #222; color: #fff; text-decoration: none; font-size: 13px; text-align: left; word-break: break-all; }
 
         /* Форма введення */
-        #form { padding: 15px 20px; background: var(--bg-sidebar); display: flex; flex-direction: column; border-top: 1px solid var(--border-color); position: relative; z-index: 5; gap: 8px; }
+        #form { padding: 15px 20px; padding-bottom: calc(15px + env(safe-area-inset-bottom)); background: var(--bg-sidebar); display: flex; flex-direction: column; border-top: 1px solid var(--border-color); position: relative; z-index: 5; gap: 8px; }
         .input-row { display: flex; width: 100%; align-items: center; gap: 10px; }
-        #input { flex-grow: 1; padding: 14px; background: #161616; border: 1px solid var(--border-color); color: white; border-radius: 12px; outline: none; font-size: 15px; transition: border-color 0.2s; }
-        #input:focus { border-color: #444; }
+        #input { flex-grow: 1; padding: 14px; background: #161616; border: 1px solid var(--border-color); color: white; border-radius: 12px; outline: none; font-size: 15px; -webkit-user-select: text; user-select: text; }
         
-        .form-action-btn { background: #1a1a1a; border: 1px solid var(--border-color); color: white; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background 0.2s; }
-        .form-action-btn:hover { background: #252525; }
+        .form-action-btn { background: #1a1a1a; border: 1px solid var(--border-color); color: white; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
         .form-action-btn.recording { background: #dc3545; color: white; animation: pulse 1s infinite; }
 
-        #button { padding: 0 22px; height: 45px; background: #ffffff; color: #000000; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 15px; flex-shrink: 0; transition: opacity 0.2s; }
-        #button:hover { opacity: 0.9; }
+        #button { padding: 0 22px; height: 45px; background: #ffffff; color: #000000; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 15px; flex-shrink: 0; }
         
         .no-chat-selected { margin: auto; text-align: center; color: var(--text-muted); font-size: 16px; line-height: 1.6; padding: 20px; }
 
-        /* Шторка Контекстного Меню */
-        .context-menu { position: fixed; background: #161616; border: 1px solid var(--border-color); border-radius: 12px; display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.7); min-width: 180px; overflow: hidden; animation: fadeInUp 0.15s ease; }
-        .context-menu button { background: none; border: none; color: #fff; width: 100%; text-align: left; padding: 12px 16px; font-size: 14px; cursor: pointer; outline: none; transition: background 0.15s; }
-        .context-menu button:hover { background: #222; }
-        .context-menu button.delete-btn { color: #ff4a5a; font-weight: 600; border-top: 1px solid var(--border-color); }
+        /* Нативна мобільна шторка дій + Емодзі внизу */
+        .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); display: none; justify-content: flex-end; flex-direction: column; z-index: 3000; backdrop-filter: blur(4px); }
+        .bottom-sheet-overlay.active { display: flex; }
+        .bottom-sheet { background: #161616; border-radius: 20px 20px 0 0; padding: 20px; padding-bottom: calc(25px + env(safe-area-inset-bottom)); animation: slideUpSheet 0.25s cubic-bezier(0.1, 0.9, 0.2, 1); max-width: 500px; width: 100%; margin: 0 auto; border-top: 1px solid var(--border-color); }
+        
+        .sheet-emoji-row { display: flex; justify-content: space-between; background: #0f0f0f; padding: 12px; border-radius: 14px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        .sheet-emoji-row span { font-size: 26px; cursor: pointer; transition: transform 0.1s; display: inline-block; width: 45px; text-align: center; }
+        .sheet-emoji-row span:active { transform: scale(1.3); }
+
+        .sheet-actions-list { display: flex; flex-direction: column; gap: 4px; }
+        .sheet-btn { background: #222222; border: none; color: white; text-align: left; padding: 14px 16px; font-size: 15px; border-radius: 10px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .sheet-btn:active { background: #2a2a2a; }
+        .sheet-btn.delete { color: #ff4a5a; background: rgba(255, 74, 90, 0.1); }
+        .sheet-btn.delete:active { background: rgba(255, 74, 90, 0.2); }
 
         /* Панель превью дій */
         .action-preview-bar { display: none; background: #161616; border-left: 3px solid #ffffff; padding: 8px 12px; border-radius: 6px; justify-content: space-between; align-items: center; font-size: 13px; }
@@ -135,7 +140,7 @@
         .reply-box { background: rgba(255, 255, 255, 0.08); border-left: 2px solid #fff; padding: 4px 8px; margin-bottom: 6px; border-radius: 4px; font-size: 12px; color: #bbb; }
         .my-msg .reply-box { border-left-color: #000; color: #333; background: rgba(0, 0, 0, 0.05); }
 
-        /* Покращена Бічна Шторка Модальних Вікон (Шторка справа наліво) */
+        /* Права бічна шторка налаштувань */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: flex-end; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
         .modal-content { background: #111111; height: 100%; width: 100%; max-width: 380px; border-left: 1px solid var(--border-color); padding: 30px 25px; display: flex; flex-direction: column; animation: slideInRight 0.3s cubic-bezier(0.1, 0.9, 0.2, 1); overflow-y: auto; }
@@ -145,19 +150,17 @@
         
         .account-property { margin-bottom: 18px; font-size: 14px; }
         .account-property label { display: block; color: var(--text-muted); margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .profile-name-input, .profile-desc-input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; font-size: 14px; margin-top: 5px; }
+        .profile-name-input, .profile-desc-input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; font-size: 14px; margin-top: 5px; -webkit-user-select: text; user-select: text; }
         .profile-desc-input { resize: none; height: 70px; }
-        .profile-name-input:disabled, .profile-desc-input:disabled { background: #0c0c0c; color: var(--text-muted); cursor: not-allowed; }
 
         .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 25px; }
         .modal-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color); }
         .modal-avatar-placeholder { width: 90px; height: 90px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; text-transform: uppercase; }
 
-        .lang-select { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; cursor: pointer; }
-        .settings-logout-btn { width: 100%; padding: 14px; background: #222; color: #ff4a5a; border: 1px solid #333; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 14px; transition: background 0.2s; }
-        .settings-logout-btn:hover { background: #ff4a5a; color: white; }
+        .lang-select { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; }
+        .settings-logout-btn { width: 100%; padding: 14px; background: #222; color: #ff4a5a; border: 1px solid #333; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; font-size: 14px; }
 
-        /* Адаптивність для телефонів */
+        /* Мобільна адаптація */
         @media (max-width: 768px) {
             #sidebar { width: 100%; display: flex; }
             #chat-main { display: none; width: 100%; }
@@ -196,9 +199,9 @@
         <div id="chat-header">
             <div class="header-meta">
                 <button class="back-btn" id="btn-back">⬅ Назад</button>
-                <span id="chat-title-text" onclick="openPartnerProfile()">Чат</span>
+                <div id="chat-title-text" onclick="openPartnerProfile()">Чат</div>
+                <div id="chat-typing-status" class="typing-indicator"></div>
             </div>
-            <div id="chat-typing-status" class="typing-indicator"></div>
         </div>
         
         <ul id="messages"></ul>
@@ -227,13 +230,11 @@
             <span id="modal-title-text">⚙️ Налаштування</span>
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
-        
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
             <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
             <button class="form-action-btn" id="lbl-upload-btn" style="width:auto; padding:0 15px; font-size:13px;" onclick="document.getElementById('avatar-file-input').click()">Завантажити фото</button>
         </div>
-
         <div id="account-info">
             <div class="account-property">
                 <label id="lbl-profile-name">Ім'я в чаті:</label>
@@ -249,12 +250,7 @@
                 <label id="lbl-bio-title">Про себе:</label>
                 <textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea>
             </div>
-            <div class="account-property" id="login-time-block">
-                <label id="lbl-time">Час сесії:</label> 
-                <span id="info-login-time" style="font-weight: bold; color: #fff;"></span>
-            </div>
         </div>
-
         <div class="lang-select-container" id="lang-select-block" style="margin-top: 15px;">
             <label id="lbl-lang-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px;">Мова додатку:</label>
             <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
@@ -263,15 +259,22 @@
                 <option value="en">English</option>
             </select>
         </div>
-
         <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Вийти з акаунту 🚪</button>
     </div>
 </div>
 
-<div class="context-menu" id="global-context-menu"></div>
+<div class="bottom-sheet-overlay" id="message-sheet-overlay" onclick="closeMessageSheet()">
+    <div class="bottom-sheet" onclick="event.stopPropagation()">
+        <div class="sheet-emoji-row" id="sheet-emoji-container"></div>
+        <div class="sheet-actions-list" id="sheet-actions-container"></div>
+    </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    // Повністю блокуємо системний лонг-тап веб-меню для ілюзії справжнього додатка
+    window.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
+
     const translations = {
         uk: {
             searchPlaceholder: "Введіть ID друга та Enter...",
@@ -287,23 +290,19 @@
             status: "Статус:",
             online: "в мережі",
             offline: "офлайн",
-            loginTime: "Час входу:",
             logoutBtn: "Вийти з акаунту 🚪",
-            emptyList: "Список порожній. Знайдіть друга через 🔍",
-            selfChatError: "Нотатки доступні через окрему вкладку!",
-            ctxDeleteChat: "Видалити чат 🗑",
+            ctxReply: "Відповісти ↩️",
+            ctxEdit: "Редагувати ✏️",
+            ctxDeleteMsg: "Видалити повідомлення 🗑",
+            replyingTo: "Відповідь на:",
+            editingMsg: "Редагування:",
+            notesTitle: "Нотатки (Ви)",
+            ctxDeleteChat: "Видалити діалог 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "офлайн",
             typingText: "пише...",
             uploadBtn: "Завантажити фото",
-            bioPlaceholder: "Про себе:",
-            bioEmpty: "Порожньо",
-            ctxReply: "Відповісти ↩️",
-            ctxEdit: "Редагувати ✏️",
-            ctxDeleteMsg: "Видалити локально у обох 🗑",
-            replyingTo: "Відповідь на:",
-            editingMsg: "Редагування:",
-            notesTitle: "Нотатки (Ви)"
+            bioEmpty: "Порожньо"
         },
         ru: {
             searchPlaceholder: "Введите ID друга и Enter...",
@@ -319,23 +318,19 @@
             status: "Статус:",
             online: "в сети",
             offline: "оффлайн",
-            loginTime: "Время входа:",
             logoutBtn: "Выйти из аккаунта 🚪",
-            emptyList: "Список пуст. Найдите друга через 🔍",
-            selfChatError: "Заметки доступны через отдельную вкладку!",
-            ctxDeleteChat: "Удалить чат 🗑",
+            ctxReply: "Ответить ↩️",
+            ctxEdit: "Редактировать ✏️",
+            ctxDeleteMsg: "Удалить сообщение 🗑",
+            replyingTo: "Ответ на:",
+            editingMsg: "Редактирование:",
+            notesTitle: "Заметки (Вы)",
+            ctxDeleteChat: "Удалить диалог 🗑",
             chatStatusOnline: "● онлайн",
             chatStatusOffline: "оффлайн",
             typingText: "печатает...",
             uploadBtn: "Загрузить фото",
-            bioPlaceholder: "О себе:",
-            bioEmpty: "Пусто",
-            ctxReply: "Ответить ↩️",
-            ctxEdit: "Редактировать ✏️",
-            ctxDeleteMsg: "Удалить локально у обоих 🗑",
-            replyingTo: "Ответ на:",
-            editingMsg: "Редактирование:",
-            notesTitle: "Заметки (Вы)"
+            bioEmpty: "Пусто"
         },
         en: {
             searchPlaceholder: "Type friend ID and press Enter...",
@@ -351,23 +346,19 @@
             status: "Status:",
             online: "online",
             offline: "offline",
-            loginTime: "Session time:",
             logoutBtn: "Log out 🚪",
-            emptyList: "List is empty. Add friend by 🔍",
-            selfChatError: "Notes are available in a special tab!",
-            ctxDeleteChat: "Delete chat 🗑",
+            ctxReply: "Reply ↩️",
+            ctxEdit: "Edit ✏️",
+            ctxDeleteMsg: "Delete Message 🗑",
+            replyingTo: "Reply to:",
+            editingMsg: "Editing:",
+            notesTitle: "Saved Notes (You)",
+            ctxDeleteChat: "Delete Dialogue 🗑",
             chatStatusOnline: "● online",
             chatStatusOffline: "offline",
             typingText: "is typing...",
             uploadBtn: "Upload photo",
-            bioPlaceholder: "About me:",
-            bioEmpty: "Empty",
-            ctxReply: "Reply ↩️",
-            ctxEdit: "Edit ✏️",
-            ctxDeleteMsg: "Delete locally for both 🗑",
-            replyingTo: "Reply to:",
-            editingMsg: "Editing:",
-            notesTitle: "Saved Notes (You)"
+            bioEmpty: "Empty"
         }
     };
 
@@ -376,15 +367,13 @@
     const authToken = urlParams.get('auth');
     let myNick = 'Анонім'; 
     let authorized = false;
-    let sessionTimeString = 'Невідомо';
 
     let replyMessageId = null;
     let editMessageId = null;
-    
-    // Переменные аудиозаписи
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
+    let activeSheetMsgData = null;
 
     if (authToken) {
         try {
@@ -392,9 +381,6 @@
             const parts = decoded.split('_');
             myNick = parts[0]; 
             const loginTime = parseInt(parts[1]);
-            if (!isNaN(loginTime)) {
-                sessionTimeString = new Date(loginTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + " " + new Date(loginTime).toLocaleDateString();
-            }
             if (Date.now() - loginTime < 86400000 && myNick) authorized = true;
         } catch (e) { console.error(e); }
     }
@@ -431,12 +417,12 @@
     const messagesContainer = document.getElementById('messages');
     const input = document.getElementById('input');
     const button = document.getElementById('button');
-    const contextMenu = document.getElementById('global-context-menu');
     const settingsToggleBtn = document.getElementById('settings-toggle-btn');
     const settingsModal = document.getElementById('settings-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     const actionPreview = document.getElementById('action-preview');
     const previewTextContent = document.getElementById('preview-text-content');
+    const msgSheetOverlay = document.getElementById('message-sheet-overlay');
 
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
@@ -483,15 +469,12 @@
         document.getElementById('btn-back').textContent = t.backBtn;
         input.placeholder = t.inputPlaceholder;
         button.textContent = t.btnSend;
-
         document.getElementById('lbl-profile-name').textContent = t.profileName;
         document.getElementById('lbl-profile').textContent = t.profile;
         document.getElementById('lbl-status').textContent = t.status;
-        document.getElementById('lbl-bio-title').textContent = t.bioPlaceholder;
-        document.getElementById('lbl-time').textContent = t.loginTime;
+        document.getElementById('lbl-bio-title').textContent = t.bioEmpty;
         document.getElementById('btn-logout').textContent = t.logoutBtn;
         document.getElementById('lbl-upload-btn').textContent = t.uploadBtn;
-
         renderChatsList(); 
         loadMessagesHistory();
     }
@@ -504,16 +487,7 @@
         document.getElementById('profile-display-name').value = myData.displayName || myNick;
         document.getElementById('profile-desc').disabled = false;
         document.getElementById('profile-desc').value = myData.bio || '';
-        document.getElementById('profile-desc').placeholder = t.bioEmpty;
         document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
-        document.getElementById('info-login-time').textContent = sessionTimeString;
-        
-        document.getElementById('lbl-upload-btn').style.display = 'block';
-        document.getElementById('btn-logout').style.display = 'block';
-        document.getElementById('lang-select-block').style.display = 'block';
-        document.getElementById('login-time-block').style.display = 'block';
-
-        applyLanguage();
         settingsModal.classList.add('active');
     }
 
@@ -521,21 +495,12 @@
         if (!currentActiveChatPartner || currentActiveChatPartner.endsWith('_notes')) return;
         const t = translations[currentLang];
         document.getElementById('info-nick').textContent = currentActiveChatPartner; 
-
         const partnerData = localProfiles[currentActiveChatPartner] || { avatar: '', bio: '', displayName: '' };
         document.getElementById('profile-display-name').disabled = true;
         document.getElementById('profile-display-name').value = partnerData.displayName || currentActiveChatPartner;
         document.getElementById('profile-desc').disabled = true; 
         document.getElementById('profile-desc').value = partnerData.bio || '';
-        document.getElementById('profile-desc').placeholder = t.bioEmpty;
         document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(currentActiveChatPartner, 'modal-avatar');
-
-        document.getElementById('lbl-upload-btn').style.display = 'none';
-        document.getElementById('btn-logout').style.display = 'none';
-        document.getElementById('lang-select-block').style.display = 'none';
-        document.getElementById('login-time-block').style.display = 'none'; 
-
-        applyLanguage();
         settingsModal.classList.add('active');
     }
 
@@ -571,11 +536,10 @@
         reader.readAsDataURL(file);
     }
 
-    // Робота з медіафайлами (З прихованим натисканням)
+    // Надсилання файлу (Глобально через сокети, дані повністю транслюються)
     function handleMediaUpload(el) {
         const file = el.files[0]; if (!file || !currentRoom) return;
         const reader = new FileReader();
-        
         let type = 'doc';
         if (file.type.startsWith('image/')) type = 'img';
         else if (file.type.startsWith('video/')) type = 'video';
@@ -587,7 +551,6 @@
         el.value = '';
     }
 
-    // Аудіозапис
     async function toggleVoiceRecord() {
         const btn = document.getElementById('voice-record-btn');
         if (!isRecording) {
@@ -618,7 +581,7 @@
     function sendMediaMessage(base64Data, type, filename) {
         const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
         const msgPacket = {
-            room: currentRoom, text: `[MEDIA:${type}]`, user: myNick, msgId: generatedId,
+            room: currentRoom, text: `[MEDIA_CONTENT]`, user: myNick, msgId: generatedId,
             isRead: false, time: Date.now(), reactions: {}, replyToId: replyMessageId,
             mediaData: base64Data, mediaType: type, mediaName: filename
         };
@@ -653,7 +616,7 @@
     
     input.oninput = () => {
         if (currentRoom && !currentActiveChatPartner.endsWith('_notes')) {
-            socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+            socket.emit('private chat message', { room: currentRoom, isTypingSignal: true, user: myNick });
         }
     };
 
@@ -663,7 +626,8 @@
         if (!data || !data.room) return;
         const roomKey = String(data.room);
 
-        if (data.text === '[TYPING_SIGNAL]') {
+        // Обробка невидимих службових сигналів
+        if (data.isTypingSignal) {
             if (roomKey === currentRoom && data.user !== myNick) {
                 typingStatusEl.textContent = translations[currentLang].typingText;
                 typingStatusEl.style.display = 'block';
@@ -673,7 +637,7 @@
             return;
         }
 
-        if (data.text === '[READ_SIGNAL]') {
+        if (data.isReadSignal) {
             if (roomKey === currentRoom && data.user !== myNick) {
                 messagesContainer.querySelectorAll('.msg-status').forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
                 if (savedMessages[roomKey]) {
@@ -684,8 +648,7 @@
             return;
         }
 
-        // Локальне реальне видалення для обох сторін чату у реальному часі
-        if (data.text === '[LOCAL_DELETE_SIGNAL]' && data.targetMsgId) {
+        if (data.isDeleteSignal && data.targetMsgId) {
             if (savedMessages[roomKey]) {
                 savedMessages[roomKey] = savedMessages[roomKey].filter(m => m.msgId !== data.targetMsgId);
                 localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
@@ -697,7 +660,7 @@
             return;
         }
 
-        if (data.text === '[EDIT_SIGNAL]' && data.targetMsgId) {
+        if (data.isEditSignal && data.targetMsgId) {
             if (savedMessages[roomKey]) {
                 const localMsg = savedMessages[roomKey].find(m => m.msgId === data.targetMsgId);
                 if (localMsg) localMsg.text = data.newText;
@@ -721,7 +684,7 @@
         }
 
         if (roomKey === currentRoom) {
-            setTimeout(() => { socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }, 200);
+            setTimeout(() => { socket.emit('private chat message', { room: currentRoom, isReadSignal: true, user: myNick }); }, 200);
             displaySingleMessage(data);
         }
     });
@@ -732,7 +695,7 @@
         if (e.key === 'Enter') {
             const targetNick = searchInput.value.trim();
             if (!targetNick) return;
-            if (targetNick === myNick) { alert(translations[currentLang].selfChatError); return; }
+            if (targetNick === myNick) return;
             if (!activeChats.includes(targetNick)) { activeChats.push(targetNick); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); }
             searchInput.value = ''; searchFrame.classList.remove('active'); openChatWith(targetNick);
         }
@@ -740,8 +703,6 @@
 
     function renderChatsList() {
         chatsList.innerHTML = '';
-        
-        // Рендер Нотаток (Завжди зверху)
         const notesItem = document.createElement('div');
         notesItem.className = 'chat-item' + (currentActiveChatPartner === myNick + '_notes' ? ' active' : '');
         notesItem.innerHTML = `<div class="chat-info-block">${getAvatarHTML(myNick + '_notes')}<span>${translations[currentLang].notesTitle}</span></div>`;
@@ -758,7 +719,7 @@
                 <span class="status-dot ${isOnline?'online':''}">${isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline}</span>
             `;
             item.onclick = () => openChatWith(user);
-            item.oncontextmenu = (e) => { e.preventDefault(); showChatContextMenu(e.clientX, e.clientY, user); };
+            item.oncontextmenu = (e) => { e.preventDefault(); openChatDeleteOptions(user); };
             chatsList.appendChild(item);
         });
     }
@@ -776,7 +737,7 @@
         document.body.classList.add('chat-opened');
         if (!user.endsWith('_notes')) socket.emit('join room', user);
         loadMessagesHistory(); renderChatsList();
-        if (!user.endsWith('_notes')) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick });
+        if (!user.endsWith('_notes')) socket.emit('private chat message', { room: currentRoom, isReadSignal: true, user: myNick });
         setTimeout(() => { input.focus(); }, 100);
     }
 
@@ -792,7 +753,7 @@
             }
             const targetLi = document.getElementById(editMessageId);
             if (targetLi) { const tx = targetLi.querySelector('.msg-body-text'); if(tx) tx.textContent = text; }
-            if (!currentActiveChatPartner.endsWith('_notes')) socket.emit('private chat message', { room: currentRoom, text: '[EDIT_SIGNAL]', targetMsgId: editMessageId, newText: text, user: myNick });
+            if (!currentActiveChatPartner.endsWith('_notes')) socket.emit('private chat message', { room: currentRoom, isEditSignal: true, targetMsgId: editMessageId, newText: text, user: myNick });
             cancelInputAction(); return;
         }
 
@@ -821,11 +782,11 @@
         if (type === 'img') {
             container.innerHTML = `<img src="${base64Data}" class="media-content-loaded">`;
         } else if (type === 'video') {
-            container.innerHTML = `<video src="${base64Data}" controls class="media-content-loaded"></video>`;
+            container.innerHTML = `<video src="${base64Data}" controls autoplay class="media-content-loaded"></video>`;
         } else if (type === 'doc') {
-            container.innerHTML = `<a href="${base64Data}" download="${name}" class="doc-file-loaded">📄 ${name} (Скачати)</a>`;
+            container.innerHTML = `<a href="${base64Data}" download="${name}" class="doc-file-loaded">📄 ${name}</a>`;
         } else if (type === 'audio') {
-            container.innerHTML = `<audio src="${base64Data}" controls style="max-width:100%; margin:5px;"></audio>`;
+            container.innerHTML = `<audio src="${base64Data}" controls autoplay style="max-width:100%; margin:5px;"></audio>`;
         }
     }
 
@@ -843,16 +804,6 @@
         wrapper.id = 'wrapper-' + data.msgId;
         wrapper.className = 'msg-container' + (data.user === myNick ? ' my-wrapper' : '');
 
-        const picker = document.createElement('div'); picker.className = 'reaction-picker';
-        ['👍', '🔥', '❤️', '😂', '😮'].forEach(emoji => {
-            const span = document.createElement('span'); span.textContent = emoji;
-            span.onclick = (e) => {
-                e.stopPropagation(); picker.style.display = 'none';
-                socket.emit('message_reaction', { room: currentRoom, msgId: data.msgId, reaction: emoji, username: myNick });
-            };
-            picker.appendChild(span);
-        });
-
         const item = document.createElement('li'); item.id = data.msgId;
         if (data.user === myNick) item.classList.add('my-msg');
 
@@ -860,13 +811,12 @@
             const replyTarget = savedMessages[currentRoom].find(m => m.msgId === data.replyToId);
             if (replyTarget) {
                 const rb = document.createElement('div'); rb.className = 'reply-box';
-                rb.textContent = `${getVisibleName(replyTarget.user)}: ${replyTarget.text.startsWith('[MEDIA') ? '📎 Файл' : replyTarget.text}`;
+                rb.textContent = `${getVisibleName(replyTarget.user)}: ${replyTarget.text === '[MEDIA_CONTENT]' ? '📎 Файл' : replyTarget.text}`;
                 item.appendChild(rb);
             }
         }
 
-        // Обробка тексту чи медіафайлів
-        if (data.text.startsWith('[MEDIA:')) {
+        if (data.text === '[MEDIA_CONTENT]') {
             const mContainer = document.createElement('div');
             mContainer.className = 'media-preview-container';
             mContainer.innerHTML = `<div class="media-blur-box">👁 Дивитись файл<br><span style="font-size:10px; opacity:0.5;">${data.mediaName || 'Медіа'}</span></div>`;
@@ -894,60 +844,67 @@
             item.appendChild(statusSpan);
         }
 
-        item.onclick = (e) => {
-            e.stopPropagation();
-            const disp = picker.style.display;
-            document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-            contextMenu.style.display = 'none';
-            picker.style.display = disp === 'flex' ? 'none' : 'flex';
-        };
-
-        item.oncontextmenu = (e) => {
-            e.preventDefault(); e.stopPropagation(); showMessageContextMenu(e.clientX, e.clientY, data);
-        };
-
-        wrapper.appendChild(picker); wrapper.appendChild(item);
+        // Клік викликає ультрасучасну нижню шторку (для емодзі та дій)
+        item.onclick = (e) => { e.stopPropagation(); openMessageBottomSheet(data); };
+        wrapper.appendChild(item);
         messagesContainer.appendChild(wrapper);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    function showMessageContextMenu(x, y, msgData) {
+    // Робота з нативною шторкою емодзі внизу
+    function openMessageBottomSheet(msgData) {
+        activeSheetMsgData = msgData;
         const t = translations[currentLang];
-        let html = `<button onclick="initReply('${msgData.msgId}')">${t.ctxReply}</button>`;
-        if (msgData.user === myNick) {
-            if (!msgData.text.startsWith('[MEDIA:')) html += `<button onclick="initEdit('${msgData.msgId}')">${t.ctxEdit}</button>`;
-            html += `<button onclick="executeDeleteMessage('${msgData.msgId}')" class="delete-btn">${t.ctxDeleteMsg}</button>`;
-        }
-        contextMenu.innerHTML = html; contextMenu.style.display = 'block';
+        const emojiContainer = document.getElementById('sheet-emoji-container');
+        const actionsContainer = document.getElementById('sheet-actions-container');
+        
+        emojiContainer.innerHTML = '';
+        ['👍', '🔥', '❤️', '😂', '😮', '🤡'].forEach(emoji => {
+            const s = document.createElement('span'); s.textContent = emoji;
+            s.onclick = () => {
+                socket.emit('message_reaction', { room: currentRoom, msgId: msgData.msgId, reaction: emoji, username: myNick });
+                closeMessageSheet();
+            };
+            emojiContainer.appendChild(s);
+        });
 
-        if (x + contextMenu.offsetWidth > window.innerWidth) x = window.innerWidth - contextMenu.offsetWidth - 10;
-        if (y + contextMenu.offsetHeight > window.innerHeight) y = window.innerHeight - contextMenu.offsetHeight - 10;
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
+        let actionsHTML = `<button class="sheet-btn" onclick="triggerReply()">${t.ctxReply}</button>`;
+        if (msgData.user === myNick) {
+            if (msgData.text !== '[MEDIA_CONTENT]') {
+                actionsHTML += `<button class="sheet-btn" onclick="triggerEdit()">${t.ctxEdit}</button>`;
+            }
+            actionsHTML += `<button class="sheet-btn delete" onclick="triggerDelete()">${t.ctxDeleteMsg}</button>`;
+        }
+        actionsContainer.innerHTML = actionsHTML;
+        msgSheetOverlay.classList.add('active');
     }
 
-    window.initReply = function(msgId) {
-        const msg = savedMessages[currentRoom].find(m => m.msgId === msgId); if (!msg) return;
-        cancelInputAction(); replyMessageId = msgId;
-        previewTextContent.textContent = `${translations[currentLang].replyingTo} "${msg.text.startsWith('[MEDIA') ? 'Файл' : msg.text}"`;
+    function closeMessageSheet() { msgSheetOverlay.classList.remove('active'); activeSheetMsgData = null; }
+
+    window.triggerReply = function() {
+        if (!activeSheetMsgData) return;
+        const msg = activeSheetMsgData; closeMessageSheet(); cancelInputAction(); replyMessageId = msg.msgId;
+        previewTextContent.textContent = `${translations[currentLang].replyingTo} "${msg.text === '[MEDIA_CONTENT]' ? 'Файл' : msg.text}"`;
         actionPreview.style.display = 'flex'; input.focus();
     };
 
-    window.initEdit = function(msgId) {
-        const msg = savedMessages[currentRoom].find(m => m.msgId === msgId); if (!msg) return;
-        cancelInputAction(); editMessageId = msgId; input.value = msg.text;
+    window.triggerEdit = function() {
+        if (!activeSheetMsgData) return;
+        const msg = activeSheetMsgData; closeMessageSheet(); cancelInputAction(); editMessageId = msg.msgId; input.value = msg.text;
         previewTextContent.textContent = `${translations[currentLang].editingMsg} "${msg.text}"`;
         actionPreview.style.display = 'flex'; input.focus();
     };
 
-    // РЕАЛЬНЕ ЛОКАЛЬНЕ ВИДАЛЕННЯ У ОБОХ КОРИСТУВАЧІВ
-    window.executeDeleteMessage = function(msgId) {
+    window.triggerDelete = function() {
+        if (!activeSheetMsgData) return;
+        const msgId = activeSheetMsgData.msgId; closeMessageSheet();
         if (savedMessages[currentRoom]) {
             savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
         const wr = document.getElementById('wrapper-' + msgId); if (wr) wr.remove();
         if (!currentActiveChatPartner.endsWith('_notes')) {
-            socket.emit('private chat message', { room: currentRoom, text: '[LOCAL_DELETE_SIGNAL]', targetMsgId: msgId, user: myNick });
+            socket.emit('private chat message', { room: currentRoom, isDeleteSignal: true, targetMsgId: msgId, user: myNick });
         }
         cancelInputAction();
     };
@@ -957,26 +914,17 @@
         actionPreview.style.display = 'none'; previewTextContent.textContent = '';
     };
 
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-        contextMenu.style.display = 'none';
-    });
-
-    function showChatContextMenu(x, y, partnerNick) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
-        contextMenu.innerHTML = `<button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>`;
-        contextMenu.style.display = 'block';
+    function openChatDeleteOptions(partnerNick) {
+        if(confirm(translations[currentLang].ctxDeleteChat)) {
+            const r = [myNick, partnerNick].sort().join('_');
+            if (savedMessages[r]) delete savedMessages[r];
+            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+            activeChats = activeChats.filter(c => c !== partnerNick);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            if (r === currentRoom) { currentActiveChatPartner = null; currentRoom = null; chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; }
+            renderChatsList();
+        }
     }
-
-    window.executeDeleteChat = function(partnerNick) {
-        const r = [myNick, partnerNick].sort().join('_');
-        if (savedMessages[r]) delete savedMessages[r];
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        activeChats = activeChats.filter(c => c !== partnerNick);
-        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        if (r === currentRoom) { currentActiveChatPartner = null; currentRoom = null; chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; }
-        renderChatsList();
-    };
 
     function logout() { localStorage.clear(); window.location.href = '/'; }
     applyLanguage();
