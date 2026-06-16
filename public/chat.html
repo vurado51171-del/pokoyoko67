@@ -317,7 +317,6 @@
     let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
     let savedMessages = JSON.parse(localStorage.getItem('burmalda_msg_history')) || {};
     let deletedMessageIds = JSON.parse(localStorage.getItem('burmalda_deleted_ids')) || [];
-
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
 
     const searchToggleBtn = document.getElementById('search-toggle-btn');
@@ -505,7 +504,6 @@
         applyLanguage();
     }
 
-    // Инициализация сокетов
     socket.emit('store user', myNick);
     socket.emit('request profiles'); 
 
@@ -576,10 +574,14 @@
             typingStatusEl.style.display = 'none';
         }
 
-        if (!savedMessages[roomKey].some(m => m.msgId === data.msgId)) {
+        // Обновляем или добавляем в массив истории сообщений
+        const existingMsgIndex = savedMessages[roomKey].findIndex(m => m.msgId === data.msgId);
+        if (existingMsgIndex > -1) {
+            savedMessages[roomKey][existingMsgIndex] = data;
+        } else {
             savedMessages[roomKey].push(data);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
 
         if (roomKey === currentRoom) displaySingleMessage(data);
     });
@@ -695,27 +697,22 @@
     function displaySingleMessage(data) {
         const isMe = data.user === myNick;
         
-        // Предотвращаем дублирование рендеринга входящих сообщений
-        if (!isMe) {
-            const existingItems = messagesContainer.querySelectorAll('li:not(.my-msg)');
-            for (let item of existingItems) {
-                if (item.getAttribute('data-id') === data.msgId) return;
-            }
-        } else {
-            const existingMyItems = messagesContainer.querySelectorAll('li.my-msg');
-            for (let item of existingMyItems) {
-                if (item.getAttribute('data-id') === data.msgId) {
-                    // Обновляем статус галочек если пришел сигнал
-                    const statusSpan = item.querySelector('.msg-status');
-                    if (statusSpan) {
-                        statusSpan.className = 'msg-status' + (data.isRead ? ' read' : '');
-                        statusSpan.textContent = data.isRead ? '✓✓' : '✓';
-                    }
-                    return;
+        // Перевіряємо чи повідомлення вже існує в DOM-дереві
+        const existingLi = messagesContainer.querySelector(`li[data-id="${data.msgId}"]`);
+        
+        if (existingLi) {
+            // Якщо існує, просто оновлюємо статус його галочок
+            if (isMe) {
+                const statusSpan = existingLi.querySelector('.msg-status');
+                if (statusSpan) {
+                    statusSpan.className = 'msg-status' + (data.isRead ? ' read' : '');
+                    statusSpan.textContent = data.isRead ? '✓✓' : '✓';
                 }
             }
+            return;
         }
 
+        // Якщо повідомлення нове — створюємо елемент
         const li = document.createElement('li');
         li.setAttribute('data-id', data.msgId);
         if (isMe) li.classList.add('my-msg');
