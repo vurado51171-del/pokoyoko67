@@ -3,56 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BurmaldaGram Premium Neon</title>
+    <title>BurmaldaGram Monochrome Glass</title>
     <style>
-        /* Глобальні налаштування та змінні тем */
+        /* Монохромні змінні рідкого скла (Liquid Glass) */
         :root {
-            --bg-body: #040711;
-            --bg-sidebar: rgba(13, 19, 33, 0.75);
-            --bg-chat-main: #080c14;
-            --bg-header: rgba(13, 19, 33, 0.6);
-            --border-color: rgba(255, 255, 255, 0.06);
-            --text-main: #f3f4f6;
-            --text-secondary: #94a3b8;
-            --msg-partner: rgba(26, 35, 54, 0.85);
-            --msg-my: linear-gradient(135deg, #1d4ed8, #1e40af);
-            --input-bg: rgba(30, 41, 59, 0.5);
-            --input-text: white;
-            --blur-val: blur(20px);
+            --bg-body: #000000;
+            --bg-sidebar: rgba(15, 15, 15, 0.7);
+            --bg-chat-main: #050505;
+            --bg-header: rgba(15, 15, 15, 0.6);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-secondary: #888888;
+            --msg-partner: rgba(25, 25, 25, 0.8);
+            --msg-my: rgba(255, 255, 255, 0.15);
+            --input-bg: rgba(30, 30, 30, 0.6);
+            --input-text: #ffffff;
+            --blur-val: blur(25px);
+            --accent-color: #ffffff;
         }
 
         body.light-theme {
-            --bg-body: #f0f2f5;
-            --bg-sidebar: rgba(255, 255, 255, 0.8);
-            --bg-chat-main: #ffffff;
-            --bg-header: rgba(240, 242, 245, 0.7);
-            --border-color: rgba(0, 0, 0, 0.08);
-            --text-main: #1f2937;
-            --text-secondary: #64748b;
-            --msg-partner: #e4e6eb;
-            --msg-my: linear-gradient(135deg, #0084ff, #0066cc);
-            --input-bg: #e4e6eb;
-            --input-text: #050505;
-            --blur-val: blur(15px);
+            --bg-body: #f3f3f3;
+            --bg-sidebar: rgba(255, 255, 255, 0.45);
+            --bg-chat-main: #fafafa;
+            --bg-header: rgba(240, 240, 240, 0.5);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --text-main: #111111;
+            --text-secondary: #666666;
+            --msg-partner: rgba(0, 0, 0, 0.06);
+            --msg-my: rgba(0, 0, 0, 0.12);
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-text: #111111;
+            --blur-val: blur(25px);
+            --accent-color: #111111;
         }
 
         * { 
             box-sizing: border-box; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
         
-        /* Виправлення висоти під мобільні телефони (Dynamic Viewport Height) */
         html, body { height: 100dvh; margin: 0; padding: 0; overflow: hidden; background: var(--bg-body); color: var(--text-main); }
         body { display: flex; position: relative; }
         
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        /* Гарні тонкі скроллбари */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--text-secondary); border-radius: 10px; opacity: 0.3; }
 
-        /* ЛІВА ПАНЕЛЬ */
+        /* ЛІВА ПАНЕЛЬ (Скляний сайдбар) */
         #sidebar { 
             width: 340px; 
             background: var(--bg-sidebar); 
@@ -68,7 +70,6 @@
         
         .sidebar-header { 
             padding: 16px 14px; 
-            background: rgba(0, 0, 0, 0.05); 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
@@ -77,7 +78,6 @@
         
         .my-profile { 
             font-weight: 600; 
-            color: #2563eb; 
             font-size: 15px; 
             cursor: pointer; 
             display: flex; 
@@ -85,19 +85,20 @@
             gap: 10px; 
             padding: 6px 12px; 
             border-radius: 20px; 
-            background: rgba(37, 99, 235, 0.08); 
-            border: 1px solid rgba(37, 99, 235, 0.15); 
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid var(--border-color); 
         }
-        .my-profile:hover { background: rgba(37, 99, 235, 0.2); transform: scale(1.02); }
+        body.light-theme .my-profile { background: rgba(0, 0, 0, 0.03); }
+        .my-profile:hover { transform: scale(1.02); background: rgba(255,255,255,0.1); }
         
-        .header-controls { display: flex; gap: 6px; align-items: center; }
+        .header-controls { display: flex; gap: 8px; align-items: center; }
         
         .control-btn { 
-            background: rgba(0, 0, 0, 0.1); 
+            background: none; 
             border: 1px solid var(--border-color); 
-            font-size: 16px; 
+            font-size: 15px; 
             cursor: pointer; 
-            color: var(--text-secondary); 
+            color: var(--text-main); 
             width: 36px; 
             height: 36px; 
             border-radius: 50%; 
@@ -106,9 +107,9 @@
             justify-content: center; 
             outline: none; 
         }
-        .control-btn:hover { color: var(--text-main); background: #2563eb; transform: scale(1.08); }
+        .control-btn:hover { background: var(--text-main); color: var(--bg-body); transform: scale(1.05); }
 
-        .search-container { padding: 10px 14px; }
+        .search-container { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
         .search-input { 
             width: 100%; 
             padding: 10px 14px; 
@@ -119,14 +120,34 @@
             outline: none; 
             font-size: 14px; 
         }
-        .search-input:focus { border-color: #2563eb; }
+        .search-input:focus { border-color: var(--text-secondary); }
+
+        /* Кнопка швидкого додавання в списку пошуку */
+        .quick-add-box {
+            padding: 4px 6px;
+            animation: itemIn 0.2s ease both;
+        }
+        .quick-add-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px dashed var(--border-color);
+            color: var(--text-main);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            font-size: 13px;
+        }
+        body.light-theme .quick-add-btn { background: rgba(0,0,0,0.04); }
+        .quick-add-btn:hover { background: var(--text-main); color: var(--bg-body); }
 
         .section-title { padding: 12px 16px 6px 16px; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
         
         #chats-list { flex-grow: 1; overflow-y: auto; padding: 0 8px 10px 8px; }
         .chat-item { 
             padding: 12px 14px; 
-            margin-bottom: 6px; 
+            margin-bottom: 4px; 
             border-radius: 14px; 
             cursor: pointer; 
             display: flex; 
@@ -134,29 +155,34 @@
             align-items: center; 
             user-select: none; 
             border: 1px solid transparent; 
-            animation: itemIn 0.25s ease both;
+            animation: itemIn 0.2s ease both;
         }
-        @keyframes itemIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes itemIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
         
-        .chat-item:hover { background: rgba(0, 0, 0, 0.04); }
-        .chat-item.active { background: rgba(37, 99, 235, 0.15); border-color: rgba(37, 99, 235, 0.25); }
+        .chat-item:hover { background: rgba(255, 255, 255, 0.04); }
+        body.light-theme .chat-item:hover { background: rgba(0, 0, 0, 0.03); }
+        .chat-item.active { background: rgba(255, 255, 255, 0.08); border-color: var(--border-color); }
+        body.light-theme .chat-item.active { background: rgba(0, 0, 0, 0.06); }
         
         .chat-info-block { display: flex; align-items: center; gap: 12px; color: var(--text-main); }
         .chat-info-block span { font-weight: 500; font-size: 14px; }
         
-        .status-dot { font-size: 11px; color: var(--text-secondary); padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.1); }
-        .status-dot.online { color: #10b981; background: rgba(16, 185, 129, 0.12); font-weight: 600; }
+        .status-dot { font-size: 11px; color: var(--text-secondary); padding: 2px 6px; border-radius: 8px; background: rgba(255,255,255,0.05); }
+        body.light-theme .status-dot { background: rgba(0,0,0,0.04); }
+        .status-dot.online { color: #ffffff; background: rgba(255, 255, 255, 0.2); font-weight: 600; }
+        body.light-theme .status-dot.online { color: #000000; background: rgba(0, 0, 0, 0.1); }
 
-        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-color); }
         .avatar-placeholder { 
             width: 40px; height: 40px; border-radius: 50%; 
-            background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; 
+            background: var(--text-main); color: var(--bg-body); 
             display: flex; align-items: center; justify-content: center; 
             font-weight: 700; font-size: 14px; text-transform: uppercase; flex-shrink: 0; 
         }
 
         /* ПРАВА ПАНЕЛЬ ЧАТУ */
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: var(--bg-chat-main); position: relative; height: 100dvh; }
+        
         #chat-header { 
             padding: 14px 20px; 
             background: var(--bg-header); 
@@ -178,62 +204,59 @@
             display: flex; flex-direction: column; 
         }
         
-        /* ПОВІДОМЛЕННЯ ТА РЕАКЦІЇ */
-        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 65%; width: fit-content; animation: msgFadeIn 0.2s ease both; }
+        /* ПОВІДОМЛЕННЯ */
+        .msg-container { position: relative; margin-bottom: 10px; display: flex; flex-direction: column; max-width: 65%; width: fit-content; animation: msgFadeIn 0.15s ease both; }
         .msg-container.my-wrapper { align-self: flex-end; }
-        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes msgFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
         #messages li { 
             padding: 10px 14px; background: var(--msg-partner); border-radius: 16px; 
             border-top-left-radius: 4px; word-break: break-word; user-select: none; color: var(--text-main); 
-            position: relative; cursor: pointer; width: 100%; box-shadow: 0 2px 6px rgba(0,0,0,0.05); 
+            position: relative; cursor: pointer; width: 100%; border: 1px solid var(--border-color);
         }
         #messages li.my-msg { 
             background: var(--msg-my); 
-            border-radius: 16px; border-top-right-radius: 4px; color: #fff; 
+            border-radius: 16px; border-top-right-radius: 4px; color: var(--text-main); 
         }
         
-        /* Цитата відповіді в повідомленні */
+        /* Цитата відповіді */
         .msg-reply-quote {
-            background: rgba(0, 0, 0, 0.08);
-            border-left: 3px solid #2563eb;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 3px solid var(--text-main);
             padding: 4px 8px;
             margin-bottom: 6px;
             border-radius: 4px;
             font-size: 12px;
             color: var(--text-main);
-            opacity: 0.9;
+            opacity: 0.8;
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .my-msg .msg-reply-quote {
-            background: rgba(255, 255, 255, 0.15);
-            border-left-color: #fff;
-            color: #fff;
-        }
+        body.light-theme .msg-reply-quote { background: rgba(0,0,0,0.05); }
 
-        .msg-status { position: absolute; bottom: 3px; right: 8px; font-size: 10px; color: rgba(255, 255, 255, 0.5); }
-        .msg-status.read { color: #38bdf8; }
+        .msg-status { position: absolute; bottom: 3px; right: 8px; font-size: 10px; color: var(--text-secondary); }
+        .msg-status.read { color: var(--text-main); font-weight: bold; }
 
-        /* ПАНЕЛЬ ЕМОДЗІ */
+        /* РЕАКЦІЇ */
         .reaction-picker { 
             position: absolute; top: -42px; left: 6px; background: var(--bg-sidebar); 
             border: 1px solid var(--border-color); border-radius: 30px; padding: 4px 10px; 
-            display: none; gap: 8px; z-index: 50; box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
-            animation: scaleUp 0.15s ease both; 
+            display: none; gap: 8px; z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            animation: scaleUp 0.12s ease both; 
         }
         .msg-container.my-wrapper .reaction-picker { left: auto; right: 6px; }
-        .reaction-picker span { font-size: 19px; cursor: pointer; }
-        .reaction-picker span:hover { transform: scale(1.3); }
-        @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .reaction-picker span { font-size: 18px; cursor: pointer; }
+        .reaction-picker span:hover { transform: scale(1.25); }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .reactions-holder { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-        .reaction-chip { background: rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--text-secondary); }
-        .reaction-chip.active-my { background: rgba(37, 99, 235, 0.15); border-color: #2563eb; color: #2563eb; font-weight: bold; }
+        .reactions-holder { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .reaction-chip { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 7px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--text-main); }
+        body.light-theme .reaction-chip { background: rgba(0,0,0,0.03); }
+        .reaction-chip.active-my { background: var(--text-main); color: var(--bg-body); font-weight: bold; }
 
-        /* НИЖНЯ ФОРМА ТА БЛОК ВІДПОВІДІ */
+        /* НИЖНЯ ФОРМА ВВЕДЕННЯ */
         #form-wrapper {
             background: var(--bg-header); 
             backdrop-filter: var(--blur-val); 
@@ -241,54 +264,46 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 10px 14px;
+            padding: 10px 14px 14px 14px;
         }
         
-        /* Панель прев'ю відповіді зверху форми введення */
         #reply-preview-area {
             display: none;
             align-items: center;
             justify-content: space-between;
-            background: rgba(0, 0, 0, 0.03);
-            border-left: 3px solid #2563eb;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid var(--text-main);
             padding: 6px 12px;
             margin-bottom: 8px;
             border-radius: 4px;
-            animation: itemIn 0.2s ease both;
         }
-        #reply-preview-text {
-            font-size: 13px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 85%;
-            color: var(--text-main);
-        }
-        .cancel-reply-btn {
-            background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; font-weight: bold;
-        }
+        body.light-theme #reply-preview-area { background: rgba(0,0,0,0.03); }
+        #reply-preview-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85%; color: var(--text-main); }
+        .cancel-reply-btn { background: none; border: none; color: #ef4444; font-size: 16px; cursor: pointer; font-weight: bold; }
 
         #form { display: flex; gap: 10px; align-items: center; width: 100%; }
         #input { flex-grow: 1; padding: 12px 16px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--input-text); border-radius: 20px; outline: none; font-size: 14px; }
-        #button { padding: 11px 22px; background: #2563eb; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 14px; }
-        #button:hover { background: #3b82f6; }
+        #input:focus { border-color: var(--text-secondary); }
+        #button { padding: 11px 22px; background: var(--text-main); color: var(--bg-body); border: none; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        #button:hover { transform: scale(1.02); }
         
-        .no-chat-selected { margin: auto; text-align: center; color: var(--text-secondary); font-size: 16px; }
+        .no-chat-selected { margin: auto; text-align: center; color: var(--text-secondary); font-size: 15px; }
 
         /* Контекстне меню */
-        .context-menu { position: fixed; background: var(--bg-sidebar); backdrop-filter: var(--blur-val); -webkit-backdrop-filter: var(--blur-val); border: 1px solid var(--border-color); border-radius: 12px; display: none; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); min-width: 170px; padding: 6px; }
+        .context-menu { position: fixed; background: var(--bg-sidebar); backdrop-filter: var(--blur-val); -webkit-backdrop-filter: var(--blur-val); border: 1px solid var(--border-color); border-radius: 12px; display: none; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 170px; padding: 6px; }
         .context-menu button { background: none; border: none; color: var(--text-main); width: 100%; text-align: left; padding: 10px 12px; font-size: 13px; cursor: pointer; outline: none; border-radius: 8px; display: flex; align-items: center; gap: 8px; }
-        .context-menu button:hover { background: rgba(0, 0, 0, 0.05); }
+        .context-menu button:hover { background: rgba(255, 255, 255, 0.08); }
+        body.light-theme .context-menu button:hover { background: rgba(0, 0, 0, 0.04); }
         .context-menu button.delete-btn { color: #ef4444; }
 
-        /* МОДАЛЬНІ ВІКНА */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 12px; backdrop-filter: blur(4px); }
+        /* МОДАЛКИ */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 12px; backdrop-filter: blur(5px); }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 22px; border-radius: 20px; width: 100%; max-width: 360px; box-shadow: 0 25px 50px rgba(0,0,0,0.3); animation: modalBounce 0.2s ease both; }
-        @keyframes modalBounce { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-content { background: var(--bg-sidebar); backdrop-filter: var(--blur-val); border: 1px solid var(--border-color); padding: 22px; border-radius: 20px; width: 100%; max-width: 360px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); animation: modalBounce 0.18s ease both; }
+        @keyframes modalBounce { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); color: #2563eb; display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: rgba(0,0,0,0.05); border: none; color: var(--text-secondary); font-size: 18px; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-main); display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: rgba(255,255,255,0.05); border: none; color: var(--text-secondary); font-size: 18px; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         
         .account-property { margin-bottom: 14px; font-size: 13px; }
         .account-property label { display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
@@ -296,24 +311,20 @@
         .profile-desc-input { resize: none; height: 65px; }
 
         .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 18px; }
-        .modal-avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 2px solid #2563eb; }
-        .modal-avatar-placeholder { width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; }
+        .modal-avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-color); }
+        .modal-avatar-placeholder { width: 84px; height: 84px; border-radius: 50%; background: var(--text-main); color: var(--bg-body); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; }
         .upload-btn { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 14px; border-radius: 14px; cursor: pointer; font-size: 12px; }
 
         .lang-select { width: 100%; padding: 8px; background: var(--input-bg); border: 1px solid var(--border-color); color: var(--input-text); border-radius: 8px; }
         .settings-logout-btn { width: 100%; padding: 10px; background: #b91c1c; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
 
-        /* АДАПТИВНІСТЬ ПІД ТЕЛЕФОНИ */
         @media (max-width: 768px) {
             #sidebar { width: 100%; display: flex; }
             #chat-main { display: none; width: 100%; }
-            
             body.chat-opened #sidebar { display: none; }
             body.chat-opened #chat-main { display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; height: 100dvh; }
             body.chat-opened .back-btn { display: block; }
-            
             .msg-container { max-width: 85%; }
-            .no-chat-selected { display: none; }
         }
     </style>
 </head>
@@ -323,15 +334,14 @@
     <div class="sidebar-header">
         <div class="my-profile" id="my-profile-name" onclick="openMyProfile()">...</div>
         <div class="header-controls">
-            <!-- Кнопка зміни теми поруч з налаштуваннями -->
             <button class="control-btn" onclick="toggleTheme()" title="Змінити тему">🌓</button>
-            <button class="control-btn" id="btn-add-person" onclick="addPerson()" title="Додати контакт за ID">➕</button>
             <button class="control-btn" id="settings-toggle-btn">⚙️</button>
         </div>
     </div>
     
     <div class="search-container">
-        <input type="text" id="search-input" class="search-input" placeholder="Пошук чатів...">
+        <input type="text" id="search-input" class="search-input" placeholder="Пошук або новий нік...">
+        <div id="quick-add-container" class="quick-add-box" style="display: none;"></div>
     </div>
 
     <div class="section-title" id="lbl-dialogs">Діалоги</div>
@@ -354,9 +364,7 @@
         
         <ul id="messages"></ul>
         
-        <!-- Контейнер нижньої форми введення -->
         <div id="form-wrapper">
-            <!-- Панель реплаю -->
             <div id="reply-preview-area">
                 <div id="reply-preview-text">Відповідь на повідомлення...</div>
                 <button class="cancel-reply-btn" onclick="cancelReply()">&times;</button>
@@ -369,7 +377,7 @@
     </div>
 </div>
 
-<!-- Модалка Профілю та Налаштувань -->
+<!-- Налаштування -->
 <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
         <div class="modal-title">
@@ -380,12 +388,12 @@
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
             <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
-            <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Завантажити фото</button>
+            <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Фото</button>
         </div>
 
         <div id="account-info">
             <div class="account-property">
-                <label id="lbl-profile-name">Ім'я в чаті (Нік):</label>
+                <label id="lbl-profile-name">Ім'я в чаті:</label>
                 <input type="text" id="profile-display-name" class="profile-name-input" oninput="saveMyDisplayName(this.value)">
             </div>
             <div class="account-property">
@@ -395,11 +403,11 @@
                 <span id="lbl-status">Статус:</span> <strong id="lbl-online-status">...</strong>
             </div>
             <div class="account-property">
-                <label id="lbl-bio-title">Про себе / Опис:</label>
+                <label id="lbl-bio-title">Про себе:</label>
                 <textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea>
             </div>
             <div class="account-property" id="login-time-block">
-                <label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: #2563eb;"></span>
+                <label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold;"></span>
             </div>
         </div>
 
@@ -412,7 +420,7 @@
             </select>
         </div>
 
-        <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Вийти з профілю 🚪</button>
+        <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Вийти 🚪</button>
     </div>
 </div>
 
@@ -423,19 +431,19 @@
     const translations = {
         uk: {
             dialogsTitle: "Діалоги",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Оберіть чат зі списку для початку розмови</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Оберіть чат зі списку</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишіть повідомлення...",
             btnSend: "Надіслати",
             settingsTitle: "⚙️ Налаштування",
-            profileTitle: "👤 Профіль користувача",
+            profileTitle: "👤 Профіль",
             profile: "Юзернейм (ID):",
             profileName: "Ім'я в чаті:",
             status: "Статус:",
             online: "В мережі",
             offline: "Офлайн",
             loginTime: "Час входу:",
-            logoutBtn: "Вийти з профілю 🚪",
+            logoutBtn: "Вийти 🚪",
             emptyList: "Чати відсутні.",
             ctxDeleteChat: "Видалити чат 🗑",
             ctxReply: "Відповісти ↩",
@@ -443,48 +451,48 @@
             chatStatusOnline: "онлайн",
             chatStatusOffline: "офлайн",
             typingText: "пише...",
-            uploadBtn: "📁 Завантажити фото",
-            bioPlaceholder: "Про себе / Опис:",
+            uploadBtn: "📁 Фото",
+            bioPlaceholder: "Про себе:",
             bioEmpty: "Нічого не вказано",
-            promptAdd: "Введіть точний нікнейм (ID) користувача, з яким хочете почати чат:",
-            searchPlaceholder: "Пошук чатів..."
+            searchPlaceholder: "Пошук або новий нік...",
+            notesTitle: "📝 Нотатки (Ви)"
         },
         ru: {
             dialogsTitle: "Диалоги",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Выберите чат из списка для начала разговора</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Выберите чат из списка</span>",
             backBtn: "⬅ Назад",
             inputPlaceholder: "Напишите сообщение...",
             btnSend: "Отправить",
             settingsTitle: "⚙️ Настройки",
-            profileTitle: "👤 Профиль пользователя",
+            profileTitle: "👤 Профиль",
             profile: "Юзернейм (ID):",
             profileName: "Имя в чате:",
             status: "Статус:",
             online: "В сети",
             offline: "Оффлайн",
             loginTime: "Время входа:",
-            logoutBtn: "Выйти из профиля 🚪",
+            logoutBtn: "Выйти 🚪",
             emptyList: "Чаты отсутствуют.",
             ctxDeleteChat: "Удалить чат 🗑",
             ctxReply: "Ответить ↩",
-            ctxDeleteMsg: "Удалить для всех 🗑",
+            ctxDeleteMsg: "Убрать для всех 🗑",
             chatStatusOnline: "онлайн",
-            chatStatusOffline: "офлайн",
+            chatStatusOffline: "оффлайн",
             typingText: "печатает...",
-            uploadBtn: "📁 Загрузить фото",
-            bioPlaceholder: "О себе / Описание:",
+            uploadBtn: "📁 Фото",
+            bioPlaceholder: "О себе:",
             bioEmpty: "Ничего не указано",
-            promptAdd: "Введите точный никнейм (ID) пользователя для начала чата:",
-            searchPlaceholder: "Поиск чатов..."
+            searchPlaceholder: "Поиск или новый ник...",
+            notesTitle: "📝 Заметки (Вы)"
         },
         en: {
             dialogsTitle: "Dialogs",
-            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Select a chat to start talking</span>",
+            placeholderText: "BurmaldaGram<br><span style='font-size: 13px;'>Select a chat</span>",
             backBtn: "⬅ Back",
             inputPlaceholder: "Write a message...",
             btnSend: "Send",
             settingsTitle: "⚙️ Settings",
-            profileTitle: "👤 User Profile",
+            profileTitle: "👤 Profile",
             profile: "Username (ID):",
             profileName: "Display Name:",
             status: "Status:",
@@ -495,15 +503,15 @@
             emptyList: "No chats yet.",
             ctxDeleteChat: "Delete chat 🗑",
             ctxReply: "Reply ↩",
-            ctxDeleteMsg: "Delete for everyone 🗑",
+            ctxDeleteMsg: "Delete for all 🗑",
             chatStatusOnline: "online",
             chatStatusOffline: "offline",
             typingText: "is typing...",
-            uploadBtn: "📁 Upload Photo",
+            uploadBtn: "📁 Photo",
             bioPlaceholder: "About me:",
             bioEmpty: "Nothing specified",
-            promptAdd: "Enter the exact username (ID) of the person you want to chat with:",
-            searchPlaceholder: "Search chats..."
+            searchPlaceholder: "Search or new username...",
+            notesTitle: "📝 Notes (You)"
         }
     };
 
@@ -513,20 +521,15 @@
     let myNick = 'Аноним'; 
     let authorized = false;
     let sessionTimeString = 'Невідомо';
-    let replyTargetMsg = null; // Змінна для збереження повідомлення, на яке відповідаємо
+    let replyTargetMsg = null;
 
-    // Логіка перемикання теми
     if(localStorage.getItem('burmalda_theme') === 'light') {
         document.body.classList.add('light-theme');
     }
 
     function toggleTheme() {
         document.body.classList.toggle('light-theme');
-        if(document.body.classList.contains('light-theme')) {
-            localStorage.setItem('burmalda_theme', 'light');
-        } else {
-            localStorage.setItem('burmalda_theme', 'dark');
-        }
+        localStorage.setItem('burmalda_theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
     }
 
     if (authToken) {
@@ -557,9 +560,10 @@
     try {
         const rawHistory = localStorage.getItem('burmalda_msg_history');
         if (rawHistory) savedMessages = JSON.parse(rawHistory);
-    } catch (e) { savedMessages = {}; }
+    } catch (e) {}
 
     let localProfiles = JSON.parse(localStorage.getItem('burmalda_profiles_data')) || {};
+    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
 
     const chatsList = document.getElementById('chats-list');
     const chatPlaceholder = document.getElementById('no-chat-placeholder');
@@ -571,6 +575,7 @@
     const button = document.getElementById('button');
     const contextMenu = document.getElementById('global-context-menu');
     const searchInput = document.getElementById('search-input');
+    const quickAddContainer = document.getElementById('quick-add-container');
     const replyPreviewArea = document.getElementById('reply-preview-area');
     const replyPreviewText = document.getElementById('reply-preview-text');
 
@@ -581,9 +586,7 @@
     settingsToggleBtn.onclick = () => { openMyProfile(); };
     settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
-    document.getElementById('btn-back').onclick = () => {
-        if (document.body.classList.contains('chat-opened')) window.history.back();
-    };
+    document.getElementById('btn-back').onclick = () => { if (document.body.classList.contains('chat-opened')) window.history.back(); };
 
     window.onpopstate = function() {
         if (document.body.classList.contains('chat-opened')) {
@@ -595,17 +598,48 @@
         }
     };
 
+    // Оновлена логіка сокетів — ПОВНИЙ захист від вилітання з онлайну
+    socket.on('connect', () => {
+        socket.emit('store user', myNick);
+        socket.emit('request profiles'); 
+        activeChats.forEach(p => { socket.emit('join room', p); });
+    });
+
     searchInput.oninput = function() {
-        renderChatsList(this.value.trim().toLowerCase());
+        const val = this.value.trim().toLowerCase();
+        renderChatsList(val);
+        
+        // Інша беззапитна система додавання: якщо нік новий — пропонуємо додати прямо в списку
+        if (val.length > 0 && val !== myNick.toLowerCase() && val !== '__notes__' && !activeChats.some(c => c.toLowerCase() === val)) {
+            quickAddContainer.innerHTML = `<button class="quick-add-btn" onclick="addNewContactViaSearch('${this.value.trim()}')">➕ Додати "@${this.value.trim()}"</button>`;
+            quickAddContainer.style.display = 'block';
+        } else {
+            quickAddContainer.style.display = 'none';
+        }
     };
 
+    function addNewContactViaSearch(username) {
+        const cleanName = username.trim();
+        if(!cleanName || cleanName === myNick) return;
+        if (!activeChats.includes(cleanName)) {
+            activeChats.push(cleanName);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+        }
+        socket.emit('join room', cleanName);
+        searchInput.value = '';
+        quickAddContainer.style.display = 'none';
+        openChatWith(cleanName);
+    }
+
     function getVisibleName(username) {
+        if (username === '__notes__') return translations[currentLang].notesTitle;
         const uData = localProfiles[username];
         if (uData && uData.displayName && uData.displayName.trim() !== '') return uData.displayName.trim();
         return username;
     }
 
     function getAvatarHTML(username, cssClass = 'avatar') {
+        if (username === '__notes__') return `<div class="${cssClass === 'avatar'?'avatar-placeholder':'modal-avatar-placeholder'}" style="background:#fff; color:#000;">📝</div>`;
         const uData = localProfiles[username];
         if (uData && uData.avatar) return `<img src="${uData.avatar}" class="${cssClass}" alt="">`;
         const visibleName = getVisibleName(username);
@@ -635,13 +669,17 @@
 
         if (settingsModal.classList.contains('active')) {
             const openedNick = document.getElementById('info-nick').textContent;
+            if(openedNick === '__notes__') {
+                settingsModal.classList.remove('active');
+                return;
+            }
             const isMe = (openedNick === myNick);
             document.getElementById('modal-title-text').textContent = isMe ? t.settingsTitle : t.profileTitle;
             
             const isOnline = onlineUsers.includes(openedNick) || openedNick === myNick;
             const statusLabel = document.getElementById('lbl-online-status');
             statusLabel.textContent = isOnline ? t.online : t.offline;
-            statusLabel.style.color = isOnline ? '#10b981' : '#ef4444';
+            statusLabel.style.color = isOnline ? var(--text-main) : var(--text-secondary);
         }
         renderChatsList(searchInput.value.trim().toLowerCase()); 
         loadMessagesHistory();
@@ -671,7 +709,7 @@
     }
 
     function openPartnerProfile() {
-        if (!currentActiveChatPartner) return;
+        if (!currentActiveChatPartner || currentActiveChatPartner === '__notes__') return;
         const t = translations[currentLang];
         document.getElementById('info-nick').textContent = currentActiveChatPartner; 
 
@@ -693,21 +731,6 @@
 
         settingsModal.classList.add('active');
         applyLanguage();
-    }
-
-    function addPerson() {
-        const t = translations[currentLang];
-        let partner = prompt(t.promptAdd);
-        if (partner) {
-            partner = partner.trim();
-            if (partner === "" || partner === myNick) return;
-            if (!activeChats.includes(partner)) {
-                activeChats.push(partner);
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-            }
-            socket.emit('join room', partner);
-            openChatWith(partner);
-        }
     }
 
     function changeLanguage(lang) {
@@ -747,9 +770,6 @@
         reader.readAsDataURL(file);
     }
 
-    socket.emit('store user', myNick);
-    socket.emit('request profiles'); 
-
     socket.on('broadcast profile update', (packet) => {
         if (packet && packet.user && packet.data) {
             localProfiles[packet.user] = packet.data;
@@ -757,9 +777,6 @@
             renderChatsList(searchInput.value.trim().toLowerCase());
             if (currentActiveChatPartner === packet.user) {
                 chatTitleText.innerHTML = `${getAvatarHTML(packet.user)} <span>${getVisibleName(packet.user)}</span>`;
-            }
-            if (settingsModal.classList.contains('active') && document.getElementById('info-nick').textContent === packet.user) {
-                applyLanguage();
             }
         }
     });
@@ -775,17 +792,15 @@
     socket.on('online users', (users) => { 
         onlineUsers = Array.isArray(users) ? users : []; 
         renderChatsList(searchInput.value.trim().toLowerCase()); 
-        if (settingsModal.classList.contains('active')) {
-            applyLanguage();
-        }
     });
 
     input.oninput = () => {
-        if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+        if (currentRoom && currentActiveChatPartner !== '__notes__') {
+            socket.emit('private chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+        }
     };
 
     let remoteTypingTimer = null;
-    let activeChats = JSON.parse(localStorage.getItem('burmalda_chat_list')) || [];
 
     socket.on('chat message', (data) => {
         if (!data || !data.room) return;
@@ -813,7 +828,7 @@
             return;
         }
 
-        // БАГ 2 ФІКС: Якщо прийшло смс від нового юзера, автоматично додаємо його в контакти
+        // Автододавання контакту, якщо нам хтось написав
         if (data.user !== myNick) {
             if (!activeChats.includes(data.user)) {
                 activeChats.push(data.user);
@@ -832,13 +847,12 @@
         }
 
         if (roomKey === currentRoom) {
-            setTimeout(sendReadSignal, 300); 
+            setTimeout(sendReadSignal, 200); 
             typingStatusEl.style.display = 'none';
             displaySingleMessage(data);
         }
     });
 
-    // Обробка повного видалення повідомлення з сервера через кастомну сокетну подію
     socket.on('message_delete_broadcast', (data) => {
         const { room, msgId } = data;
         if (savedMessages[room]) {
@@ -849,24 +863,6 @@
             const wrapper = document.getElementById('wrapper-' + msgId);
             if (wrapper) wrapper.remove();
         }
-    });
-
-    socket.on('server history', (serverMessages) => {
-        const roomKey = currentRoom;
-        if (!roomKey || !Array.isArray(serverMessages)) return;
-        savedMessages[roomKey] = serverMessages;
-        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        loadMessagesHistory();
-    });
-
-    socket.on('server dialogs list', (serverDialogs) => {
-        if (!Array.isArray(serverDialogs)) return;
-        serverDialogs.forEach(partner => {
-            if (!activeChats.includes(partner)) activeChats.push(partner);
-        });
-        localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        renderChatsList(searchInput.value.trim().toLowerCase());
-        serverDialogs.forEach(partner => { socket.emit('join room', partner); });
     });
 
     socket.on('update_message_data', (data) => {
@@ -883,22 +879,27 @@
 
     function renderChatsList(filterText = '') {
         chatsList.innerHTML = ''; const t = translations[currentLang];
-        const filtered = activeChats.filter(user => {
-            if (!user) return false;
-            const visibleName = getVisibleName(user).toLowerCase();
-            const username = user.toLowerCase();
-            return visibleName.includes(filterText) || username.includes(filterText);
-        });
-
-        if (filtered.length === 0) {
-            chatsList.innerHTML = `<div style="padding:20px;text-align:center;">${t.emptyList}</div>`; return;
+        
+        // Рендеримо закріплені чат-нотатки на самому верху
+        if (t.notesTitle.toLowerCase().includes(filterText) || 'нотатки'.includes(filterText)) {
+            const notesItem = document.createElement('div');
+            notesItem.className = 'chat-item' + (currentActiveChatPartner === '__notes__' ? ' active' : '');
+            notesItem.innerHTML = `
+                <div class="chat-info-block">${getAvatarHTML('__notes__')}<span>${t.notesTitle}</span></div>
+                <span class="status-dot">📝 cloud</span>
+            `;
+            notesItem.onclick = () => openChatWith('__notes__');
+            chatsList.appendChild(notesItem);
         }
 
-        filtered.forEach((user, index) => {
+        const filtered = activeChats.filter(user => {
+            if (!user || user === '__notes__') return false;
+            return getVisibleName(user).toLowerCase().includes(filterText) || user.toLowerCase().includes(filterText);
+        });
+
+        filtered.forEach((user) => {
             const item = document.createElement('div'); 
-            item.className = 'chat-item';
-            item.style.animationDelay = `${index * 0.02}s`;
-            if (currentActiveChatPartner === user) item.classList.add('active');
+            item.className = 'chat-item' + (currentActiveChatPartner === user ? ' active' : '');
             const isOnline = onlineUsers.includes(user);
             item.innerHTML = `
                 <div class="chat-info-block">${getAvatarHTML(user)}<span>${getVisibleName(user)}</span></div>
@@ -912,7 +913,15 @@
 
     function openChatWith(user) {
         if (!user) return;
-        currentActiveChatPartner = user; currentRoom = [myNick, user].sort().join('_');
+        currentActiveChatPartner = user;
+        
+        if (user === '__notes__') {
+            currentRoom = 'notes_' + myNick;
+        } else {
+            currentRoom = [myNick, user].sort().join('_');
+            socket.emit('join room', user);
+        }
+
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
         
@@ -921,21 +930,13 @@
             window.history.pushState({ chatOpened: true, partner: user }, "", newUrl);
         }
         document.body.classList.add('chat-opened');
-        socket.emit('join room', user);
+        
         cancelReply();
-        loadMessagesHistory(); renderChatsList(searchInput.value.trim().toLowerCase()); sendReadSignal();
+        loadMessagesHistory(); 
+        renderChatsList(searchInput.value.trim().toLowerCase()); 
+        sendReadSignal();
         setTimeout(() => { input.focus(); }, 100);
     }
-
-    socket.on('force join room', (roomName) => {
-        if (!roomName) return;
-        const partner = String(roomName).replace(myNick, '').replace('_', '');
-        if (!partner) return;
-        if (!activeChats.includes(partner)) {
-            activeChats.push(partner); localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats)); renderChatsList(searchInput.value.trim().toLowerCase());
-        }
-        socket.emit('join room', partner);
-    });
 
     function sendMessage() {
         const text = input.value.trim();
@@ -947,7 +948,7 @@
                 text: text, 
                 user: myNick, 
                 msgId: generatedId, 
-                isRead: false, 
+                isRead: (currentActiveChatPartner === '__notes__'), 
                 time: Date.now(), 
                 reactions: {},
                 replyTo: replyTargetMsg ? { msgId: replyTargetMsg.msgId, user: replyTargetMsg.user, text: replyTargetMsg.text } : null
@@ -958,14 +959,22 @@
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
             displaySingleMessage(msgPacket);
             
-            socket.emit('private chat message', msgPacket);
+            if (currentActiveChatPartner !== '__notes__') {
+                socket.emit('private chat message', msgPacket);
+            }
+            
             input.value = ''; 
             cancelReply();
             input.focus();
         }
     }
 
-    function sendReadSignal() { if (currentRoom) socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); }
+    function sendReadSignal() { 
+        if (currentRoom && currentActiveChatPartner !== '__notes__') {
+            socket.emit('private chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); 
+        }
+    }
+
     button.onclick = sendMessage; input.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
     function loadMessagesHistory() {
@@ -987,6 +996,7 @@
             chip.innerHTML = `${emoji} <span>${voters.length}</span>`;
             chip.onclick = (e) => {
                 e.stopPropagation();
+                if (currentActiveChatPartner === '__notes__') return;
                 socket.emit('message_reaction', {
                     room: currentRoom, msgId: msgId, reaction: hasMyVote ? null : emoji, username: myNick
                 });
@@ -1009,13 +1019,11 @@
         const msgTime = data.time ? new Date(data.time) : new Date();
         const hours = String(msgTime.getHours()).padStart(2, '0');
         const minutes = String(msgTime.getMinutes()).padStart(2, '0');
-        const timeString = `${hours}:${minutes}`;
 
         wrapper = document.createElement('div');
         wrapper.id = 'wrapper-' + data.msgId;
         wrapper.className = 'msg-container' + (data.user === myNick ? ' my-wrapper' : '');
 
-        // Панель вибору смайликів
         const picker = document.createElement('div');
         picker.className = 'reaction-picker';
         const emojis = ['👍', '🔥', '❤️', '😂', '😮', '💩', '🤡'];
@@ -1024,19 +1032,18 @@
             span.textContent = emoji;
             span.onclick = (e) => {
                 e.stopPropagation(); picker.style.display = 'none';
+                if (currentActiveChatPartner === '__notes__') return;
                 const currentReactions = data.reactions || {};
                 const alreadyHasIt = currentReactions[emoji] && currentReactions[emoji].includes(myNick);
-                socket.emit('message_reaction', {
-                    room: currentRoom, msgId: data.msgId, reaction: alreadyHasIt ? null : emoji, username: myNick
-                });
+                socket.emit('message_reaction', { room: currentRoom, msgId: data.msgId, reaction: alreadyHasIt ? null : emoji, username: myNick });
             };
             picker.appendChild(span);
         });
 
         const item = document.createElement('li');
         item.id = data.msgId;
+        if (data.user === myNick) item.classList.add('my-msg');
         
-        // Відображення плашки відповіді, якщо повідомлення є реплаєм
         if(data.replyTo) {
             const replyQuote = document.createElement('div');
             replyQuote.className = 'msg-reply-quote';
@@ -1048,10 +1055,9 @@
         textSpan.textContent = data.text;
         item.appendChild(textSpan);
 
-        const timeHtml = `<span style="font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 8px; float: right; margin-top: 4px;">${timeString}</span>`;
+        const timeHtml = `<span style="font-size: 10px; opacity:0.5; margin-left: 8px; float: right; margin-top: 4px;">${hours}:${minutes}</span>`;
         
         if (data.user === myNick) {
-            item.classList.add('my-msg');
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
             item.insertAdjacentHTML('beforeend', `${timeHtml}<span class="${readClass}" style="margin-left:5px; position:static; float:right; margin-top:4px;">${checkRead}</span>`);
@@ -1059,28 +1065,23 @@
             item.insertAdjacentHTML('beforeend', timeHtml);
         }
 
-        // Клік відкриває смайлики
         item.onclick = (e) => {
-            e.stopPropagation(); const currentDisplay = picker.style.display;
+            e.stopPropagation(); 
+            if (currentActiveChatPartner === '__notes__') return;
+            const currentDisplay = picker.style.display;
             document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
             picker.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
         };
 
-        // Підтримка виклику контекстного меню (Права кнопка миші на ПК)
-        item.oncontextmenu = (e) => {
-            e.preventDefault(); e.stopPropagation();
-            showMsgContextMenu(e.clientX, e.clientY, data);
-        };
+        item.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); showMsgContextMenu(e.clientX, e.clientY, data); };
 
-        // Довге затискання під тач-скріни мобільних телефонів (Лонг-прес)
         let pressTimer;
         item.addEventListener('touchstart', (e) => {
             pressTimer = setTimeout(() => {
                 const touch = e.touches[0];
                 showMsgContextMenu(touch.clientX, touch.clientY, data);
-            }, 600); // 600мс затискання
+            }, 550);
         }, { passive: true });
-
         item.addEventListener('touchend', () => clearTimeout(pressTimer));
         item.addEventListener('touchmove', () => clearTimeout(pressTimer));
 
@@ -1094,14 +1095,11 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Спільне контекстне меню для повідомлень (Відповідь, Видалення)
     function showMsgContextMenu(x, y, msgData) {
         const t = translations[currentLang];
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
         
         let html = `<button onclick="window.setupReplyMessage('${msgData.msgId}')">↩ ${t.ctxReply}</button>`;
-        
-        // Видалення працює тільки на свої повідомлення
         if(msgData.user === myNick) {
             html += `<button onclick="window.executeDeleteMessage('${msgData.msgId}')" class="delete-btn">🗑 ${t.ctxDeleteMsg}</button>`;
         }
@@ -1115,15 +1113,12 @@
         const msg = savedMessages[currentRoom].find(m => m.msgId === msgId);
         if(!msg) return;
         replyTargetMsg = msg;
-        replyPreviewText.innerHTML = `↩ Відповідь користувачу <b>${getVisibleName(msg.user)}</b>:<br><small>${msg.text}</small>`;
+        replyPreviewText.innerHTML = `↩ Відповідь <b>${getVisibleName(msg.user)}</b>:<br><small>${msg.text}</small>`;
         replyPreviewArea.style.display = 'flex';
         input.focus();
     };
 
-    window.cancelReply = function() {
-        replyTargetMsg = null;
-        replyPreviewArea.style.display = 'none';
-    };
+    window.cancelReply = function() { replyTargetMsg = null; replyPreviewArea.style.display = 'none'; };
 
     window.executeDeleteMessage = function(msgId) {
         if (savedMessages[currentRoom]) {
@@ -1133,9 +1128,10 @@
         const wrapper = document.getElementById('wrapper-' + msgId);
         if (wrapper) wrapper.remove();
         
-        // Стрімимо видалення на сервер, щоб воно стерлося і в іншої людини
-        socket.emit('private chat message', { room: currentRoom, text: '[DELETE_SIGNAL]', msgId: msgId, user: myNick });
-        socket.emit('delete_message_broadcast', { room: currentRoom, msgId: msgId });
+        if (currentActiveChatPartner !== '__notes__') {
+            socket.emit('private chat message', { room: currentRoom, text: '[DELETE_SIGNAL]', msgId: msgId, user: myNick });
+            socket.emit('delete_message_broadcast', { room: currentRoom, msgId: msgId });
+        }
     };
 
     document.addEventListener('click', () => {
