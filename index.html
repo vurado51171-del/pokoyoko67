@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="t-title">Вхід у Burmalda Messenger</title>
     <style>
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Прибирає синій спалах при натисканні на мобільних */
+        }
         
+        /* Приємний колір виділення тексту */
+        ::selection {
+            background: rgba(0, 242, 254, 0.3);
+            color: #ffffff;
+        }
+
         body, html { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0; 
             padding: 0;
             height: 100vh; 
@@ -17,7 +26,20 @@
             color: white; 
             display: flex; 
             justify-content: center; 
-            align-items: center; 
+            align-items: center;
+            /* Заборона виділення тексту на сторінці */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Дозволяємо виділення тексту лише в полях введення */
+        input {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
 
         /* --- ФОН: РІДКЕ СКЛО ТА АВРОРА --- */
@@ -41,10 +63,19 @@
             border-radius: 50%;
             opacity: 0.5;
             animation: move 20s infinite alternate ease-in-out;
+            will-change: transform; /* Оптимізація продуктивності для мобільних */
         }
 
-        .blob:nth-child(2) { background: linear-gradient(135deg, #ff0055 0%, #ffcc00 100%); animation-delay: -5s; animation-duration: 25s; }
-        .blob:nth-child(3) { background: linear-gradient(135deg, #00ff88 0%, #00f2fe 100%); animation-delay: -10s; animation-duration: 15s; }
+        .blob:nth-child(2) { 
+            background: linear-gradient(135deg, #ff0055 0%, #ffcc00 100%);
+            animation-delay: -5s; 
+            animation-duration: 25s; 
+        }
+        .blob:nth-child(3) { 
+            background: linear-gradient(135deg, #00ff88 0%, #00f2fe 100%);
+            animation-delay: -10s; 
+            animation-duration: 15s; 
+        }
 
         @keyframes move {
             0% { transform: translate(-10%, -10%) scale(1); }
@@ -60,7 +91,10 @@
             animation: twinkle 5s infinite;
         }
 
-        @keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.8; } }
+        @keyframes twinkle { 
+            0%, 100% { opacity: 0.2; } 
+            50% { opacity: 0.8; } 
+        }
 
         /* --- ЛІТАЮЧІ КАРТИНКИ --- */
         .floating-img {
@@ -89,13 +123,12 @@
             padding: 0 15px;
         }
 
+        /* Оновлений контейнер .box з динамічним рідким склом */
         .box { 
-            background: rgba(255, 255, 255, 0.03); 
+            background: transparent; /* Прозорий фон, щоб не перекривати ефект */
             padding: 50px 30px 30px; 
             border-radius: 24px; 
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             text-align: center; 
             display: flex; 
@@ -104,57 +137,74 @@
             max-width: 360px;
             position: relative;
             transform-style: preserve-3d;
+            z-index: 10;
         }
 
-        /* --- АНІМАЦІЯ СВИНА --- */
-        .pig-boss {
+        /* Динамічний задній фон з SVG-фільтром рідкого скла */
+        .box::before {
+            content: "";
             position: absolute;
-            width: 120px; top: -65px; left: 50%; margin-left: -60px;
-            z-index: 15; border-radius: 50%;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-            animation: pigFlyIn 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            transform: translateZ(50px);
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: inherit;
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            filter: url('#liquid-glass-4rtdsii4q_filter'); /* Підключення SVG фільтра */
+            z-index: -1;
+            animation: liquidMove 8s infinite alternate ease-in-out;
+            will-change: transform;
         }
 
-        @keyframes pigFlyIn {
-            0% { transform: translate(-300px, -400px) rotate(-70deg) scale(0.2) translateZ(50px); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translate(0, 0) rotate(0deg) scale(1) translateZ(50px); opacity: 1; }
+        /* Легка анімація переливання скла */
+        @keyframes liquidMove {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.02); }
         }
 
         /* Виштовхуємо елементи вперед для 3D ефекту */
         .box h2, .box input, .box button, .box .hint { transform: translateZ(30px); }
         
         h2 { 
-            margin-top: 10px; margin-bottom: 25px; 
+            margin-top: 10px;
+            margin-bottom: 25px; 
             color: #fff; font-size: 26px; font-weight: 800;
             text-shadow: 0 2px 10px rgba(255,255,255,0.2); letter-spacing: 1px;
         }
         
         input { 
-            width: 100%; padding: 15px; 
+            width: 100%;
+            padding: 15px; 
             background: rgba(255, 255, 255, 0.05); 
             border: 1px solid rgba(255, 255, 255, 0.2); 
             color: white; border-radius: 12px; 
-            margin-bottom: 5px; font-size: 16px; 
+            margin-bottom: 5px;
+            font-size: 16px; 
             outline: none; transition: all 0.3s ease;
         }
         input::placeholder { color: rgba(255, 255, 255, 0.5); }
         input:focus { 
-            border-color: #00f2fe; background: rgba(0, 242, 254, 0.1);
+            border-color: #00f2fe;
+            background: rgba(0, 242, 254, 0.1);
             box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transform: translateZ(40px);
         }
         
-        .hint { font-size: 11px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; margin-bottom: 15px; text-align: left; padding-left: 8px; }
+        .hint { 
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6); margin-top: 2px; margin-bottom: 15px; text-align: left; padding-left: 8px;
+        }
         
         button { 
-            width: 100%; padding: 15px 20px; 
+            width: 100%;
+            padding: 15px 20px; 
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white; border: none; border-radius: 12px; 
-            cursor: pointer; font-size: 16px; font-weight: 800; 
+            cursor: pointer; font-size: 16px;
+            font-weight: 800; 
             text-transform: uppercase; letter-spacing: 1px;
             box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
             transition: all 0.3s ease; margin-top: 10px;
+            outline: none;
         }
         button:hover { 
             box-shadow: 0 8px 25px rgba(0, 242, 254, 0.6);
@@ -163,7 +213,8 @@
         }
         
         .error-msg { 
-            font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; 
+            font-size: 13px;
+            margin-bottom: 12px; display: none; font-weight: bold; 
             padding: 10px; border-radius: 8px;
             transform: translateZ(30px);
         }
@@ -204,7 +255,8 @@
 
         /* --- НИЖНІЙ НАПИС --- */
         .bottom-text {
-            position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 12px;
+            position: absolute;
+            bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 12px;
             color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 3px;
             z-index: 20; pointer-events: none; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
             transition: opacity 0.5s ease;
@@ -223,6 +275,15 @@
 </head>
 <body>
 
+    <svg width="0" height="0" style="position: fixed; top: 0px; left: 0px; pointer-events: none; z-index: 9998;">
+        <defs>
+            <filter id="liquid-glass-4rtdsii4q_filter" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+                <feImage id="liquid-glass-4rtdsii4q_map" width="300" height="200" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAQAElEQVR4Aey9eah1WfeddepWFfiHIAiCIAiCIIIIIogIIiIiIqKIoiiKDfZtNEZjTOxj3/diQ2JiYmJMjDHGGDVGYohNMPbGqASDSjCoBAn5VXPzPOOsue7c6+x97n2rbve+7/k444w5x5xr7b3X3mt8+9669X139/en+xtO99+xDj8Bfif4HeD/Bb8d/Dbwf4LfCn4L+F/B//zd6f5//OZ0/9//rtP9f/M7T/e/8f8/3f+G33G6/y/+v9P9r/9/Tve/7ref7n/t/326/zW/7XT/q/+v0/1/+H+c7n/Vbz3d/8r//XT/K37L6f6X/2+n+1/2v5zuf+lvPt3/kt90uv/F/9Pp/hf9D6f7X/jfne5/wX97uv/5//Xp/uf9xtP9z/2vTvc/5zec7n/2f3m6/1n/+en+X/nPTvf/8q8/3f9Lv+50/y/+p6f7f+HXnu7/+f/kdP/P/ZrT/T/7H5/u/5lffbr/p/+j0/0/9R+c7v/JX3W6/yf+/dP9P/4rT/f/2L93uv9Hf8Xp/h/5d8EvP93/w//O6f4f+mWn+3/w3wa/9HT/D/xbp/u//5eAX3y6//v+zdP93/uLzviZ/8bp/mf+wtP93/vLwL9+uv+7xc8/3f9в8/3f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP873f9fP840z8D/WfQI346/T+dcX+rYJ6fxnw/jXn/FsFxfirH+6kc92/mHMTfxPn8FM7rp3B+fyPn+ZM535/Mef8NnP9Vh/fVf30X8Je/Lnc1/+NO7Pn8p9+lN+0+n+T/7Np/s/ifv3J3If/wTu5x/Pff3juL9/LPf5j+F+/9Hc9z+K+/9H/vbT/R/B8/CH81z8YTwffyjPyR/C8/IH89z8QTw/fyDP0R/A8/T7g98P/L7g9wG/N/i9wO8Jfg/wNbgDpxvu7063/5y+Yw2+HfhmcOWTvz+dviX59idg8B0w3mO1CzDx1Ii/F8whq8uP4d4xgvOw1/yeOEBPLpf2CJ9afcYuBnDO0lyge7TkMqjcWiEatcqLv1g1jltauOfEHucLmXHWE5PLourGj4L1+KJQc5DfCXLZuvwYvuR+pWfwl8yhFvSYerTBX11ha19xHl/xfH3Fs7fi66Z9Sfy5fz57w+JZ8fk/8bwFlYd5iLpJlUFpMBWv/B0TBTyk9iVWI9dkAuLSk1MvVv+eg1cua0TR0I0D4tLsmTG6ZrMHL/RCxxQ0Fs1GVE9pYeYM2ztic5Ex6k+EBuS4CeYrTfNR3+SjPjWOY1+H59zzHt8xfoJ1rjg95DGr0ZMYLaYko2tKM1cDauKO+1i1GFTV0NdcY1JbuTT1gGOu5qVpiTKzz9m0PlvDuueu83z5rG+NasekNCWhAcmiYjlgMs0mMQ+scYyEOGydWF1MDd04Gg+rcVCxDDSpqZNrUDEfxofRimetadYCNnyZjBzNPnTNQu0a99qJtTLfoLSVx/zpHbUyIbWKr3FMhnPtPcZTt9agOV3UWC81axNqoOeJ1QRzxqCIizUq44D7ah6MuHQNKbFjqZlrTMVrbD7Bcbt5lWnJX/D8fo6fz9Kw3Ds8Pw9mxQZa36Q0QpQ6NqPKKZY3mWyZLzANpHvTY+kBMp2IeyOTF6JpNNGLNZOb0mF+Ai7nQ6HWc5lPQFBJT88IzhrGlR+s5sf3WuzHds1alXdRbrXr2WJOpOb+oMRxvasYgfcWcd881Hc9Z3uijX8NJzXEd1ns+YvtjOJWz/pWHzaklhjWhxOjGF+D+T80YfFW9xuBJpkVfDIxjal6alW9a8uf4I+JnZ1jcd5/z0ze8Yn3Dw1smJH/DwyGMj6AZxaB4+BIzRn4MMSEObp9mkpw5ZkzNOG9SI07eYvM9aBy7YGyMSeZa1x7NRO0a91oZymTmrLgbWTSNqEDfNCY1cudNn/HQynisVXyNrW3AdU6TYt5NbeQxJvqO2PG9lh8Tq5/7lZos0DWl0owfg+ZTPWVgakf4mudL9PrXXAu/iD9pXOJzetP6bAwLf4pJfcvN/oaHLYb0u86/QNekRDQekJU1mTIpa3mbYg71Q/AwW4vB2Esek4JL/464tPSZ70BTmcZDfY0dOzWuz343vSwSO4ми6K3Gy+h6cf6P7OutcxcYg5gNveivnulOHrWsssohOX2lyMLTEjEuf/ATEpFjfbk4VazypM0949EUnPmLNxZoGJowfMy/HBDx/skZVrCGJ/rsucxGTYoyxMHescX7nwdrMXf4JBZ+WYblBeMhO3Mh7UKYUxjQ0H9+q5MegCdkjC38pLwc8tJ1jVGoNXdNgyryMN+B8K+/GFI2axrELjrWr86Bu9JFrOGUs1jUCc5GYY8m9z7zqxmLN1SZcf46X/Ciu+uCYzIgd1/PE47w0papHZ0zXPG9za2HGhUdf4tJk1u9CUwfdpDYmxpiqxYzMB8qgijUq40L6eQY1o2jGjE1O7N9izZjcOAZEfI3ztjV6Ylo89/IXsPvAdTl5Lz4R0/o0DIuHLH+bMG6SZhGTIu9c8XyLop6YG64BaVDiO/Li6DxYclAx7HE0Fs0oYJy5MJdX+ONpaRpUYs4/b1SNNRXRdfMJNqK1mTNWMzH3ITV2gyenN/no6XrvjU6vLDKmch765LC1gHhPS62Nmzn9Gko2UKuvWvJRv4i5BufTbML2oVXfhT5q6gVNx/7KZbWCuah8w9x3TSwGRPwl81fcWVOqXPMxF9F4Toynbg6umZa9MS6eWd+iOjQoodZZ04xpMSb7g3P92H3r4zUsH1QemNwQbnaYG6MBaUy+SQmNp9h4DxpR6YmZVxbX3qw0JXvCjNF8jGUxYx4UcxGTMh/QUJ6KaVBc+2YMuZt3auQXsRp4qkHFiOzHZDK3caFrI44JrfGaOx5Ns3DOjFEDqzbzXtuLWUd7g4plYb8MPN7sIdeQKteQkpf+CNtf6OYVjedAM4oxtVgt4Fk9ZGob03K82sA0rZHHwFpcb1tywH7QxGpvxLTQPuYfGT8uw+Jhd8Nl4blR80ZwE/xzgDKm4pgXfWVGe6yplK75dIOaMQ+OfUfQiIT1yTz0xhPmPwDTeBiriQTGwE3Yc+PSjrj3bGLXlg2uiUSvHO2+Ylmg2RccxfYVjnoW/Qv71QSxhlLHsJacob%" />
+                <feDisplacementMap in="SourceGraphic" in2="liquid-glass-4rtdsii4q_map" scale="15" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
+
     <div class="aurora-bg">
         <div class="stars"></div>
         <div class="blob"></div>
@@ -235,7 +296,7 @@
 
     <div class="container">
         <div class="box" data-tilt data-tilt-max="10" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            
+    
             <img src="photo_2026-06-16_00-59-57.jpg" class="pig-boss" alt="Pig Boss">
 
             <h2 id="t-heading">Вхід Burmalda</h2>
@@ -305,12 +366,12 @@
             }
         };
 
-        let currentLang = 'uk'; // Мова за замовчуванням
+        let currentLang = 'uk';
 
         // Ініціалізація мови при завантаженні
         function initLanguage() {
             const savedLang = localStorage.getItem('burmalda_lang');
-            const userLang = navigator.language || navigator.userLanguage; // Беремо мову регіону/браузера
+            const userLang = navigator.language || navigator.userLanguage;
 
             if (savedLang && i18n[savedLang]) {
                 currentLang = savedLang;
@@ -319,7 +380,7 @@
             } else if (userLang.toLowerCase().includes('ru')) {
                 currentLang = 'ru';
             } else {
-                currentLang = 'uk'; // За замовчуванням ставимо українську
+                currentLang = 'uk';
             }
             
             setLang(currentLang);
@@ -330,29 +391,21 @@
             currentLang = lang;
             localStorage.setItem('burmalda_lang', lang);
 
-            // Оновлюємо UI перемикача (скидаємо всі активні класи)
             document.getElementById('btn-uk').classList.remove('active');
             document.getElementById('btn-ru').classList.remove('active');
             document.getElementById('btn-en').classList.remove('active');
             
-            // Активуємо обрану кнопку
             document.getElementById(`btn-${lang}`).classList.add('active');
-
-            // Оновлюємо тексти на сторінці
             document.getElementById('t-title').innerText = i18n[lang].title;
             document.getElementById('t-heading').innerText = i18n[lang].heading;
             document.getElementById('username').placeholder = i18n[lang].userPlaceholder;
             document.getElementById('t-hint').innerText = i18n[lang].userHint;
             document.getElementById('password').placeholder = i18n[lang].passPlaceholder;
             document.getElementById('login-btn').innerText = i18n[lang].btnText;
-
-            // Ховаємо помилки, якщо користувач змінив мову
             document.getElementById('error').style.display = 'none';
         }
 
-        // Виклик ініціалізації при завантаженні сторінки
         window.addEventListener('DOMContentLoaded', initLanguage);
-
 
         // --- ЛОГІКА РАНДОМНИХ ФРАЗ ---
         const phrases = [
@@ -360,7 +413,6 @@
             "влад пушка дєвки ловушка",
             "назар пушка дєвки ловушка"
         ];
-        
         const phraseElement = document.getElementById('dynamic-phrase');
         
         setInterval(() => {
@@ -370,7 +422,7 @@
                 phraseElement.innerText = phrases[randomIndex];
                 phraseElement.style.opacity = '1';
             }, 500); 
-        }, 5000); 
+        }, 5000);
 
         // --- ЛОГІКА АВТОРИЗАЦІЇ ---
         function enterChat() {
@@ -380,14 +432,12 @@
             const btn = document.getElementById('login-btn');
 
             errorDiv.style.display = 'none';
-
             if (!nick || !pass) {
                 showError(i18n[currentLang].errEmpty);
                 return;
             }
 
             const url = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
-
             const originalBtnText = btn.innerText;
             btn.innerText = i18n[currentLang].loading;
             btn.style.opacity = "0.8";
@@ -407,25 +457,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    
-                    // --- СИСТЕМА ІЗОЛЯЦІЇ АКАУНТІВ ---
-                    
-                    // 1. Очищаємо сесію та глобальні ключі попереднього користувача
                     localStorage.removeItem('chat_logged_in');
                     localStorage.removeItem('burmalda_my_nick');
-                    localStorage.removeItem('current_active_chat'); // Видаляє відкритий чат
-                    localStorage.removeItem('current_messages');    // Видаляє кеш повідомлень на екрані
-                    sessionStorage.clear(); // Про всяк випадок чистимо сесію браузера
+                    localStorage.removeItem('current_active_chat');
+                    localStorage.removeItem('current_messages');    
+                    sessionStorage.clear(); 
                     
-                    // 2. Встановлюємо дані для нового входу
                     localStorage.setItem('chat_logged_in', 'true');
                     localStorage.setItem('burmalda_my_nick', nick);
-
-                    // 3. Зберігаємо контакти з жорсткою прив'язкою до КОНКРЕТНОГО нікнейму
+                    
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
 
-                    // Перехід у чат
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
                     window.location.href = '/chat?auth=' + loginToken; 
                 } else {
@@ -438,7 +481,7 @@
                 console.error(err);
                 resetButton(btn, originalBtnText);
             });
-            
+
             function showError(msg) {
                 errorDiv.innerText = msg;
                 errorDiv.style.color = "#ff4a4a";
