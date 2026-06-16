@@ -1,84 +1,90 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title id="t-title">Вхід у Burmalda Messenger</title>
     <style>
-        * { box-sizing: border-box; }
-        
-        body, html { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        /* Динамічні пастельні змінні для тем */
+        :root {
+            --bg-color: #f7f7f9;
+            --box-bg: rgba(255, 255, 255, 0.45);
+            --box-border: rgba(0, 0, 0, 0.06);
+            --text-main: #121214;
+            --text-muted: rgba(0, 0, 0, 0.4);
+            --input-bg: rgba(0, 0, 0, 0.03);
+            --input-border: rgba(0, 0, 0, 0.08);
+            --input-focus-bg: rgba(0, 0, 0, 0.01);
+            --btn-bg: #121214;
+            --btn-text: #ffffff;
+            --btn-hover: #232326;
+            --shadow: 0 30px 60px rgba(0, 0, 0, 0.05);
+            --blob-opacity: 0.07;
+            --panel-blur: 30px;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0a0a0c;
+            --box-bg: rgba(18, 18, 22, 0.45);
+            --box-border: rgba(255, 255, 255, 0.06);
+            --text-main: #f3f3f5;
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --input-bg: rgba(255, 255, 255, 0.03);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --input-focus-bg: rgba(255, 255, 255, 0.01);
+            --btn-bg: #f3f3f5;
+            --btn-text: #0a0a0c;
+            --btn-hover: #ffffff;
+            --shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            --blob-opacity: 0.15;
+        }
+
+        * { 
+            box-sizing: border-box; 
             margin: 0; 
             padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+        
+        body, html { 
             height: 100vh; 
             overflow: hidden; 
-            background-color: #050510;
-            color: white; 
+            background-color: var(--bg-color);
+            color: var(--text-main); 
             display: flex; 
             justify-content: center; 
-            align-items: center; 
+            align-items: center;
         }
 
-        /* --- ФОН: РІДКЕ СКЛО ТА АВРОРА --- */
-        .aurora-bg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            overflow: hidden;
-            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #050505 100%);
-        }
-
-        .blob {
-            position: absolute;
-            width: 50vw;
-            height: 50vw;
-            min-width: 300px;
-            min-height: 300px;
-            background: linear-gradient(135deg, #00f2fe 0%, #7000ff 100%);
-            filter: blur(120px);
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: move 20s infinite alternate ease-in-out;
-        }
-
-        .blob:nth-child(2) { background: linear-gradient(135deg, #ff0055 0%, #ffcc00 100%); animation-delay: -5s; animation-duration: 25s; }
-        .blob:nth-child(3) { background: linear-gradient(135deg, #00ff88 0%, #00f2fe 100%); animation-delay: -10s; animation-duration: 15s; }
-
-        @keyframes move {
-            0% { transform: translate(-10%, -10%) scale(1); }
-            50% { transform: translate(50%, 30%) scale(1.2); }
-            100% { transform: translate(-20%, 20%) scale(0.9); }
-        }
-
-        /* Ефект дрібних зірок */
-        .stars {
+        /* --- ЕФЕКТ СПРАВЖНЬОГО РІДКОГО СКЛА НА ФОНІ --- */
+        .liquid-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><circle cx="20" cy="20" r="1" fill="white" opacity="0.3"/><circle cx="150" cy="100" r="1.5" fill="white" opacity="0.5"/></svg>');
-            animation: twinkle 5s infinite;
+            z-index: 0;
+            overflow: hidden;
+            filter: url(#liquid-glass-4rtdsii4q_filter); /* Застосування твого фільтра */
         }
 
-        @keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.8; } }
-
-        /* --- ЛІТАЮЧІ КАРТИНКИ --- */
-        .floating-img {
+        .liquid-blob {
             position: absolute;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1;
-            opacity: 0.8;
-            transition: all 0.5s ease;
-            filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));
+            border-radius: 50%;
+            background: var(--text-main);
+            opacity: var(--blob-opacity);
+            animation: drift 22s infinite alternate ease-in-out;
         }
 
-        .img-1 { width: 200px; top: 15%; left: 10%; animation: floatSpace 12s infinite alternate ease-in-out; }
-        .img-2 { width: 250px; bottom: 15%; right: 10%; animation: floatSpace2 14s infinite alternate-reverse ease-in-out; }
+        .liquid-blob:nth-child(1) { width: 45vw; height: 45vw; top: -10%; left: -10%; }
+        .liquid-blob:nth-child(2) { width: 55vw; height: 55vw; bottom: -15%; right: -10%; animation-duration: 28s; animation-delay: -5s; }
+        .liquid-blob:nth-child(3) { width: 35vw; height: 35vw; top: 30%; left: 40%; animation-duration: 18s; animation-delay: -10s; }
 
-        @keyframes floatSpace { 0% { transform: translateY(0px) rotate(-5deg); } 100% { transform: translateY(-30px) rotate(5deg); } }
-        @keyframes floatSpace2 { 0% { transform: translateY(0px) rotate(5deg); } 100% { transform: translateY(-40px) rotate(-5deg); } }
-        
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate(10%, 15%) scale(1.1) rotate(90deg); }
+            100% { transform: translate(-5%, 5%) scale(0.95) rotate(180deg); }
+        }
+
+        /* --- ОСНОВНИЙ КОНТЕЙНЕР --- */
         .container {
             position: relative;
             z-index: 10;
@@ -86,156 +92,189 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            padding: 0 15px;
+            padding: 0 20px;
         }
 
         .box { 
-            background: rgba(255, 255, 255, 0.03); 
-            padding: 50px 30px 30px; 
+            background: var(--box-bg);
+            padding: 40px 30px; 
             border-radius: 24px; 
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(var(--panel-blur));
+            -webkit-backdrop-filter: blur(var(--panel-blur));
+            border: 1px solid var(--box-border);
             text-align: center; 
             display: flex; 
             flex-direction: column; 
             width: 100%;
             max-width: 360px;
-            position: relative;
             transform-style: preserve-3d;
         }
 
-        /* --- АНІМАЦІЯ СВИНА --- */
+        /* МІНІМАЛІСТИЧНИЙ СТИЛЬ ДЛЯ ПІГА */
         .pig-boss {
-            position: absolute;
-            width: 120px; top: -65px; left: 50%; margin-left: -60px;
-            z-index: 15; border-radius: 50%;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-            animation: pigFlyIn 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            transform: translateZ(50px);
+            width: 80px; 
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--box-border);
+            filter: grayscale(20%);
         }
-
-        @keyframes pigFlyIn {
-            0% { transform: translate(-300px, -400px) rotate(-70deg) scale(0.2) translateZ(50px); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translate(0, 0) rotate(0deg) scale(1) translateZ(50px); opacity: 1; }
-        }
-
-        /* Виштовхуємо елементи вперед для 3D ефекту */
-        .box h2, .box input, .box button, .box .hint { transform: translateZ(30px); }
         
         h2 { 
-            margin-top: 10px; margin-bottom: 25px; 
-            color: #fff; font-size: 26px; font-weight: 800;
-            text-shadow: 0 2px 10px rgba(255,255,255,0.2); letter-spacing: 1px;
+            margin-bottom: 25px; 
+            color: var(--text-main); 
+            font-size: 22px; 
+            font-weight: 600;
+            letter-spacing: -0.5px;
         }
         
         input { 
-            width: 100%; padding: 15px; 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            color: white; border-radius: 12px; 
-            margin-bottom: 5px; font-size: 16px; 
-            outline: none; transition: all 0.3s ease;
+            width: 100%;
+            padding: 14px 16px; 
+            background: var(--input-bg); 
+            border: 1px solid var(--input-border); 
+            color: var(--text-main); 
+            border-radius: 12px; 
+            margin-bottom: 6px;
+            font-size: 15px; 
+            outline: none; 
+            transition: all 0.25s ease;
         }
-        input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
+        input::placeholder { 
+            color: var(--text-muted); 
+        }
+
         input:focus { 
-            border-color: #00f2fe; background: rgba(0, 242, 254, 0.1);
-            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); transform: translateZ(40px);
+            border-color: var(--text-main);
+            background: var(--input-focus-bg);
         }
         
-        .hint { font-size: 11px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; margin-bottom: 15px; text-align: left; padding-left: 8px; }
+        .hint { 
+            font-size: 11px;
+            color: var(--text-muted); 
+            margin-top: 2px; 
+            margin-bottom: 20px; 
+            text-align: left; 
+            padding-left: 4px;
+            line-height: 1.4;
+        }
         
         button { 
-            width: 100%; padding: 15px 20px; 
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white; border: none; border-radius: 12px; 
-            cursor: pointer; font-size: 16px; font-weight: 800; 
-            text-transform: uppercase; letter-spacing: 1px;
-            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
-            transition: all 0.3s ease; margin-top: 10px;
+            width: 100%;
+            padding: 14px 20px; 
+            background: var(--btn-bg);
+            color: var(--btn-text); 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 14px;
+            font-weight: 600; 
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease; 
+            margin-top: 5px;
         }
+
         button:hover { 
-            box-shadow: 0 8px 25px rgba(0, 242, 254, 0.6);
-            transform: translateZ(50px) scale(1.02);
-            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            background: var(--btn-hover);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
         
         .error-msg { 
-            font-size: 13px; margin-bottom: 12px; display: none; font-weight: bold; 
-            padding: 10px; border-radius: 8px;
-            transform: translateZ(30px);
+            font-size: 13px;
+            margin-bottom: 12px; 
+            display: none; 
+            font-weight: 500; 
+            padding: 12px; 
+            border-radius: 10px;
         }
 
-        /* --- ВИБІР МОВИ (LIQUID GLASS) --- */
-        .lang-switch {
+        /* --- НИЖНЯ ПАНЕЛЬ КЕРУВАННЯ --- */
+        .bottom-controls {
             position: absolute;
-            bottom: 55px;
+            bottom: 30px;
             display: flex;
-            gap: 4px;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 5px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
             z-index: 20;
         }
+
+        .control-row {
+            display: flex;
+            gap: 8px;
+            background: var(--box-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--box-border);
+            padding: 4px;
+            border-radius: 30px;
+        }
         
-        .lang-btn {
+        .ctrl-btn {
             cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 6px 12px;
-            border-radius: 15px;
-            transition: all 0.3s ease;
-            letter-spacing: 1px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .lang-btn.active {
-            background: rgba(0, 242, 254, 0.15);
-            color: #00f2fe;
-            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
-            border: 1px solid rgba(0, 242, 254, 0.3);
+        .ctrl-btn.active, .ctrl-btn:hover {
+            background: var(--btn-bg);
+            color: var(--btn-text);
         }
 
-        /* --- НИЖНІЙ НАПИС --- */
+        /* --- ТЕКСТ ЗНИЗУ --- */
         .bottom-text {
-            position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center; font-size: 12px;
-            color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 3px;
-            z-index: 20; pointer-events: none; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 10px;
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            pointer-events: none; 
             transition: opacity 0.5s ease;
+            text-align: center;
         }
 
-        /* Адаптація під мобільні екрани */
-        @media (max-width: 768px) {
-            .img-1 { width: 120px; top: 10%; left: 5%; }
-            .img-2 { width: 150px; bottom: 10%; right: 5%; }
-            .box { padding: 45px 20px 25px; }
-            h2 { font-size: 22px; }
-            .pig-boss { width: 100px; top: -55px; margin-left: -50px; }
-            .blob { filter: blur(80px); }
+        @media (max-width: 480px) {
+            .box { 
+                padding: 35px 20px; 
+            }
+            h2 { 
+                font-size: 20px; 
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="aurora-bg">
-        <div class="stars"></div>
-        <div class="blob"></div>
-        <div class="blob"></div>
-        <div class="blob"></div>
+    <svg width="0" height="0" style="position: fixed; top: 0px; left: 0px; pointer-events: none; z-index: 9998;">
+        <defs>
+            <filter id="liquid-glass-4rtdsii4q_filter" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB" x="-20%" y="-20%" width="140%" height="140%">
+                <feImage id="liquid-glass-4rtdsii4q_map" width="300" height="200" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAADICAYAAABS39xVAAAQAElEQVR4Aey9eah1WfeddepWFfiHIAiCIAiCIIIIIogIIiIiIqKIoiiKDfZtNEZjTOxj3/diQ2JiYmJMjDHGGDVGYohNMPbGqASDSjCoBAn5VXPzPOOsue7c6+x97n2rbve+7/k444w5x5xp7b3X3mt8+9669X139/en+xtO99+xDj8Bfif4HeD/Bb8d/Dbwf4LfCn4L+F/B//zd6f5//OZ0/9//rtP9f/M7T/e/8f8/3f+G33G6/y/+v9P9r/9/Tve/7ref7n/t/326/zW/7XT/q/+v0/1/+M7T/e/8f8/3f+G33G6/y/+v9P9r/9/Tve/7ref7n/t/326/zW/7XT/q/+v0/1/+H+c7n/Vbz3d/8r//XT/K37L6f6X/2+n+1/2v5zuf+lvPt3/kt90uv/F/9Pp/hf9D6f7X/jfne5/wX97uv/5//Xp/uf9xtP9z/2vTvc/5zec7n/2f3m6/1n/+en+X/nPTvf/8q8/3f9Lv+50/y/+p6f7f+HXnu7/+f/kdP/P/ZrT/T/7H5/u/5lffbr/p/+j0/0/9R+c7v/JX3W6/yf+/dP9P/4rT/f/2L93uv9Hf8Xp/h/5d8EvP93/w//O6f4f+mWn+3/w3wa/9HT/D/xbp/u//5eAX3y6//v+zdP93/uLzviZ/8bp/mf+wtP93/М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мо//AAS05st8YfGT8uw+Jhd8Nl4blR80ZwE/xzgDKm4pgXfWVGe6yplK75dIOaMQ+OfUfQiIT1yTz0xhPmPwDTeBiriQTGwE3Yc+PSjrj3bGLXlg2uiUSvHO2+Ylmg2RccxfYVjnoW/Qv71QSxhlLHsJacobmiy8RllUfMTTkBifHtYvGrnjEw8txkP8wcxzUkblWI3JvLhi80PwvF41LY6xGlXPNSpNSi0x88n+eUbfL3MPcZ1Z44/k1evjMCweqvy3Aou/t+jfY1i+VcWgiItjXOaMK1PqrMFUvjErHoqNWTHe3hUxI264+ozJEzOHb0R78C2r0Osbc2Iec+saSIS25tFZnw3TZ+7GXNmHMxqGkPpgY9Fr6a26LDjWNd1aMPoSt3HJqWlAFYdHz6prJpмо//AAS05st8YfGT8uw+Jhd8Nl4blR80ZwE/xzgDKm4pgXfWVGe6yplK75dIOaMQ+OfUfQiIT1yTz0xhPmPwDTeBiriQTGwE3Yc+PSjrj3bGLXlg2uiUSvHO2+Ylmg2RccxfYVjnoW/Qv71QSxhlLHsJacobmiy8RllUfMTTkBifHtYvGrnjEw8txkP8wcxzUkblWI3JvLhi80PwvF41LY6xGlXPNSpNSi0x88n+eUbfL3MPcZ1Z44/k1evjMCweqvy3Aou/t+jfY1i+VcWgiItjXOaMK1PqrMFUvjErHoqNWTHe3hUxI264+ozJEzOHb0R78C2r0Osbc2Iec+saSIS25tFZnw3TZ+7GXNmHMxqGkPpgY9Fr6a26LDjWNd1aMPoSt3HJqWlAFYdHz6prJp5XIXXGOya1GqcGog2OCVXcmfWxT9x9dzr1Po0muT0N6gXfqgqlXTD3PwbFHKmRa1I9Nt+A5yw5HNNyTMXygD0a0i543jWo/qOhBmbuv0o0jYq+uZeYN/uLNTq98/+8X8PyQeRmZ4HXxXWBh+Y/vYsxoa1cZrTHmkzpiXk45IC5wl1rcQyJc6seTaT/bsp8F8xRY7/n4RCaUqGP0TgK6ulhTDSOHTYndjObr3xNS69rzBxufnvzJrVo9lkPqrf1RDf/UDBXzMdxxHMeYo0kObFsX9fMc17U1YV5миїівтуЗССС" />
+                <feDisplacementMap in="SourceGraphic" in2="liquid-glass-4rtdsii4q_map" scale="15" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="liquid-container">
+        <div class="liquid-blob"></div>
+        <div class="liquid-blob"></div>
+        <div class="liquid-blob"></div>
     </div>
 
-    <img src="photo_2026-06-16_00-59-53.jpg" class="floating-img img-1" alt="Space Guy 1">
-    <img src="photo_2026-06-16_00-59-56.jpg" class="floating-img img-2" alt="Space Guy 2">
-
     <div class="container">
-        <div class="box" data-tilt data-tilt-max="10" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.2">
-            
+        <div class="box" data-tilt data-tilt-max="6" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.1">
+    
             <img src="photo_2026-06-16_00-59-57.jpg" class="pig-boss" alt="Pig Boss">
 
             <h2 id="t-heading">Вхід Burmalda</h2>
@@ -251,13 +290,19 @@
         </div>
     </div>
 
-    <div class="lang-switch">
-        <div class="lang-btn active" onclick="setLang('uk')" id="btn-uk">UK</div>
-        <div class="lang-btn" onclick="setLang('ru')" id="btn-ru">RU</div>
-        <div class="lang-btn" onclick="setLang('en')" id="btn-en">EN</div>
-    </div>
+    <div class="bottom-controls">
+        <div class="control-row">
+            <div class="ctrl-btn active" onclick="setLang('uk')" id="btn-uk">UK</div>
+            <div class="ctrl-btn" onclick="setLang('ru')" id="btn-ru">RU</div>
+            <div class="ctrl-btn" onclick="setLang('en')" id="btn-en">EN</div>
+        </div>
 
-    <div class="bottom-text" id="dynamic-phrase">остап пушка дєвки ловушка</div>
+        <div class="control-row">
+            <div class="ctrl-btn" onclick="toggleTheme()" id="theme-toggle-btn">🌙 ТЕМНА</div>
+        </div>
+
+        <div class="bottom-text" id="dynamic-phrase">остап пушка дєвки ловушка</div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
 
@@ -268,7 +313,7 @@
                 title: "Вхід у Burmalda Messenger",
                 heading: "Вхід Burmalda",
                 userPlaceholder: "Юзернейм...",
-                userHint: "Максимум 12 символів",
+                userHint: "Максимум 12 символів (змінити юзернейм неможливо!)",
                 passPlaceholder: "Пароль...",
                 btnText: "Увійти / Створити",
                 loading: "Завантаження...",
@@ -305,12 +350,13 @@
             }
         };
 
-        let currentLang = 'uk'; // Мова за замовчуванням
+        let currentLang = 'uk';
 
-        // Ініціалізація мови при завантаженні
-        function initLanguage() {
+        // Ініціалізація мови та теми
+        function initPage() {
+            // Мова
             const savedLang = localStorage.getItem('burmalda_lang');
-            const userLang = navigator.language || navigator.userLanguage; // Беремо мову регіону/браузера
+            const userLang = navigator.language || navigator.userLanguage;
 
             if (savedLang && i18n[savedLang]) {
                 currentLang = savedLang;
@@ -319,10 +365,14 @@
             } else if (userLang.toLowerCase().includes('ru')) {
                 currentLang = 'ru';
             } else {
-                currentLang = 'uk'; // За замовчуванням ставимо українську
+                currentLang = 'uk';
             }
-            
             setLang(currentLang);
+
+            // Тема
+            const savedTheme = localStorage.getItem('burmalda_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
         }
 
         // Функція перемикання мови
@@ -330,29 +380,37 @@
             currentLang = lang;
             localStorage.setItem('burmalda_lang', lang);
 
-            // Оновлюємо UI перемикача (скидаємо всі активні класи)
             document.getElementById('btn-uk').classList.remove('active');
             document.getElementById('btn-ru').classList.remove('active');
             document.getElementById('btn-en').classList.remove('active');
             
-            // Активуємо обрану кнопку
             document.getElementById(`btn-${lang}`).classList.add('active');
 
-            // Оновлюємо тексти на сторінці
             document.getElementById('t-title').innerText = i18n[lang].title;
             document.getElementById('t-heading').innerText = i18n[lang].heading;
             document.getElementById('username').placeholder = i18n[lang].userPlaceholder;
             document.getElementById('t-hint').innerText = i18n[lang].userHint;
             document.getElementById('password').placeholder = i18n[lang].passPlaceholder;
             document.getElementById('login-btn').innerText = i18n[lang].btnText;
-
-            // Ховаємо помилки, якщо користувач змінив мову
             document.getElementById('error').style.display = 'none';
         }
 
-        // Виклик ініціалізації при завантаженні сторінки
-        window.addEventListener('DOMContentLoaded', initLanguage);
+        // Логіка зміни темної/світлої теми
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('burmalda_theme', newTheme);
+            updateThemeButton(newTheme);
+        }
 
+        function updateThemeButton(theme) {
+            const btn = document.getElementById('theme-toggle-btn');
+            btn.innerText = theme === 'dark' ? '☀️ СВІТЛА ТЕМА' : '🌙 ТЕМНА ТЕМА';
+        }
+
+        window.addEventListener('DOMContentLoaded', initPage);
 
         // --- ЛОГІКА РАНДОМНИХ ФРАЗ ---
         const phrases = [
@@ -360,7 +418,6 @@
             "влад пушка дєвки ловушка",
             "назар пушка дєвки ловушка"
         ];
-        
         const phraseElement = document.getElementById('dynamic-phrase');
         
         setInterval(() => {
@@ -370,7 +427,7 @@
                 phraseElement.innerText = phrases[randomIndex];
                 phraseElement.style.opacity = '1';
             }, 500); 
-        }, 5000); 
+        }, 5000);
 
         // --- ЛОГІКА АВТОРИЗАЦІЇ ---
         function enterChat() {
@@ -380,21 +437,19 @@
             const btn = document.getElementById('login-btn');
 
             errorDiv.style.display = 'none';
-
             if (!nick || !pass) {
                 showError(i18n[currentLang].errEmpty);
                 return;
             }
 
             const url = 'https://script.google.com/macros/s/AKfycbw5-YIlQPbTq8fI46zqdBBBUq_b5KjAQ7PY0CPCRN0tG_PLkJx4hpwhe_6iiqdWx7Gj0g/exec';
-
             const originalBtnText = btn.innerText;
             btn.innerText = i18n[currentLang].loading;
             btn.style.opacity = "0.8";
             btn.disabled = true;
 
             errorDiv.innerText = i18n[currentLang].checking;
-            errorDiv.style.color = "#00f2fe";
+            errorDiv.style.color = "var(--text-main)";
             errorDiv.style.background = "transparent";
             errorDiv.style.border = "none";
             errorDiv.style.display = 'block';
@@ -407,25 +462,18 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    
-                    // --- СИСТЕМА ІЗОЛЯЦІЇ АКАУНТІВ ---
-                    
-                    // 1. Очищаємо сесію та глобальні ключі попереднього користувача
                     localStorage.removeItem('chat_logged_in');
                     localStorage.removeItem('burmalda_my_nick');
-                    localStorage.removeItem('current_active_chat'); // Видаляє відкритий чат
-                    localStorage.removeItem('current_messages');    // Видаляє кеш повідомлень на екрані
-                    sessionStorage.clear(); // Про всяк випадок чистимо сесію браузера
+                    localStorage.removeItem('current_active_chat'); 
+                    localStorage.removeItem('current_messages');    
+                    sessionStorage.clear(); 
                     
-                    // 2. Встановлюємо дані для нового входу
                     localStorage.setItem('chat_logged_in', 'true');
                     localStorage.setItem('burmalda_my_nick', nick);
 
-                    // 3. Зберігаємо контакти з жорсткою прив'язкою до КОНКРЕТНОГО нікнейму
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
 
-                    // Перехід у чат
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
                     window.location.href = '/chat?auth=' + loginToken; 
                 } else {
@@ -438,12 +486,12 @@
                 console.error(err);
                 resetButton(btn, originalBtnText);
             });
-            
+
             function showError(msg) {
                 errorDiv.innerText = msg;
                 errorDiv.style.color = "#ff4a4a";
-                errorDiv.style.background = "rgba(255, 74, 74, 0.1)";
-                errorDiv.style.border = "1px solid rgba(255, 74, 74, 0.3)";
+                errorDiv.style.background = "rgba(255, 74, 74, 0.08)";
+                errorDiv.style.border = "1px solid rgba(255, 74, 74, 0.2)";
                 errorDiv.style.display = 'block';
             }
             
