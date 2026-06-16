@@ -159,6 +159,7 @@
         <ul id="messages"></ul>
         
         <div id="form">
+            <!-- Превью панели для ответа или редактирования -->
             <div class="action-preview-bar" id="action-preview">
                 <span class="preview-text" id="preview-text-content"></span>
                 <button class="close-preview" onclick="cancelInputAction()">&times;</button>
@@ -222,6 +223,7 @@
     </div>
 </div>
 
+<!-- Модифицированное контекстное меню сообщений -->
 <div class="context-menu" id="global-context-menu"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -772,7 +774,7 @@
             isRead: false, 
             time: Date.now(), 
             reactions: {},
-            replyToId: replyMessageId // Передаємо ID повідомлення, на яке відповідаємо
+            replyToId: replyMessageId
         };
 
         if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
@@ -857,7 +859,6 @@
         const item = document.createElement('li');
         item.id = data.msgId;
 
-        // Візуалізація цитати відповіді (якщо повідомлення містить replyToId)
         if (data.replyToId && savedMessages[currentRoom]) {
             const replyTarget = savedMessages[currentRoom].find(m => m.msgId === data.replyToId);
             if (replyTarget) {
@@ -890,15 +891,14 @@
             item.style.paddingRight = "45px";
         }
 
-        // Обробка кліку: показ реакцій
         item.onclick = (e) => {
             e.stopPropagation();
             const currentDisplay = picker.style.display;
             document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+            contextMenu.style.display = 'none'; // Закрываем контекстное меню при выборе реакции
             picker.style.display = currentDisplay === 'flex' ? 'none' : 'flex';
         };
 
-        // Обробка Правого Кліку (Контекстне меню повідомлення)
         item.oncontextmenu = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -917,23 +917,41 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // Показує контекстне меню повідомлення (відповідь, редагування, видалення)
+    // Показує контекстне меню повідомлення із захистом від виходу за межі екрана
     function showMessageContextMenu(x, y, msgData) {
         const t = translations[currentLang];
-        contextMenu.style.left = `${x}px`; 
-        contextMenu.style.top = `${y}px`;
         
+        // Спочатку наповнюємо меню вмістом, щоб дізнатися його реальні розміри
         let html = `<button onclick="initReply('${msgData.msgId}')">${t.ctxReply}</button>`;
         if (msgData.user === myNick) {
             html += `<button onclick="initEdit('${msgData.msgId}')">${t.ctxEdit}</button>`;
             html += `<button onclick="executeDeleteMessage('${msgData.msgId}')" class="delete-btn">${t.ctxDeleteMsg}</button>`;
         }
-        
         contextMenu.innerHTML = html;
         contextMenu.style.display = 'block';
+
+        // Розумне позиціонування (Захист від виходу за краї екрана на мобілках)
+        const menuWidth = contextMenu.offsetWidth || 160;
+        const menuHeight = contextMenu.offsetHeight || 120;
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        // Перевірка правого краю
+        if (x + menuWidth > windowWidth) {
+            x = windowWidth - menuWidth - 10;
+        }
+        // Перевірка нижнього краю
+        if (y + menuHeight > windowHeight) {
+            y = windowHeight - menuHeight - 10;
+        }
+        // Захист від від'ємних координат
+        if (x < 10) x = 10;
+        if (y < 10) y = 10;
+
+        contextMenu.style.left = `${x}px`; 
+        contextMenu.style.top = `${y}px`;
     }
 
-    // Ініціалізація ВІДПОВІДІ
     window.initReply = function(msgId) {
         if (!savedMessages[currentRoom]) return;
         const msg = savedMessages[currentRoom].find(m => m.msgId === msgId);
@@ -946,7 +964,6 @@
         input.focus();
     };
 
-    // Ініціалізація РЕДАГУВАННЯ
     window.initEdit = function(msgId) {
         if (!savedMessages[currentRoom]) return;
         const msg = savedMessages[currentRoom].find(m => m.msgId === msgId);
@@ -960,7 +977,6 @@
         input.focus();
     };
 
-    // ГЛОБАЛЬНЕ ВИДАЛЕННЯ повідомлення у всіх
     window.executeDeleteMessage = function(msgId) {
         if (savedMessages[currentRoom]) {
             savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
@@ -969,12 +985,12 @@
         const wrapper = document.getElementById('wrapper-' + msgId);
         if (wrapper) wrapper.remove();
         
-        // Відправляємо сигнал серверу та співрозмовнику
         socket.emit('private chat message', { room: currentRoom, text: '[DELETE_SIGNAL]', targetMsgId: msgId, user: myNick });
-        if (replyMessageId === msgId || editMessageId === msgId) cancelInputAction();
+        
+        // Реальне очищення станів після видалення повідомлення
+        cancelInputAction();
     };
 
-    // Скасування поточної дії
     window.cancelInputAction = function() {
         replyMessageId = null;
         editMessageId = null;
@@ -983,14 +999,20 @@
         previewTextContent.textContent = '';
     };
 
+    // Глобальний клік по екрану ховає меню та реакції
     document.addEventListener('click', () => {
         document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
         contextMenu.style.display = 'none';
     });
 
-    // Контекстне меню лівої панелі (видалення всього чату)
     function showChatContextMenu(x, y, partnerNick) {
-        contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
+        const menuWidth = 160;
+        const menuHeight = 50;
+        if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+        if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+
+        contextMenu.style.left = `${x}px`; 
+        contextMenu.style.top = `${y}px`;
         contextMenu.innerHTML = `<button onclick="window.executeDeleteChat('${partnerNick}')" class="delete-btn">${translations[currentLang].ctxDeleteChat}</button>`;
         contextMenu.style.display = 'block';
     }
