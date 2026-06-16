@@ -407,7 +407,7 @@
             bioPlaceholder: "About me:",
             bioEmpty: "Nothing specified",
             searchPlaceholder: "Search username...",
-            notesTitle: "📝 Notes (You)"
+            notesTitle: "Notes (You)"
         }
     };
 
@@ -502,10 +502,15 @@
     socket.on('connect', () => {
         socket.emit('store user', myNick);
         socket.emit('request profiles'); 
-        socket.emit('join room', myNick); // Реєструємо свою кімнату для отримання повідомлень
+        
+        socket.emit('join room', myNick); 
+        socket.emit('join room', myNick + '_notes');
         
         activeChats.forEach(p => { 
-            socket.emit('join room', p); 
+            if (p && p !== myNick) {
+                socket.emit('join room', p); 
+                socket.emit('join room', [myNick, p].sort().join('_'));
+            }
         });
     });
 
@@ -662,30 +667,39 @@
 
     input.oninput = () => {
         if (currentRoom && currentActiveChatPartner !== myNick) {
-            socket.emit('chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
+            socket.emit('chat message', { 
+                room: currentRoom, 
+                to: currentActiveChatPartner,
+                receiver: currentActiveChatPartner,
+                text: '[TYPING_SIGNAL]', 
+                message: '[TYPING_SIGNAL]',
+                user: myNick,
+                sender: myNick
+            });
         }
     };
 
     let remoteTypingTimer = null;
 
-    // СТАБІЛЬНИЙ ПРИЙОМ КЛІЄНТОМ БЕЗ РОЗСИНХРОНІЗАЦІЇ КІМНАТ
     socket.on('chat message', (data) => {
         if (!data) return;
         
         let chatPartner = null;
-        if (data.user === myNick) {
-            if (data.room === myNick || data.room === myNick + '_notes') {
-                chatPartner = myNick;
+        if (data.user === myNick || data.sender === myNick) {
+            if (data.receiver && data.receiver !== myNick) chatPartner = data.receiver;
+            else if (data.to && data.to !== myNick) chatPartner = data.to;
+            else if (data.room && data.room.includes('_')) {
+                chatPartner = data.room.split('_').find(p => p !== myNick);
             } else {
-                chatPartner = data.room; // Якщо це луна нашого вихідного, партнер — адресат кімнати
+                chatPartner = myNick;
             }
         } else {
-            chatPartner = data.user; // Якщо вхідне — партнер це той, хто написав
+            chatPartner = data.sender || data.user;
         }
 
         if (!chatPartner) return;
 
-        if (data.text === '[TYPING_SIGNAL]') {
+        if (data.text === '[TYPING_SIGNAL]' || data.message === '[TYPING_SIGNAL]') {
             if (chatPartner === currentActiveChatPartner) {
                 typingStatusEl.textContent = translations[currentLang].typingText;
                 typingStatusEl.style.display = 'block';
@@ -695,26 +709,27 @@
             return;
         }
 
-        if (data.text === '[READ_SIGNAL]') {
-            if (chatPartner === currentActiveChatPartner && data.user !== myNick) {
+        if (data.text === '[READ_SIGNAL]' || data.message === '[READ_SIGNAL]') {
+            if (chatPartner === currentActiveChatPartner && data.user !== myNick && data.sender !== myNick) {
                 const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
                 systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
                 if (savedMessages[chatPartner]) {
-                    savedMessages[chatPartner].forEach(m => { if(m.user === myNick) m.isRead = true; });
+                    savedMessages[chatPartner].forEach(m => { if(m.user === myNick || m.sender === myNick) m.isRead = true; });
                     localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
                 }
             }
             return;
         }
 
-        // Автоматичне миттєве створення діалогу в списку отримувача
         if (chatPartner !== myNick && !activeChats.includes(chatPartner)) {
             activeChats.push(chatPartner);
             localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            socket.emit('join room', [myNick, chatPartner].sort().join('_'));
+            socket.emit('join room', chatPartner);
             renderChatsList(searchInput.value.trim().toLowerCase());
         }
 
-        if (data.user === myNick && chatPartner !== myNick) return; // Вже відрендерено локально при надсиланні
+        if ((data.user === myNick || data.sender === myNick) && chatPartner !== myNick) return; 
         
         if (!savedMessages[chatPartner]) savedMessages[chatPartner] = [];
         const isDuplicate = savedMessages[chatPartner].some(m => m.msgId === data.msgId);
@@ -731,27 +746,24 @@
     });
 
     socket.on('message_delete_broadcast', (data) => {
-        const { room, msgId } = data;
-        let chatPartner = (room === myNick) ? data.user : room;
-        if (savedMessages[chatPartner]) {
-            savedMessages[chatPartner] = savedMessages[chatPartner].filter(m => m.msgId !== msgId);
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
-        if (chatPartner === currentActiveChatPartner) {
-            const wrapper = document.getElementById('wrapper-' + msgId);
-            if (wrapper) wrapper.remove();
-        }
+        if (!data) return;
+        const { msgId } = data;
+        Object.keys(savedMessages).forEach(partner => {
+            savedMessages[partner] = savedMessages[partner].filter(m => m.msgId !== msgId);
+        });
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
+        const wrapper = document.getElementById('wrapper-' + msgId);
+        if (wrapper) wrapper.remove();
     });
 
     socket.on('update_message_data', (data) => {
-        const { room, msgId, reactions } = data;
-        let chatPartner = (room === myNick) ? data.user : room;
-        if (chatPartner !== currentActiveChatPartner) return;
-        if (savedMessages[chatPartner]) {
-            const localMsg = savedMessages[chatPartner].find(m => m.msgId === msgId);
+        if (!data) return;
+        const { msgId, reactions } = data;
+        Object.keys(savedMessages).forEach(partner => {
+            const localMsg = savedMessages[partner].find(m => m.msgId === msgId);
             if (localMsg) localMsg.reactions = reactions;
-            localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
-        }
+        });
+        localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         const holder = document.getElementById('reactions-holder-' + msgId);
         if (holder) renderReactions(msgId, reactions, holder);
     });
@@ -794,9 +806,12 @@
     function openChatWith(user) {
         if (!user) return;
         currentActiveChatPartner = user;
-        currentRoom = user === myNick ? myNick + '_notes' : user; 
+        currentRoom = user === myNick ? myNick + '_notes' : [myNick, user].sort().join('_'); 
         
         socket.emit('join room', currentRoom);
+        if(user !== myNick) {
+            socket.emit('join room', user);
+        }
 
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
@@ -824,8 +839,13 @@
             
             const msgPacket = {
                 room: currentRoom, 
-                text: text, 
+                to: currentActiveChatPartner,
+                receiver: currentActiveChatPartner,
+                recipient: currentActiveChatPartner,
                 user: myNick, 
+                sender: myNick,
+                text: text, 
+                message: text,
                 msgId: generatedId, 
                 isRead: false, 
                 time: Date.now(), 
@@ -836,6 +856,8 @@
             if (currentActiveChatPartner !== myNick && !activeChats.includes(currentActiveChatPartner)) {
                 activeChats.push(currentActiveChatPartner);
                 localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+                socket.emit('join room', [myNick, currentActiveChatPartner].sort().join('_'));
+                socket.emit('join room', currentActiveChatPartner);
                 renderChatsList();
             }
 
@@ -854,7 +876,15 @@
 
     function sendReadSignal() { 
         if (currentRoom && currentActiveChatPartner !== myNick) {
-            socket.emit('chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); 
+            socket.emit('chat message', { 
+                room: currentRoom, 
+                to: currentActiveChatPartner,
+                receiver: currentActiveChatPartner,
+                text: '[READ_SIGNAL]', 
+                message: '[READ_SIGNAL]',
+                user: myNick,
+                sender: myNick 
+            }); 
         }
     }
 
@@ -905,7 +935,7 @@
 
         wrapper = document.createElement('div');
         wrapper.id = 'wrapper-' + data.msgId;
-        wrapper.className = 'msg-container' + (data.user === myNick ? ' my-wrapper' : '');
+        wrapper.className = 'msg-container' + ((data.user === myNick || data.sender === myNick) ? ' my-wrapper' : '');
 
         const picker = document.createElement('div');
         picker.className = 'reaction-picker';
@@ -924,7 +954,7 @@
 
         const item = document.createElement('li');
         item.id = data.msgId;
-        if (data.user === myNick) item.classList.add('my-msg');
+        if (data.user === myNick || data.sender === myNick) item.classList.add('my-msg');
         
         if(data.replyTo) {
             const replyQuote = document.createElement('div');
@@ -934,12 +964,12 @@
         }
 
         const textSpan = document.createElement('span');
-        textSpan.textContent = data.text;
+        textSpan.textContent = data.text || data.message || '';
         item.appendChild(textSpan);
 
         const timeHtml = `<span style="font-size: 10px; opacity:0.5; margin-left: 8px; float: right; margin-top: 4px;">${hours}:${minutes}</span>`;
         
-        if (data.user === myNick) {
+        if (data.user === myNick || data.sender === myNick) {
             const checkRead = data.isRead ? '✓✓' : '✓';
             const readClass = data.isRead ? 'msg-status read' : 'msg-status';
             item.insertAdjacentHTML('beforeend', `${timeHtml}<span class="${readClass}" style="margin-left:5px; position:static; float:right; margin-top:4px;">${checkRead}</span>`);
@@ -981,7 +1011,7 @@
         contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`;
         
         let html = `<button onclick="window.setupReplyMessage('${msgData.msgId}')">↩ ${t.ctxReply}</button>`;
-        if(msgData.user === myNick) {
+        if(msgData.user === myNick || msgData.sender === myNick) {
             html += `<button onclick="window.executeDeleteMessage('${msgData.msgId}')" class="delete-btn">🗑 ${t.ctxDeleteMsg}</button>`;
         }
         
@@ -994,7 +1024,7 @@
         const msg = savedMessages[currentActiveChatPartner].find(m => m.msgId === msgId);
         if(!msg) return;
         replyTargetMsg = msg;
-        replyPreviewText.innerHTML = `↩ Відповідь <b>${getVisibleName(msg.user)}</b>:<br><small>${msg.text}</small>`;
+        replyPreviewText.innerHTML = `↩ Відповідь <b>${getVisibleName(msg.user || msg.sender)}</b>:<br><small>${msg.text || msg.message}</small>`;
         replyPreviewArea.style.display = 'flex';
         input.focus();
     };
@@ -1009,7 +1039,7 @@
         const wrapper = document.getElementById('wrapper-' + msgId);
         if (wrapper) wrapper.remove();
         
-        socket.emit('chat message', { room: currentRoom, text: '[DELETE_SIGNAL]', msgId: msgId, user: myNick });
+        socket.emit('chat message', { room: currentRoom, to: currentActiveChatPartner, receiver: currentActiveChatPartner, text: '[DELETE_SIGNAL]', message: '[DELETE_SIGNAL]', msgId: msgId, user: myNick, sender: myNick });
         socket.emit('delete_message_broadcast', { room: currentRoom, msgId: msgId });
     };
 
