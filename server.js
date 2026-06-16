@@ -11,43 +11,38 @@ const PORT = process.env.PORT || 3000;
 
 let userProfiles = {};
 let onlineUsers = [];
+// Хранилище сообщений на сервере, чтобы ничего не пропадало, пока тебя нет в сети
+let messagesDatabase = {}; 
 
-// Раздаем статические файлы из корня проекта
 app.use(express.static(__dirname));
 
-// Главная страница авторизации
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
+app.get('/chat', (req, res) => { res.sendFile(path.join(__dirname, 'chat.html')); });
 
-// Страница чата
-app.get('/chat', (req, res) => {
-    res.sendFile(path.join(__dirname, 'chat.html'));
-});
-
-// Socket.io логика
 io.on('connection', (socket) => {
-    console.log('Новое подключение');
+    console.log('Новое подключение к BurmaldaGram');
 
     socket.on('store user', (username) => {
         if (!username) return;
         socket.username = username;
-        if (!onlineUsers.includes(username)) {
-            onlineUsers.push(username);
-        }
+        if (!onlineUsers.includes(username)) onlineUsers.push(username);
         io.emit('online users', onlineUsers);
     });
 
-    // ИСПРАВЛЕНО: Теперь при входе в комнату сервер не спамит всех остальных!
+    // Когда пользователь заходит в чат с кем-то
     socket.on('join room', (partnerName) => {
         if (!socket.username || !partnerName) return;
         const roomName = [socket.username, partnerName].sort().join('_');
-        
-        // Пользователь просто заходит в комнату для общения
         socket.join(roomName);
+
+        // Отдаем пользователю ВСЮ историю из памяти сервера, даже если он был офлайн
+        if (messagesDatabase[roomName]) {
+            socket.emit('server history', messagesDatabase[roomName]);
+        } else {
+            socket.emit('server history', []);
+        }
     });
 
-    // Улучшенная отправка сообщений
     socket.on('private chat message', (data) => {
         if (!data) return;
         const room = data.room;
@@ -58,23 +53,25 @@ io.on('connection', (socket) => {
 
         if (!room || !text) return;
 
-        const packetToSend = { room, text, user, msgId, isRead };
-        
-        // Отправляем сообщение строго внутрь этой комнаты (только двум участникам)
-        io.to(room).emit('chat message', packetToSend);
+        const packetToSend = { room, text, user, msgId, isRead, time: data.time || Date.now() };
 
-        // Умный force join: если это реальное текстовое сообщение (а не сервисный сигнал печати или прочтения),
-        // отправляем сигнал «создать чат» второму участнику, если у него его ещё нет.
+        // Сохраняем на сервере только реальный текст (игнорируем сигналы печати/прочтения)
         if (text !== '[TYPING_SIGNAL]' && text !== '[READ_SIGNAL]') {
-            // Рассылаем ТОЛЬКО в эту комнату. У тех, кто в ней сидит, чат обновится.
+            if (!messagesDatabase[room]) messagesDatabase[room] = [];
+            
+            // Защита от дублирования сообщений в базе
+            if (!messagesDatabase[room].some(m => m.msgId === msgId)) {
+                messagesDatabase[room].push(packetToSend);
+            }
+            // Показываем чат у собеседника
             socket.to(room).emit('force join room', room);
         }
+
+        // Пересылаем сообщение участникам комнаты
+        io.to(room).emit('chat message', packetToSend);
     });
 
-    socket.on('request profiles', () => {
-        socket.emit('all profiles data', userProfiles);
-    });
-
+    socket.on('request profiles', () => { socket.emit('all profiles data', userProfiles); });
     socket.on('update profile', (packet) => {
         if (packet && packet.user && packet.data) {
             userProfiles[packet.user] = packet.data;
@@ -90,6 +87,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-});
+server.listen(PORT, () => { console.log(`BurmaldaGram запущен на порту ${PORT}`); });
