@@ -14,12 +14,17 @@ let userProfiles = {};
 // Список пользователей, которые сейчас онлайн
 let onlineUsers = [];
 
-// Указываем, что статические файлы (HTML, CSS, JS) лежат в папке public
-app.use(express.static(path.join(__dirname, 'public')));
+// ИСПРАВЛЕНО: Теперь раздаем статические файлы прямо из КОРНЯ проекта, а не из public!
+app.use(express.static(__dirname));
 
-// Главный маршрут
+// Главная страница (авторизация/вход)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ИСПРАВЛЕНО: Явно прописываем маршрут для чата, чтобы по ссылке /chat?auth=... открывался chat.html из корня
+app.get('/chat', (req, res) => {
+    res.sendFile(path.join(__dirname, 'chat.html'));
 });
 
 // Работа со Socket.io
@@ -45,7 +50,6 @@ io.on('connection', (socket) => {
         if (!socket.username || !partnerName) return;
         
         // Генерируем уникальное имя комнаты, сортируя ники по алфавиту
-        // (например, "andrey_ostap" всегда будет одинаковым для обоих)
         const roomName = [socket.username, partnerName].sort().join('_');
         
         socket.join(roomName);
@@ -55,21 +59,18 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('force join room', roomName);
     });
 
-    // 3. ИСПРАВЛЕННЫЙ ОБРАБОТЧИК ПРИВАТНЫХ СООБЩЕНИЙ
+    // 3. Универсальный обработчик приватных сообщений (понимает любые форматы)
     socket.on('private chat message', (data) => {
         if (!data) return;
 
-        // Сервер теперь всеяден: он вытащит данные, даже если фронтенд прислал целый msgPacket
         const room = data.room;
         const text = data.text;
         const user = data.user || socket.username; 
         const msgId = data.msgId || ('msg-' + Date.now());
         const isRead = data.isRead || false;
 
-        // Если нет комнаты или текста, отменяем отправку
         if (!room || !text) return;
 
-        // Собираем стандартизированный чистый пакет для отправки в сеть
         const packetToSend = {
             room: room,
             text: text,
@@ -78,7 +79,7 @@ io.on('connection', (socket) => {
             isRead: isRead
         };
 
-        // Рассылаем сообщение абсолютно всем участникам этой комнаты (и тебе, и другу)
+        // Рассылаем сообщение всем в комнате
         io.to(room).emit('chat message', packetToSend);
     });
 
@@ -87,11 +88,10 @@ io.on('connection', (socket) => {
         socket.emit('all profiles data', userProfiles);
     });
 
-    // 5. Обновление и синхронизация профиля (аватарка, ник, статус)
+    // 5. Обновление и синхронизация профиля
     socket.on('update profile', (packet) => {
         if (packet && packet.user && packet.data) {
             userProfiles[packet.user] = packet.data;
-            // Рассылаем изменения всем остальным пользователям мессенджера
             socket.broadcast.emit('broadcast profile update', packet);
         }
     });
@@ -100,7 +100,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         if (socket.username) {
             onlineUsers = onlineUsers.filter(user => user !== socket.username);
-            // Говорим всем, что юзер вышел в офлайн
             io.emit('online users', onlineUsers);
             console.log(`Пользователь ${socket.username} отключился`);
         }
@@ -109,6 +108,5 @@ io.on('connection', (socket) => {
 
 // Запуск сервера
 server.listen(PORT, () => {
-    console.log(`Сервер Бурмалда Мессенджера успешно запущен на порту ${PORT}`);
-    console.log(`Ссылка для проверки локально: http://localhost:${PORT}`);
+    console.log(`Сервер успешно запущен на порту ${PORT}`);
 });
