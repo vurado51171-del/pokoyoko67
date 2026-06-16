@@ -18,7 +18,7 @@
             --input-bg: rgba(10, 15, 12, 0.7);
             --input-text: #ffffff;
             --blur-val: blur(30px);
-            --accent-color: #10b981; /* Приємний зелений смарагд */
+            --accent-color: #10b981;
         }
 
         body.light-theme {
@@ -48,7 +48,6 @@
         html, body { height: 100dvh; margin: 0; padding: 0; overflow: hidden; background: var(--bg-body); color: var(--text-main); }
         body { display: flex; position: relative; }
 
-        /* --- АНІМОВАНИЙ ЛІКВІД ФОН --- */
         .liquid-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; overflow: hidden; pointer-events: none;
@@ -492,7 +491,10 @@
             document.body.classList.remove('chat-opened');
             currentActiveChatPartner = null; currentRoom = null; 
             chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
-            window.history.replaceState({}, "", window.location.pathname + '?auth=' + urlParams.get('auth'));
+            
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('chat');
+            window.history.replaceState({}, "", currentUrl.pathname + currentUrl.search);
             renderChatsList();
         }
     };
@@ -500,17 +502,13 @@
     socket.on('connect', () => {
         socket.emit('store user', myNick);
         socket.emit('request profiles'); 
+        socket.emit('join room', myNick); // Реєструємо свою кімнату для отримання повідомлень
         
         activeChats.forEach(p => { 
             socket.emit('join room', p); 
-            const rName = [myNick, p].sort().join('_');
-            socket.emit('join room', rName);
         });
-        // Підключаємося до кімнати нотаток
-        socket.emit('join room', [myNick, myNick].sort().join('_'));
     });
 
-    // ПОШУК ТА АВТОМАТИЧНЕ СТВОРЕННЯ ЧАТУ ПРИ КЛІКУ АБО ВВЕДЕННІ
     searchInput.oninput = function() {
         const val = this.value.trim();
         renderChatsList(val.toLowerCase());
@@ -663,20 +661,32 @@
     });
 
     input.oninput = () => {
-        if (currentRoom) {
+        if (currentRoom && currentActiveChatPartner !== myNick) {
             socket.emit('chat message', { room: currentRoom, text: '[TYPING_SIGNAL]', user: myNick });
         }
     };
 
     let remoteTypingTimer = null;
 
-    // ПРИЙОМ ПОВІДОМЛЕННЯ ТА АВТО-СТВОРЕННЯ ДІАЛОГУ У ОТРИМУВАЧА
+    // СТАБІЛЬНИЙ ПРИЙОМ КЛІЄНТОМ БЕЗ РОЗСИНХРОНІЗАЦІЇ КІМНАТ
     socket.on('chat message', (data) => {
-        if (!data || !data.room) return;
-        const roomKey = String(data.room);
+        if (!data) return;
+        
+        let chatPartner = null;
+        if (data.user === myNick) {
+            if (data.room === myNick || data.room === myNick + '_notes') {
+                chatPartner = myNick;
+            } else {
+                chatPartner = data.room; // Якщо це луна нашого вихідного, партнер — адресат кімнати
+            }
+        } else {
+            chatPartner = data.user; // Якщо вхідне — партнер це той, хто написав
+        }
+
+        if (!chatPartner) return;
 
         if (data.text === '[TYPING_SIGNAL]') {
-            if (roomKey === currentRoom && data.user !== myNick) {
+            if (chatPartner === currentActiveChatPartner) {
                 typingStatusEl.textContent = translations[currentLang].typingText;
                 typingStatusEl.style.display = 'block';
                 clearTimeout(remoteTypingTimer);
@@ -686,36 +696,34 @@
         }
 
         if (data.text === '[READ_SIGNAL]') {
-            if (roomKey === currentRoom && data.user !== myNick) {
+            if (chatPartner === currentActiveChatPartner && data.user !== myNick) {
                 const systemStatuses = messagesContainer.querySelectorAll('.msg-status');
                 systemStatuses.forEach(span => { span.textContent = '✓✓'; span.classList.add('read'); });
-                if (savedMessages[roomKey]) {
-                    savedMessages[roomKey].forEach(m => { if(m.user === myNick) m.isRead = true; });
+                if (savedMessages[chatPartner]) {
+                    savedMessages[chatPartner].forEach(m => { if(m.user === myNick) m.isRead = true; });
                     localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
                 }
             }
             return;
         }
 
-        // Авто-додавання чату для отримувача
-        if (data.user !== myNick) {
-            if (!activeChats.includes(data.user)) {
-                activeChats.push(data.user);
-                localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-                renderChatsList(searchInput.value.trim().toLowerCase());
-            }
+        // Автоматичне миттєве створення діалогу в списку отримувача
+        if (chatPartner !== myNick && !activeChats.includes(chatPartner)) {
+            activeChats.push(chatPartner);
+            localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
+            renderChatsList(searchInput.value.trim().toLowerCase());
         }
 
-        if (data.user === myNick && roomKey !== [myNick, myNick].sort().join('_')) return;
+        if (data.user === myNick && chatPartner !== myNick) return; // Вже відрендерено локально при надсиланні
         
-        if (!savedMessages[roomKey]) savedMessages[roomKey] = [];
-        const isDuplicate = savedMessages[roomKey].some(m => m.msgId === data.msgId);
+        if (!savedMessages[chatPartner]) savedMessages[chatPartner] = [];
+        const isDuplicate = savedMessages[chatPartner].some(m => m.msgId === data.msgId);
         if (!isDuplicate) {
-            savedMessages[roomKey].push(data);
+            savedMessages[chatPartner].push(data);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
 
-        if (roomKey === currentRoom) {
+        if (chatPartner === currentActiveChatPartner) {
             setTimeout(sendReadSignal, 100); 
             typingStatusEl.style.display = 'none';
             displaySingleMessage(data);
@@ -724,11 +732,12 @@
 
     socket.on('message_delete_broadcast', (data) => {
         const { room, msgId } = data;
-        if (savedMessages[room]) {
-            savedMessages[room] = savedMessages[room].filter(m => m.msgId !== msgId);
+        let chatPartner = (room === myNick) ? data.user : room;
+        if (savedMessages[chatPartner]) {
+            savedMessages[chatPartner] = savedMessages[chatPartner].filter(m => m.msgId !== msgId);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
-        if (room === currentRoom) {
+        if (chatPartner === currentActiveChatPartner) {
             const wrapper = document.getElementById('wrapper-' + msgId);
             if (wrapper) wrapper.remove();
         }
@@ -736,9 +745,10 @@
 
     socket.on('update_message_data', (data) => {
         const { room, msgId, reactions } = data;
-        if (room !== currentRoom) return;
-        if (savedMessages[room]) {
-            const localMsg = savedMessages[room].find(m => m.msgId === msgId);
+        let chatPartner = (room === myNick) ? data.user : room;
+        if (chatPartner !== currentActiveChatPartner) return;
+        if (savedMessages[chatPartner]) {
+            const localMsg = savedMessages[chatPartner].find(m => m.msgId === msgId);
             if (localMsg) localMsg.reactions = reactions;
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
@@ -751,7 +761,6 @@
         chatsList.innerHTML = ''; 
         const t = translations[currentLang];
 
-        // 1. ЗАФІКСОВАНІ НОТАТКИ НАВЕРХУ
         if (myNick.toLowerCase().includes(filterText) || 'нотатки notes'.includes(filterText) || filterText === '') {
             const notesItem = document.createElement('div');
             notesItem.className = 'chat-item' + (currentActiveChatPartner === myNick ? ' active' : '');
@@ -763,7 +772,6 @@
             chatsList.appendChild(notesItem);
         }
         
-        // 2. ІНШІ ДІАЛОГИ
         const filtered = activeChats.filter(user => {
             if (!user || user === myNick) return false;
             return getVisibleName(user).toLowerCase().includes(filterText) || user.toLowerCase().includes(filterText);
@@ -786,17 +794,19 @@
     function openChatWith(user) {
         if (!user) return;
         currentActiveChatPartner = user;
-        currentRoom = [myNick, user].sort().join('_');
+        currentRoom = user === myNick ? myNick + '_notes' : user; 
         
-        socket.emit('join room', user);
         socket.emit('join room', currentRoom);
 
         chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex';
         chatTitleText.innerHTML = `${getAvatarHTML(user)} <span>${getVisibleName(user)}</span>`;
         
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('chat', user);
         if (!document.body.classList.contains('chat-opened')) {
-            const newUrl = window.location.pathname + window.location.search + '&chat=' + encodeURIComponent(user);
-            window.history.pushState({ chatOpened: true, partner: user }, "", newUrl);
+            window.history.pushState({ chatOpened: true, partner: user }, "", currentUrl.pathname + currentUrl.search);
+        } else {
+            window.history.replaceState({ chatOpened: true, partner: user }, "", currentUrl.pathname + currentUrl.search);
         }
         document.body.classList.add('chat-opened');
         
@@ -807,10 +817,9 @@
         setTimeout(() => { if(input) input.focus(); }, 150);
     }
 
-    // ЖОРСТКА ВІДПРАВКА НА РОДНУ ПОДІЮ 'chat message'
     function sendMessage() {
         const text = input.value.trim();
-        if (text && currentRoom) {
+        if (text && currentActiveChatPartner) {
             const generatedId = 'msg-' + Date.now() + Math.floor(Math.random() * 1000);
             
             const msgPacket = {
@@ -824,19 +833,17 @@
                 replyTo: replyTargetMsg ? { msgId: replyTargetMsg.msgId, user: replyTargetMsg.user, text: replyTargetMsg.text } : null
             };
 
-            // Авто-додавання до активних чатів у відправника (якщо писав через пошук)
-            if (currentActiveChatPartner && currentActiveChatPartner !== myNick && !activeChats.includes(currentActiveChatPartner)) {
+            if (currentActiveChatPartner !== myNick && !activeChats.includes(currentActiveChatPartner)) {
                 activeChats.push(currentActiveChatPartner);
                 localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
                 renderChatsList();
             }
 
-            if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
-            savedMessages[currentRoom].push(msgPacket);
+            if (!savedMessages[currentActiveChatPartner]) savedMessages[currentActiveChatPartner] = [];
+            savedMessages[currentActiveChatPartner].push(msgPacket);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
             displaySingleMessage(msgPacket);
             
-            // Стріляємо в сервер рідним емітом
             socket.emit('chat message', msgPacket);
             
             input.value = ''; 
@@ -846,7 +853,7 @@
     }
 
     function sendReadSignal() { 
-        if (currentRoom) {
+        if (currentRoom && currentActiveChatPartner !== myNick) {
             socket.emit('chat message', { room: currentRoom, text: '[READ_SIGNAL]', user: myNick }); 
         }
     }
@@ -855,8 +862,8 @@
 
     function loadMessagesHistory() {
         messagesContainer.innerHTML = '';
-        if (currentRoom && savedMessages && savedMessages[currentRoom]) {
-            const historyArray = savedMessages[currentRoom];
+        if (currentActiveChatPartner && savedMessages && savedMessages[currentActiveChatPartner]) {
+            const historyArray = savedMessages[currentActiveChatPartner];
             if (Array.isArray(historyArray)) historyArray.forEach(displaySingleMessage);
         }
     }
@@ -983,8 +990,8 @@
     }
 
     window.setupReplyMessage = function(msgId) {
-        if(!savedMessages[currentRoom]) return;
-        const msg = savedMessages[currentRoom].find(m => m.msgId === msgId);
+        if(!currentActiveChatPartner || !savedMessages[currentActiveChatPartner]) return;
+        const msg = savedMessages[currentActiveChatPartner].find(m => m.msgId === msgId);
         if(!msg) return;
         replyTargetMsg = msg;
         replyPreviewText.innerHTML = `↩ Відповідь <b>${getVisibleName(msg.user)}</b>:<br><small>${msg.text}</small>`;
@@ -995,8 +1002,8 @@
     window.cancelReply = function() { replyTargetMsg = null; replyPreviewArea.style.display = 'none'; };
 
     window.executeDeleteMessage = function(msgId) {
-        if (savedMessages[currentRoom]) {
-            savedMessages[currentRoom] = savedMessages[currentRoom].filter(m => m.msgId !== msgId);
+        if (currentActiveChatPartner && savedMessages[currentActiveChatPartner]) {
+            savedMessages[currentActiveChatPartner] = savedMessages[currentActiveChatPartner].filter(m => m.msgId !== msgId);
             localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         }
         const wrapper = document.getElementById('wrapper-' + msgId);
@@ -1018,12 +1025,11 @@
     }
 
     window.executeDeleteChat = function(partnerNick) {
-        const generatedRoom = [myNick, partnerNick].sort().join('_');
-        if (savedMessages[generatedRoom]) delete savedMessages[generatedRoom];
+        if (savedMessages[partnerNick]) delete savedMessages[partnerNick];
         localStorage.setItem('burmalda_msg_history', JSON.stringify(savedMessages));
         activeChats = activeChats.filter(c => c !== partnerNick);
         localStorage.setItem('burmalda_chat_list', JSON.stringify(activeChats));
-        if (generatedRoom === currentRoom) {
+        if (partnerNick === currentActiveChatPartner) {
             currentActiveChatPartner = null; currentRoom = null;
             chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
         }
