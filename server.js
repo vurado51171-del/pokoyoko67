@@ -27,6 +27,19 @@ io.on('connection', (socket) => {
         socket.username = username;
         if (!onlineUsers.includes(username)) onlineUsers.push(username);
         io.emit('online users', onlineUsers);
+
+        // ИСПРАВЛЕНИЕ: Ищем все комнаты, где есть сообщения для этого пользователя, чтобы вернуть диалоги
+        let userDialogs = [];
+        for (let roomName in messagesDatabase) {
+            if (roomName.split('_').includes(username)) {
+                const partner = roomName.replace(username, '').replace('_', '');
+                if (partner && !userDialogs.includes(partner)) {
+                    userDialogs.push(partner);
+                }
+            }
+        }
+        // Отправляем пользователю список его активных диалогов, которые помнит сервер
+        socket.emit('server dialogs list', userDialogs);
     });
 
     // Когда пользователь заходит в чат с кем-то
@@ -63,7 +76,7 @@ io.on('connection', (socket) => {
             if (!messagesDatabase[room].some(m => m.msgId === msgId)) {
                 messagesDatabase[room].push(packetToSend);
             }
-            // Показываем чат у собеседника
+            // Показываем чат у собеседника на лету, если он сейчас в сети
             socket.to(room).emit('force join room', room);
         }
 
