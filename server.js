@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-// Збільшуємо ліміт для передачі фотографій
+// Ліміт буфера залишається великим, щоб відео-кружочки та голосові передавались без проблем
 const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
 
 const PORT = process.env.PORT || 3000;
@@ -14,7 +14,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 let userProfiles = {};
 let messagesDatabase = {};
-let activeConnections = {}; 
+let activeConnections = {};
 
 function loadDatabase() {
     try {
@@ -116,8 +116,8 @@ io.on('connection', (socket) => {
             status: data.status || 'sent', edited: false
         };
 
-        // Сервер не пише картинки в БД, тільки текст
-        if (packetToSend.type !== 'image') {
+        // ВАЖЛИВО: Сервер не пише важкі медіафайли (картинки, голосові, кружочки) в БД, тільки текст
+        if (packetToSend.type !== 'image' && packetToSend.type !== 'audio' && packetToSend.type !== 'video') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
             if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
                 messagesDatabase[room].push(packetToSend);
@@ -170,6 +170,7 @@ io.on('connection', (socket) => {
                 // Пряма відправка, якщо співрозмовник онлайн, але вийшов в меню
                 const users = room.replace('room_', '').split('_');
                 const receiver = users.find(u => u !== socket.username);
+            
                 if (receiver) {
                     for (let [sId, uname] of Object.entries(activeConnections)) {
                         if (uname === receiver) io.to(sId).emit('edit_message', { room, msgId: data.msgId, newText: data.newText });
