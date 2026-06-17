@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const fs = require('fs'); // Модуль для работы с файлами
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,9 +13,8 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 let userProfiles = {};
 let messagesDatabase = {}; 
-let activeConnections = {}; // Хранилище пар socket.id -> username для точного онлайна
+let activeConnections = {}; 
 
-// Функция для безопасной загрузки базы данных из файла при старте сервера
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -23,29 +22,24 @@ function loadDatabase() {
             const parsed = JSON.parse(rawData);
             messagesDatabase = parsed.messagesDatabase || {};
             userProfiles = parsed.userProfiles || {};
-            console.log('--- База данных BurmaldaGram успешно загружена из файла ---');
+            console.log('--- База данных BurmaldaGram успешно загружена ---');
         } else {
-            console.log('--- Файл базы данных не найден. Создана новая чистая БД ---');
+            console.log('--- Создана новая чистая БД ---');
         }
     } catch (e) {
-        console.error('Ошибка при чтении базы данных с диска:', e);
+        console.error('Ошибка при чтении базы данных:', e);
     }
 }
 
-// Функция для сохранения сообщений и профилей на диск
 function saveDatabase() {
     try {
-        const dataToSave = {
-            messagesDatabase,
-            userProfiles
-        };
+        const dataToSave = { messagesDatabase, userProfiles };
         fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
     } catch (e) {
-        console.error('Ошибка при записи базы данных на диск:', e);
+        console.error('Ошибка при записи базы данных:', e);
     }
 }
 
-// Загружаем данные перед запуском сокетов
 loadDatabase();
 
 app.use(express.static(__dirname));
@@ -53,137 +47,104 @@ app.use(express.static(__dirname));
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
 app.get('/chat', (req, res) => { res.sendFile(path.join(__dirname, 'chat.html')); });
 
-// Функция для генерации чистого списка уникальных юзеров в сети
 function getOnlineUsersList() {
     return Array.from(new Set(Object.values(activeConnections)));
 }
 
 io.on('connection', (socket) => {
-    console.log(`Новое подключение к BurmaldaGram (ID сокета: ${socket.id})`);
+    console.log(`Новое подключение: ${socket.id}`);
 
-    socket.on('store user', (username) => {
-        if (!username) return;
-        socket.username = username;
-        
-        // Привязываем username к конкретному ID подключения
-        activeConnections[socket.id] = username;
-        
-        // Отправляем точный список онлайн-пользователей
-        io.emit('online users', getOnlineUsersList());
-
-        // Собираем список диалогов пользователя из сохраненной базы данных
-        let userDialogs = [];
-        for (let roomName in messagesDatabase) {
-            if (roomName.split('_').includes(username)) {
-                const partner = roomName.replace(username, '').replace('_', '');
-                if (partner && !userDialogs.includes(partner)) {
-                    userDialogs.push(partner);
-                }
-            }
-        }
-        socket.emit('server dialogs list', userDialogs);
+    // Авторизация онлайна
+    socket.on('online_ping', (data) => {
+        if (!data || !data.username) return;
+        socket.username = data.username;
+        activeConnections[socket.id] = data.username;
+        io.emit('online_list', getOnlineUsersList());
     });
 
-    socket.on('join room', (partnerName) => {
-        if (!socket.username || !partnerName) return;
-        const roomName = [socket.username, partnerName].sort().join('_');
-        socket.join(roomName);
-
-        if (messagesDatabase[roomName]) {
-            socket.emit('server history', messagesDatabase[roomName]);
-        } else {
-            socket.emit('server history', []);
-        }
+    // Вход в комнату
+    socket.on('join_room', (data) => {
+        if (!data || !data.room) return;
+        socket.join(data.room);
     });
 
-    socket.on('private chat message', (data) => {
-        if (!data) return;
+    // Обработка сообщений
+    socket.on('chat_message', (data) => {
+        if (!data || !data.room) return;
         const room = data.room;
-        const text = data.text;
-        const user = data.user || socket.username; 
-        const msgId = data.msgId || ('msg-' + Date.now());
-        const isRead = data.isRead || false;
-
-        if (!room || !text) return;
 
         const packetToSend = { 
-            room, 
-            text, 
-            user, 
-            msgId, 
-            isRead, 
-            time: data.time || Date.now(),
+            id: data.id,
+            room: data.room, 
+            from: data.from, 
+            text: data.text, 
+            type: data.type || 'text', 
+            replyTo: data.replyTo || null,
+            timestamp: data.timestamp || Date.now(),
             reactions: data.reactions || {}
         };
 
-        if (text !== '[TYPING_SIGNAL]' && text !== '[READ_SIGNAL]') {
+        // ТРЕБОВАНИЕ: Если это картинка (image), сервер её в базу данных НЕ ПИШЕТ
+        if (packetToSend.type !== 'image') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
-            
-            if (!messagesDatabase[room].some(m => m.msgId === msgId)) {
+            if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
                 messagesDatabase[room].push(packetToSend);
-                // Сохраняем изменения на жесткий диск сервера
                 saveDatabase();
             }
-            socket.to(room).emit('force join room', room);
         }
 
-        io.to(room).emit('chat message', packetToSend);
+        // Пересылаем сообщение второму человеку в реальном времени
+        socket.to(room).emit('chat_message', packetToSend);
     });
 
+    // Реакции (работают на лету и для текста, и для несохраняемых медиа)
     socket.on('message_reaction', (data) => {
         if (!data || !data.room || !data.msgId) return;
-        const { room, msgId, reaction, username } = data;
+        const { room, msgId, reactions } = data;
 
         if (messagesDatabase[room]) {
-            const msg = messagesDatabase[room].find(m => m.msgId === msgId);
+            const msg = messagesDatabase[room].find(m => m.id === msgId);
             if (msg) {
-                if (!msg.reactions) msg.reactions = {};
-
-                // Удаляем прошлую реакцию юзера
-                Object.keys(msg.reactions).forEach(emoji => {
-                    if (Array.isArray(msg.reactions[emoji])) {
-                        msg.reactions[emoji] = msg.reactions[emoji].filter(u => u !== username);
-                        if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
-                    }
-                });
-
-                // Если пришел новый эмодзи — ставим его
-                if (reaction) {
-                    if (!msg.reactions[reaction]) msg.reactions[reaction] = [];
-                    msg.reactions[reaction].push(username);
-                }
-
-                // Сохраняем обновленные реакции в файл
+                msg.reactions = reactions || {};
                 saveDatabase();
-
-                // Обновляем данные у всех клиентов в комнате
-                io.to(room).emit('update_message_data', { room, msgId, reactions: msg.reactions });
             }
         }
+        socket.to(room).emit('message_reaction', data);
     });
 
-    socket.on('request profiles', () => { 
-        socket.emit('all profiles data', userProfiles); 
+    // Удаление сообщений
+    socket.on('delete_message', (data) => {
+        if (!data || !data.room) return;
+        socket.to(data.room).emit('delete_message', data);
     });
 
-    socket.on('update profile', (packet) => {
-        if (packet && packet.user && packet.data) {
-            userProfiles[packet.user] = packet.data;
-            // Сохраняем аватарки и био на диск, чтобы не слетали
+    // Закрепление сообщений
+    socket.on('pin_message', (data) => {
+        if (!data || !data.room) return;
+        socket.to(data.room).emit('pin_message', data);
+    });
+
+    // Индикатор набора текста
+    socket.on('typing', (data) => {
+        if (!data || !data.room) return;
+        socket.to(data.room).emit('typing_status', data);
+    });
+
+    // Обновление профиля
+    socket.on('update_profile', (packet) => {
+        if (packet && packet.username && packet.data) {
+            userProfiles[packet.username] = packet.data;
             saveDatabase();
-            socket.broadcast.emit('broadcast profile update', packet);
+            socket.broadcast.emit('profile_broadcast', packet);
         }
     });
 
     socket.on('disconnect', () => {
-        console.log(`Пользователь отключился (ID сокета: ${socket.id})`);
-        // Удаляем конкретное соединение из списка активных
         if (socket.id in activeConnections) {
             delete activeConnections[socket.id];
         }
-        // Рассылаем обновленный и чистый онлайн-список оставшимся
-        io.emit('online users', getOnlineUsersList());
+        io.emit('online_list', getOnlineUsersList());
     });
 });
 
-server.listen(PORT, () => { console.log(`BurmaldaGram запущен на порту ${PORT}`); });
+server.listen(PORT, () => { console.log(`СерверBurmaldaGram на порту ${PORT}`); });
