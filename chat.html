@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BurmaldaGram Premium</title>
     <style>
-        /* === ТЕМИ ОФОРМЛЕННЯ (CSS Variables з 11) === */
+        /* === ТЕМИ ОФОРМЛЕННЯ (CSS Variables) === */
         :root {
             --bg-main: #0c0c0e; --bg-panel: #131316; --bg-header: #1a1a1e; --bg-input: #1c1c21;
             --border-color: #222227; --text-main: #f5f5f7; --text-muted: #aaa;
@@ -98,9 +98,14 @@
         #chat-title-text:hover { color: var(--accent); }
         .typing-indicator { font-size: 13px; color: #4cd964; font-style: italic; display: none; }
         
-        .header-actions { display: flex; gap: 10px; }
-        .call-btn { background: rgba(76, 217, 100, 0.15); color: #4cd964; border: 1px solid #4cd964; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .call-btn:hover { background: #4cd964; color: #000; transform: scale(1.05); }
+        .header-actions { display: flex; gap: 10px; align-items: center; position: relative; }
+        .call-btn { background: rgba(128, 128, 128, 0.1); color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .call-btn:hover { background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
+
+        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 170px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
+        #chat-options-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer; }
+        #chat-options-menu button:hover { background: var(--bg-header); }
+        #chat-options-menu button.danger { color: var(--danger); }
 
         .back-btn { display: none; background: rgba(128,128,128,0.2); border: none; color: var(--text-main); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
         .back-btn:hover { background: rgba(128,128,128,0.3); }
@@ -122,15 +127,18 @@
         #messages li { padding: 10px 14px; background: var(--msg-their-bg); border-radius: var(--radius-bubble); word-break: break-word; user-select: none; color: var(--msg-their-text); position: relative; cursor: pointer; transition: background 0.15s; width: 100%; box-shadow: var(--bubble-shadow); display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(128,128,128,0.05); }
         #messages li.my-msg { background: var(--msg-my-bg); color: var(--msg-my-text); border-bottom-right-radius: 4px; }
         
-        #messages li.msg-sticker { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
+        /* Прозорі бабли для медіа */
+        #messages li.msg-transparent { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; color: var(--text-main); }
+        #messages li.msg-transparent .msg-meta-line { position: absolute; bottom: 5px; right: 8px; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 12px; color: white; width: auto; z-index: 2; font-size: 11px; }
+        #messages li.msg-transparent .chat-media-wrapper { background: transparent; border: none; margin: 0; }
+        #messages li.msg-transparent .audio-msg { background: var(--bg-panel); border-radius: 20px; border: 1px solid var(--border-color); }
+        
         .sticker-img { width: 140px; height: 140px; object-fit: contain; display: block; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); }
         
         .circle-video { width: 180px; height: 180px; display: block; border: 3px solid var(--accent); background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .audio-msg { border-radius: 20px; outline: none; height: 40px; }
 
         .msg-meta-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; align-self: flex-end; margin-top: 2px; font-size: 10px; width: 100%; opacity: 0.8; }
-        .msg-sticker .msg-meta-line { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 10px; width: auto; position: absolute; bottom: 4px; right: 4px; color: white; }
-        
         .msg-time { color: inherit; opacity: 0.6; }
         .msg-status { color: inherit; opacity: 0.6; font-weight: bold; font-size: 11px; transition: color 0.3s; }
         .msg-status.read { color: #4cd964; opacity: 1; }
@@ -263,7 +271,14 @@
             </div>
             <div class="header-actions">
                 <div id="chat-typing-status" class="typing-indicator"></div>
-                <button class="call-btn" id="btn-call" onclick="startCall()">🎥</button>
+                <button class="call-btn" id="btn-call-video" onclick="startCall(true)" title="Відеодзвінок">🎥</button>
+                <button class="call-btn" id="btn-call-audio" onclick="startCall(false)" title="Аудіодзвінок">📞</button>
+                <button class="search-trigger-btn" onclick="toggleChatMenu(event)" style="margin-left: 5px;" title="Опції чату">⋮</button>
+                <div id="chat-options-menu">
+                    <button id="btn-mute-user" onclick="toggleChatPref(currentActiveChatPartner, 'muted')">🔕 Вимкнути звук</button>
+                    <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати</button>
+                    <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button>
+                </div>
             </div>
         </div>
 
@@ -353,7 +368,7 @@
         <div class="modal-avatar-placeholder" id="call-avatar" style="margin: 0 auto 15px auto; width: 80px; height: 80px; font-size: 30px; background: var(--accent);">?</div>
         <h3 id="call-status-text" style="color: var(--text-main); margin-bottom: 20px;">Вхідний дзвінок...</h3>
         
-        <div class="video-chat-container">
+        <div class="video-chat-container" id="call-video-container" style="display: none;">
             <video id="remote-video" autoplay playsinline></video>
             <video id="local-video" autoplay playsinline muted></video>
         </div>
@@ -377,11 +392,32 @@
         return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // --- ЗВУКИ ---
+    // --- ЗВУКИ ТА РИНГТОНИ ---
     const audioSend = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
     const audioReceiveInChat = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
     const audioReceiveOutChat = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audioSend.volume = 0.5; audioReceiveInChat.volume = 0.6; audioReceiveOutChat.volume = 0.8;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration, vol) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.value = freq;
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        osc.stop(audioCtx.currentTime + duration);
+    }
+    
+    let ringInterval;
+    function startRingtone() {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        ringInterval = setInterval(() => {
+            playTone(480, 'sine', 1.5, 0.1); setTimeout(() => playTone(440, 'sine', 1.5, 0.1), 1600);
+        }, 3500);
+        playTone(480, 'sine', 1.5, 0.1); setTimeout(() => playTone(440, 'sine', 1.5, 0.1), 1600);
+    }
+    function stopRingtone() { clearInterval(ringInterval); }
 
     const translations = {
         uk: { searchPlaceholder: "Введіть ім'я...", dialogsTitle: "Ваші діалоги", placeholderText: "BurmaldaGram Premium<br><span style='font-size: 13px; color: var(--text-muted);'>Оберіть чат 🔍</span>", backBtn: "⬅ Назад", inputPlaceholder: "Напишіть повідомлення...", btnSend: "Надіслати", settingsTitle: "⚙️ Налаштування", profileTitle: "👤 Профіль", profile: "Юзернейм:", profileName: "Нік:", status: "Статус:", online: "в мережі", offline: "офлайн", loginTime: "Вхід:", logoutBtn: "Вийти 🚪", emptyList: "Список порожній", selfChatError: "Не можна створювати чат із собою!", ctxReply: "Відповісти ↩", ctxEdit: "Редагувати ✏️", userNotFound: "Не знайдено!", ctxPin: "Закріпити повідомлення 📌", ctxUnpin: "Відкріпити повідомлення 🔓", ctxDeleteMy: "Видалити (своє) 🗑", chatStatusOnline: "● онлайн", chatStatusOffline: "офлайн", typingText: "пише...", uploadBtn: "📁 Завантажити", bioPlaceholder: "Про себе:", bioEmpty: "Пусто", replyPrefix: "Відповідь на: ", pinnedLabel: "Закріплено", blockedMeText: "Цей користувач вас заблокував.", themeTitle: "Тема оформлення:" },
@@ -716,6 +752,12 @@
         }); 
     }
 
+    function toggleChatMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('chat-options-menu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
     function toggleChatPref(user, prefKey) {
         if (!chatSettings[user]) chatSettings[user] = { pinned: false, muted: false, blocked: false };
         chatSettings[user][prefKey] = !chatSettings[user][prefKey];
@@ -728,7 +770,19 @@
             input.disabled = false;
             input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false;
         }
+        updateChatHeaderUI();
         renderChatsList();
+        document.getElementById('chat-options-menu').style.display = 'none';
+    }
+
+    function clearChatHistory() {
+        if(!confirm("Очистити історію цього чату?")) return;
+        if(savedMessages[currentRoom]) {
+            delete savedMessages[currentRoom];
+            safeSaveHistory();
+            loadMessagesHistory();
+        }
+        document.getElementById('chat-options-menu').style.display = 'none';
     }
 
     function deleteChatLocally(username) { 
@@ -738,6 +792,13 @@
             currentActiveChatPartner = null;
             currentRoom = null; chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
         } renderChatsList();
+    }
+
+    function updateChatHeaderUI() {
+        if (!currentActiveChatPartner) return;
+        const prefs = chatSettings[currentActiveChatPartner] || {};
+        document.getElementById('btn-mute-user').textContent = prefs.muted ? "🔔 Увімкнути звук" : "🔕 Вимкнути звук";
+        document.getElementById('btn-block-user').textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
     }
 
     function openChatWith(username) { 
@@ -757,6 +818,7 @@
         if (prefs.blocked) { input.disabled = true; input.placeholder = "Користувач заблокований"; button.disabled = true; } 
         else { input.disabled = false; input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false; }
 
+        updateChatHeaderUI();
         cancelAction(); currentPinIndex = 0; renderPinnedBar(); loadMessagesHistory(); renderChatsList();
     }
 
@@ -912,7 +974,10 @@
         const li = document.createElement('li');
         if (msg.from === myNick) li.className = 'my-msg'; 
 
-        if (msg.type === 'sticker') { li.classList.add('msg-sticker'); }
+        // Робимо бабл прозорим для медіафайлів
+        if (['image', 'sticker', 'audio', 'video_circle'].includes(msg.type)) {
+            li.classList.add('msg-transparent');
+        }
 
         if (msg.replyTo) {
             const originalMsg = savedMessages[currentRoom]?.find(m => m.id === msg.replyTo);
@@ -1086,137 +1151,160 @@
 
     document.onclick = (e) => { 
         if(!e.target.closest('#btn-sticker') && !e.target.closest('#sticker-menu')) stickerMenu.classList.remove('active');
+        if(!e.target.closest('.search-trigger-btn') && !e.target.closest('#chat-options-menu')) {
+            document.getElementById('chat-options-menu').style.display = 'none';
+        }
         contextMenu.style.display = 'none'; 
         document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none'); 
     };
 
-    // --- WEBRTC ДЗВІНКИ ---
+    // --- WEBRTC ДЗВІНКИ (Синхронізовано з сервером через webrtc_signal) ---
     let localStream; let peerConnection;
-    let isMuted = false;
-    let isCameraOff = false;
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-    async function startCall() {
-        if (!currentRoom) return;
+    async function startCall(isVideo) {
+        if (!currentActiveChatPartner || !onlineUsers.includes(currentActiveChatPartner)) {
+            alert("Користувач не в мережі!"); return;
+        }
         document.getElementById('call-modal').classList.add('active');
-        document.getElementById('call-status-text').textContent = 'Дзвонимо...';
+        document.getElementById('call-status-text').textContent = `Дзвінок до ${getVisibleName(currentActiveChatPartner)}...`;
+        
         document.getElementById('btn-accept-call').style.display = 'none';
         document.getElementById('toggle-mic-btn').style.display = 'inline-block';
-        document.getElementById('toggle-cam-btn').style.display = 'inline-block';
+        document.getElementById('toggle-cam-btn').style.display = isVideo ? 'inline-block' : 'none';
+        document.getElementById('call-video-container').style.display = isVideo ? 'flex' : 'none';
 
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo ? {facingMode: "user"} : false });
             document.getElementById('local-video').srcObject = localStream;
             
-            isMuted = false;
-            isCameraOff = false;
-            updateMediaControlsUI();
-
-            socket.emit('call_request', { room: currentRoom, from: myNick, to: currentActiveChatPartner });
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            
+            peerConnection.ontrack = (event) => { 
+                document.getElementById('remote-video').srcObject = event.streams[0]; 
+                if(isVideo) document.getElementById('call-video-container').style.display = 'flex';
+            };
+            peerConnection.onicecandidate = (event) => { 
+                if (event.candidate) socket.emit('webrtc_signal', { target: currentActiveChatPartner, type: 'ice-candidate', candidate: event.candidate }); 
+            };
+            
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            
+            socket.emit('webrtc_signal', { target: currentActiveChatPartner, type: 'offer', offer: offer, from: myNick, isVideo: isVideo });
         } catch(e) {
             alert('Помилка доступу до камери або мікрофона');
-            endCall();
+            endCall(true);
         }
     }
 
     function toggleCallMic() {
         if (localStream) {
-            localStream.getAudioTracks().forEach(track => { track.enabled = !track.enabled; isMuted = !track.enabled; });
-            updateMediaControlsUI();
+            const track = localStream.getAudioTracks()[0];
+            if(track) {
+                track.enabled = !track.enabled;
+                const micBtn = document.getElementById('toggle-mic-btn');
+                if(!track.enabled) { micBtn.innerText = "🔇 Мікр: Вимк"; micBtn.classList.add('active-control'); } 
+                else { micBtn.innerText = "🎤 Мікр: Увімк"; micBtn.classList.remove('active-control'); }
+            }
         }
     }
 
     function toggleCallCam() {
         if (localStream) {
-            localStream.getVideoTracks().forEach(track => { track.enabled = !track.enabled; isCameraOff = !track.enabled; });
-            updateMediaControlsUI();
+            const track = localStream.getVideoTracks()[0];
+            if(track) {
+                track.enabled = !track.enabled;
+                const camBtn = document.getElementById('toggle-cam-btn');
+                if(!track.enabled) { camBtn.innerText = "📷 Камера: Вимк"; camBtn.classList.add('active-control'); } 
+                else { camBtn.innerText = "📷 Камера: Увімк"; camBtn.classList.remove('active-control'); }
+            }
         }
     }
 
-    function updateMediaControlsUI() {
-        const micBtn = document.getElementById('toggle-mic-btn');
-        const camBtn = document.getElementById('toggle-cam-btn');
-        if (isMuted) { micBtn.innerText = "🔇 Мікр: Вимк"; micBtn.classList.add('active-control'); } 
-        else { micBtn.innerText = "🎤 Мікр: Увімк"; micBtn.classList.remove('active-control'); }
+    socket.on('webrtc_signal', async (data) => {
+        if (data.target !== myNick) return;
         
-        if (isCameraOff) { camBtn.innerText = "📷 Камера: Вимк"; camBtn.classList.add('active-control'); } 
-        else { camBtn.innerText = "📷 Камера: Увімк"; camBtn.classList.remove('active-control'); }
-    }
+        const prefs = chatSettings[data.from] || {};
+        if (prefs.blocked) return;
 
-    socket.on('call_request', async (data) => {
-        if (data.to === myNick) {
+        if (data.type === 'offer') {
             document.getElementById('call-modal').classList.add('active');
-            document.getElementById('call-status-text').textContent = `${data.from} дзвонить...`;
+            document.getElementById('call-status-text').textContent = `Вхідний ${data.isVideo ? 'відеодзвінок' : 'дзвінок'} від ${getVisibleName(data.from)}`;
             
             document.getElementById('btn-accept-call').style.display = 'inline-block';
             document.getElementById('toggle-mic-btn').style.display = 'none';
             document.getElementById('toggle-cam-btn').style.display = 'none';
             
-            document.getElementById('btn-accept-call').onclick = () => acceptCall(data.room, data.from);
+            window.incomingCallData = data;
+            startRingtone();
+            
+            document.getElementById('btn-accept-call').onclick = acceptCall;
+        } else if (data.type === 'answer' && peerConnection) {
+            document.getElementById('call-status-text').textContent = "З'єднання встановлено";
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } else if (data.type === 'ice-candidate' && peerConnection) {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else if (data.type === 'end') {
+            stopRingtone();
+            endCall(false);
         }
     });
 
-    async function acceptCall(room, caller) {
+    async function acceptCall() {
+        stopRingtone();
+        const data = window.incomingCallData;
+        
         document.getElementById('btn-accept-call').style.display = 'none';
         document.getElementById('toggle-mic-btn').style.display = 'inline-block';
-        document.getElementById('toggle-cam-btn').style.display = 'inline-block';
+        document.getElementById('toggle-cam-btn').style.display = data.isVideo ? 'inline-block' : 'none';
+        document.getElementById('call-video-container').style.display = data.isVideo ? 'flex' : 'none';
         document.getElementById('call-status-text').textContent = 'З\'єднання...';
 
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: data.isVideo ? {facingMode: "user"} : false });
             document.getElementById('local-video').srcObject = localStream;
-            
-            isMuted = false; isCameraOff = false;
-            updateMediaControlsUI();
 
             peerConnection = new RTCPeerConnection(rtcConfig);
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-            peerConnection.ontrack = (event) => { document.getElementById('remote-video').srcObject = event.streams[0]; };
-            peerConnection.onicecandidate = (event) => { if (event.candidate) socket.emit('call_ice_candidate', { room, candidate: event.candidate }); };
             
-            socket.emit('call_accept', { room, from: myNick });
-        } catch(e) { alert('Помилка доступу до камери/мікрофона'); endCall(); }
+            peerConnection.ontrack = (event) => { 
+                document.getElementById('remote-video').srcObject = event.streams[0]; 
+                if(data.isVideo) document.getElementById('call-video-container').style.display = 'flex';
+            };
+            peerConnection.onicecandidate = (event) => { 
+                if (event.candidate) socket.emit('webrtc_signal', { target: data.from, type: 'ice-candidate', candidate: event.candidate }); 
+            };
+            
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            
+            socket.emit('webrtc_signal', { target: data.from, type: 'answer', answer: answer });
+        } catch(e) { 
+            alert('Помилка доступу до камери/мікрофона'); 
+            socket.emit('webrtc_signal', { target: data.from, type: 'end' });
+            endCall(false); 
+        }
     }
 
-    socket.on('call_accept', async (data) => {
-        document.getElementById('call-status-text').textContent = 'Розмова';
-        peerConnection = new RTCPeerConnection(rtcConfig);
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-        peerConnection.ontrack = (event) => { document.getElementById('remote-video').srcObject = event.streams[0]; };
-        peerConnection.onicecandidate = (event) => { if (event.candidate) socket.emit('call_ice_candidate', { room: data.room, candidate: event.candidate }); };
-        
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-        socket.emit('call_offer', { room: data.room, offer });
-    });
-
-    socket.on('call_offer', async (data) => {
-        if (!peerConnection) return;
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        socket.emit('call_answer', { room: data.room, answer });
-        document.getElementById('call-status-text').textContent = 'Розмова';
-    });
-
-    socket.on('call_answer', async (data) => {
-        if (peerConnection) await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-    });
-
-    socket.on('call_ice_candidate', async (data) => {
-        if (peerConnection) await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-    });
-
-    socket.on('call_end', () => { endCall(false); });
-
-    function endCall(emit = true) {
+    function endCall(notifyPartner = true) {
+        stopRingtone();
         if (localStream) localStream.getTracks().forEach(track => track.stop());
         if (peerConnection) peerConnection.close();
         peerConnection = null; localStream = null;
+        
         document.getElementById('local-video').srcObject = null;
         document.getElementById('remote-video').srcObject = null;
         document.getElementById('call-modal').classList.remove('active');
-        if (emit && currentRoom) socket.emit('call_end', { room: currentRoom });
+        document.getElementById('call-video-container').style.display = 'none';
+        
+        if (notifyPartner) {
+            const target = (window.incomingCallData && window.incomingCallData.from) || currentActiveChatPartner;
+            if (target) socket.emit('webrtc_signal', { target: target, type: 'end' });
+        }
+        window.incomingCallData = null;
     }
 
     // --- SOCKET EVENTS ---
