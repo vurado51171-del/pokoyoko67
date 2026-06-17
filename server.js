@@ -22,12 +22,12 @@ function loadDatabase() {
             const parsed = JSON.parse(rawData);
             messagesDatabase = parsed.messagesDatabase || {};
             userProfiles = parsed.userProfiles || {};
-            console.log('--- База данных BurmaldaGram успешно загружена ---');
+            console.log('--- База даних BurmaldaGram успішно завантажена ---');
         } else {
-            console.log('--- Создана новая чистая БД ---');
+            console.log('--- Створена нова чиста БД ---');
         }
     } catch (e) {
-        console.error('Ошибка при чтении базы данных:', e);
+        console.error('Помилка при читанні бази даних:', e);
     }
 }
 
@@ -36,7 +36,7 @@ function saveDatabase() {
         const dataToSave = { messagesDatabase, userProfiles };
         fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
     } catch (e) {
-        console.error('Ошибка при записи базы данных:', e);
+        console.error('Помилка при записі бази даних:', e);
     }
 }
 
@@ -52,9 +52,9 @@ function getOnlineUsersList() {
 }
 
 io.on('connection', (socket) => {
-    console.log(`Новое подключение: ${socket.id}`);
+    console.log(`Нове підключення: ${socket.id}`);
 
-    // Авторизация онлайна
+    // Авторизація онлайну
     socket.on('online_ping', (data) => {
         if (!data || !data.username) return;
         socket.username = data.username;
@@ -62,13 +62,13 @@ io.on('connection', (socket) => {
         io.emit('online_list', getOnlineUsersList());
     });
 
-    // Вход в комнату
+    // Вхід у кімнату
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
     });
 
-    // Обработка сообщений
+    // Обробка повідомлень (ВИПРАВЛЕНО: Пряма доставка незнайомцям)
     socket.on('chat_message', (data) => {
         if (!data || !data.room) return;
         const room = data.room;
@@ -77,14 +77,16 @@ io.on('connection', (socket) => {
             id: data.id,
             room: data.room, 
             from: data.from, 
+            to: data.to, 
             text: data.text, 
             type: data.type || 'text', 
             replyTo: data.replyTo || null,
             timestamp: data.timestamp || Date.now(),
-            reactions: data.reactions || {}
+            reactions: data.reactions || {},
+            status: data.status || 'sent'
         };
 
-        // ТРЕБОВАНИЕ: Если это картинка (image), сервер её в базу данных НЕ ПИШЕТ
+        // Сервер не пише картинки в БД
         if (packetToSend.type !== 'image') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
             if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
@@ -93,11 +95,49 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Пересылаем сообщение второму человеку в реальном времени
+        // Пересилаємо повідомлення тим, хто в кімнаті
         socket.to(room).emit('chat_message', packetToSend);
+
+        // ПРЯМА ВІДПРАВКА: Якщо отримувач онлайн, але ще не додав нас у друзі (не зайшов у кімнату)
+        if (data.to) {
+            for (let [sId, uname] of Object.entries(activeConnections)) {
+                if (uname === data.to) {
+                    io.to(sId).emit('chat_message', packetToSend);
+                }
+            }
+        }
     });
 
-    // Реакции (работают на лету и для текста, и для несохраняемых медиа)
+    // Обробка прочитання повідомлень (ВИПРАВЛЕНО: Система галочок)
+    socket.on('mark_read', (data) => {
+        if (!data || !data.room || !data.reader) return;
+        const { room, reader } = data;
+        
+        let updated = false;
+        if (messagesDatabase[room]) {
+            messagesDatabase[room].forEach(msg => {
+                if (msg.from !== reader && msg.status !== 'read') {
+                    msg.status = 'read';
+                    updated = true;
+                }
+            });
+            if (updated) saveDatabase();
+        }
+
+        // Відправляємо подію "прочитано" всім, хто відкрив чат
+        socket.to(room).emit('messages_read', data);
+
+        // Відправляємо подію "прочитано" відправнику напряму, якщо він сидить у меню
+        const users = room.replace('room_', '').split('_');
+        const senderNick = users[0] === reader ? users[1] : users[0];
+        for (let [sId, uname] of Object.entries(activeConnections)) {
+            if (uname === senderNick) {
+                io.to(sId).emit('messages_read', data);
+            }
+        }
+    });
+
+    // Реакції
     socket.on('message_reaction', (data) => {
         if (!data || !data.room || !data.msgId) return;
         const { room, msgId, reactions } = data;
@@ -112,25 +152,25 @@ io.on('connection', (socket) => {
         socket.to(room).emit('message_reaction', data);
     });
 
-    // Удаление сообщений
+    // Видалення
     socket.on('delete_message', (data) => {
         if (!data || !data.room) return;
         socket.to(data.room).emit('delete_message', data);
     });
 
-    // Закрепление сообщений
+    // Закріплення
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         socket.to(data.room).emit('pin_message', data);
     });
 
-    // Индикатор набора текста
+    // Індикатор набору тексту
     socket.on('typing', (data) => {
         if (!data || !data.room) return;
         socket.to(data.room).emit('typing_status', data);
     });
 
-    // Обновление профиля
+    // Оновлення профілю
     socket.on('update_profile', (packet) => {
         if (packet && packet.username && packet.data) {
             userProfiles[packet.username] = packet.data;
@@ -147,4 +187,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => { console.log(`СерверBurmaldaGram на порту ${PORT}`); });
+server.listen(PORT, () => { console.log(`Сервер BurmaldaGram на порту ${PORT}`); });
