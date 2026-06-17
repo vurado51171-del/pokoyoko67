@@ -6,13 +6,14 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// Збільшуємо ліміт для передачі фотографій
+const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
 let userProfiles = {};
-let messagesDatabase = {}; 
+let messagesDatabase = {};
 let activeConnections = {}; 
 
 function loadDatabase() {
@@ -54,39 +55,68 @@ function getOnlineUsersList() {
 io.on('connection', (socket) => {
     console.log(`Нове підключення: ${socket.id}`);
 
-    // Авторизація онлайну
+    // --- Авторизація та синхронізація профілю ---
     socket.on('online_ping', (data) => {
         if (!data || !data.username) return;
         socket.username = data.username;
         activeConnections[socket.id] = data.username;
+        
+        // Створюємо профіль, якщо його ще немає
+        if (!userProfiles[data.username]) {
+            userProfiles[data.username] = { chatList: [], displayName: data.username, bio: '', avatar: '' };
+            saveDatabase();
+        }
+
         io.emit('online_list', getOnlineUsersList());
+        
+        // Відправляємо користувачу його список чатів із бази даних сервера
+        socket.emit('restore_chats', userProfiles[data.username].chatList || []);
     });
 
-    // Вхід у кімнату
+    // --- Розумний пошук (перевірка існування акаунта) ---
+    socket.on('check_user_exists', (data) => {
+        const target = data.username;
+        // Користувач існує, якщо він є в БД або зараз онлайн
+        const exists = !!userProfiles[target] || Object.values(activeConnections).includes(target);
+        socket.emit('user_exists_result', { exists, username: target });
+        
+        if (exists && socket.username) {
+            // Зберігаємо чат в БД сервера
+            if (!userProfiles[socket.username].chatList) userProfiles[socket.username].chatList = [];
+            if (!userProfiles[socket.username].chatList.includes(target)) {
+                userProfiles[socket.username].chatList.push(target);
+                saveDatabase();
+            }
+        }
+    });
+
+    // --- Синхронізація видалення чату ---
+    socket.on('sync_chat_list', (data) => {
+        if (socket.username && data.chatList) {
+            if (!userProfiles[socket.username]) userProfiles[socket.username] = {};
+            userProfiles[socket.username].chatList = data.chatList;
+            saveDatabase();
+        }
+    });
+
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
     });
 
-    // Обробка повідомлень (ВИПРАВЛЕНО: Пряма доставка незнайомцям)
+    // --- Обробка повідомлень ---
     socket.on('chat_message', (data) => {
         if (!data || !data.room) return;
         const room = data.room;
 
         const packetToSend = { 
-            id: data.id,
-            room: data.room, 
-            from: data.from, 
-            to: data.to, 
-            text: data.text, 
-            type: data.type || 'text', 
-            replyTo: data.replyTo || null,
-            timestamp: data.timestamp || Date.now(),
-            reactions: data.reactions || {},
-            status: data.status || 'sent'
+            id: data.id, room: data.room, from: data.from, to: data.to, 
+            text: data.text, type: data.type || 'text', replyTo: data.replyTo || null,
+            timestamp: data.timestamp || Date.now(), reactions: data.reactions || {},
+            status: data.status || 'sent', edited: false
         };
 
-        // Сервер не пише картинки в БД
+        // Сервер не пише картинки в БД, тільки текст
         if (packetToSend.type !== 'image') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
             if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
@@ -95,94 +125,126 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Пересилаємо повідомлення тим, хто в кімнаті
+        // Автоматично додаємо діалог в профіль обом користувачам при першому повідомленні
+        if (packetToSend.from && packetToSend.to) {
+            const sender = packetToSend.from;
+            const receiver = packetToSend.to;
+            
+            [sender, receiver].forEach(user => {
+                if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
+                if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                const partner = (user === sender) ? receiver : sender;
+                
+                if (!userProfiles[user].chatList.includes(partner)) {
+                    userProfiles[user].chatList.push(partner);
+                    saveDatabase();
+                }
+            });
+        }
+
         socket.to(room).emit('chat_message', packetToSend);
 
-        // ПРЯМА ВІДПРАВКА: Якщо отримувач онлайн, але ще не додав нас у друзі (не зайшов у кімнату)
+        // Пряма відправка незнайомцям (якщо не в кімнаті)
         if (data.to) {
             for (let [sId, uname] of Object.entries(activeConnections)) {
-                if (uname === data.to) {
-                    io.to(sId).emit('chat_message', packetToSend);
+                if (uname === data.to) io.to(sId).emit('chat_message', packetToSend);
+            }
+        }
+    });
+
+    // --- Редагування повідомлення ---
+    socket.on('edit_message', (data) => {
+        if (!data || !data.room || !data.msgId || !data.newText) return;
+        const room = data.room;
+        
+        if (messagesDatabase[room]) {
+            const msg = messagesDatabase[room].find(m => m.id === data.msgId);
+            if (msg && msg.from === socket.username) {
+                msg.text = data.newText;
+                msg.edited = true;
+                saveDatabase();
+                
+                // Відправляємо оновлення в кімнату
+                socket.to(room).emit('edit_message', { room, msgId: data.msgId, newText: data.newText });
+                
+                // Пряма відправка, якщо співрозмовник онлайн, але вийшов в меню
+                const users = room.replace('room_', '').split('_');
+                const receiver = users.find(u => u !== socket.username);
+                if (receiver) {
+                    for (let [sId, uname] of Object.entries(activeConnections)) {
+                        if (uname === receiver) io.to(sId).emit('edit_message', { room, msgId: data.msgId, newText: data.newText });
+                    }
                 }
             }
         }
     });
 
-    // Обробка прочитання повідомлень (ВИПРАВЛЕНО: Система галочок)
+    // --- Прочитання повідомлень ---
     socket.on('mark_read', (data) => {
         if (!data || !data.room || !data.reader) return;
         const { room, reader } = data;
-        
         let updated = false;
         if (messagesDatabase[room]) {
             messagesDatabase[room].forEach(msg => {
                 if (msg.from !== reader && msg.status !== 'read') {
-                    msg.status = 'read';
-                    updated = true;
+                    msg.status = 'read'; updated = true;
                 }
             });
             if (updated) saveDatabase();
         }
-
-        // Відправляємо подію "прочитано" всім, хто відкрив чат
         socket.to(room).emit('messages_read', data);
 
-        // Відправляємо подію "прочитано" відправнику напряму, якщо він сидить у меню
         const users = room.replace('room_', '').split('_');
         const senderNick = users[0] === reader ? users[1] : users[0];
         for (let [sId, uname] of Object.entries(activeConnections)) {
-            if (uname === senderNick) {
-                io.to(sId).emit('messages_read', data);
-            }
+            if (uname === senderNick) io.to(sId).emit('messages_read', data);
         }
     });
 
-    // Реакції
-    socket.on('message_reaction', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        const { room, msgId, reactions } = data;
-
-        if (messagesDatabase[room]) {
-            const msg = messagesDatabase[room].find(m => m.id === msgId);
-            if (msg) {
-                msg.reactions = reactions || {};
-                saveDatabase();
-            }
-        }
-        socket.to(room).emit('message_reaction', data);
-    });
-
-    // Видалення
+    // --- Видалення ---
     socket.on('delete_message', (data) => {
-        if (!data || !data.room) return;
+        if (!data || !data.room || !data.msgId) return;
+        if (messagesDatabase[data.room]) {
+            messagesDatabase[data.room] = messagesDatabase[data.room].filter(m => m.id !== data.msgId);
+            saveDatabase();
+        }
         socket.to(data.room).emit('delete_message', data);
     });
 
-    // Закріплення
+    // --- Інше (Реакції, Закріплення, Тайпінг, Профілі) ---
+    socket.on('message_reaction', (data) => {
+        if (!data || !data.room || !data.msgId) return;
+        if (messagesDatabase[data.room]) {
+            const msg = messagesDatabase[data.room].find(m => m.id === data.msgId);
+            if (msg) {
+                msg.reactions = data.reactions || {};
+                saveDatabase();
+            }
+        }
+        socket.to(data.room).emit('message_reaction', data);
+    });
+
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         socket.to(data.room).emit('pin_message', data);
     });
 
-    // Індикатор набору тексту
     socket.on('typing', (data) => {
         if (!data || !data.room) return;
         socket.to(data.room).emit('typing_status', data);
     });
 
-    // Оновлення профілю
     socket.on('update_profile', (packet) => {
         if (packet && packet.username && packet.data) {
-            userProfiles[packet.username] = packet.data;
+            if (!userProfiles[packet.username]) userProfiles[packet.username] = { chatList: [] };
+            userProfiles[packet.username] = { ...userProfiles[packet.username], ...packet.data };
             saveDatabase();
             socket.broadcast.emit('profile_broadcast', packet);
         }
     });
 
     socket.on('disconnect', () => {
-        if (socket.id in activeConnections) {
-            delete activeConnections[socket.id];
-        }
+        if (socket.id in activeConnections) delete activeConnections[socket.id];
         io.emit('online_list', getOnlineUsersList());
     });
 });
