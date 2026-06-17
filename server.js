@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-// Збільшуємо ліміт для передачі фотографій
+// Збільшуємо ліміт для передачі фотографій, кружечків та аудіо
 const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
 
 const PORT = process.env.PORT || 3000;
@@ -14,7 +14,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 let userProfiles = {};
 let messagesDatabase = {};
-let activeConnections = {}; 
+let activeConnections = {};
 
 function loadDatabase() {
     try {
@@ -62,7 +62,9 @@ io.on('connection', (socket) => {
         activeConnections[socket.id] = data.username;
         
         if (!userProfiles[data.username]) {
-            userProfiles[data.username] = { chatList: [], displayName: data.username, bio: '', avatar: '' };
+            userProfiles[data.username] = { 
+                chatList: [], displayName: data.username, bio: '', avatar: '', blockedUsers: [] 
+            };
             saveDatabase();
         }
 
@@ -74,7 +76,7 @@ io.on('connection', (socket) => {
         const target = data.username;
         const exists = !!userProfiles[target] || Object.values(activeConnections).includes(target);
         socket.emit('user_exists_result', { exists, username: target });
-        
+    
         if (exists && socket.username) {
             if (!userProfiles[socket.username].chatList) userProfiles[socket.username].chatList = [];
             if (!userProfiles[socket.username].chatList.includes(target)) {
@@ -97,6 +99,34 @@ io.on('connection', (socket) => {
         socket.join(data.room);
     });
 
+    // --- ДОДАНО: ОБРОБКА БЛОКУВАННЯ ---
+    socket.on('block_user', (data) => {
+        if (!socket.username || !data.target) return;
+        
+        if (!userProfiles[socket.username]) userProfiles[socket.username] = { chatList: [], blockedUsers: [] };
+        if (!userProfiles[socket.username].blockedUsers) userProfiles[socket.username].blockedUsers = [];
+
+        const roomSorted = [socket.username, data.target].sort(); 
+        const room = `room_${roomSorted[0]}_${roomSorted[1]}`;
+
+        if (data.blocked) {
+            if (!userProfiles[socket.username].blockedUsers.includes(data.target)) {
+                userProfiles[socket.username].blockedUsers.push(data.target);
+                saveDatabase();
+            }
+            // Сповіщаємо заблокованого, щоб у нього одразу оновився інтерфейс
+            for (let [sId, uname] of Object.entries(activeConnections)) {
+                if (uname === data.target) io.to(sId).emit('user_blocked_you', { room: room, blocked: true });
+            }
+        } else {
+            userProfiles[socket.username].blockedUsers = userProfiles[socket.username].blockedUsers.filter(u => u !== data.target);
+            saveDatabase();
+            for (let [sId, uname] of Object.entries(activeConnections)) {
+                if (uname === data.target) io.to(sId).emit('user_blocked_you', { room: room, blocked: false });
+            }
+        }
+    });
+
     socket.on('chat_message', (data) => {
         if (!data || !data.room) return;
         const room = data.room;
@@ -108,7 +138,16 @@ io.on('connection', (socket) => {
             status: data.status || 'sent', edited: false
         };
 
-        if (packetToSend.type !== 'image') {
+        // --- ДОДАНО: Захист від заблокованих відправників ---
+        if (packetToSend.to && userProfiles[packetToSend.to] && userProfiles[packetToSend.to].blockedUsers) {
+            if (userProfiles[packetToSend.to].blockedUsers.includes(packetToSend.from)) {
+                // Сервер блокує доставку повідомлення, якщо відправник в чорному списку
+                return; 
+            }
+        }
+
+        // Зберігаємо в БД тільки текст та стікери, щоб не перевантажувати сервер
+        if (packetToSend.type === 'text' || packetToSend.type === 'sticker') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
             if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
                 messagesDatabase[room].push(packetToSend);
@@ -124,7 +163,6 @@ io.on('connection', (socket) => {
                 if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
                 if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
                 const partner = (user === sender) ? receiver : sender;
-                
                 if (!userProfiles[user].chatList.includes(partner)) {
                     userProfiles[user].chatList.push(partner);
                     saveDatabase();
@@ -133,7 +171,6 @@ io.on('connection', (socket) => {
         }
 
         socket.to(room).emit('chat_message', packetToSend);
-
         if (data.to) {
             for (let [sId, uname] of Object.entries(activeConnections)) {
                 if (uname === data.to) io.to(sId).emit('chat_message', packetToSend);
