@@ -6,7 +6,6 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-// Збільшуємо ліміт для передачі фотографій, кружечків та аудіо
 const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
@@ -54,7 +53,6 @@ function getOnlineUsersList() {
 io.on('connection', (socket) => {
     console.log(`Нове підключення: ${socket.id}`);
 
-    // --- Авторизація та синхронізація профілю ---
     socket.on('online_ping', (data) => {
         if (!data || !data.username) return;
         socket.username = data.username;
@@ -136,12 +134,9 @@ io.on('connection', (socket) => {
         };
 
         if (packetToSend.to && userProfiles[packetToSend.to] && userProfiles[packetToSend.to].blockedUsers) {
-            if (userProfiles[packetToSend.to].blockedUsers.includes(packetToSend.from)) {
-                return; 
-            }
+            if (userProfiles[packetToSend.to].blockedUsers.includes(packetToSend.from)) { return; }
         }
 
-        // БЕЗПЕКА (Сервер): фільтруємо текстові повідомлення від HTML
         if (packetToSend.type === 'text' && typeof packetToSend.text === 'string') {
             packetToSend.text = packetToSend.text.replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
@@ -186,7 +181,6 @@ io.on('connection', (socket) => {
         if (messagesDatabase[room]) {
             const msg = messagesDatabase[room].find(m => m.id === data.msgId);
             if (msg && msg.from === socket.username) {
-                // БЕЗПЕКА: фільтруємо редагування тексту
                 msg.text = typeof data.newText === 'string' ? data.newText.replace(/[&<>'"]/g, tag => ({
                     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
                 }[tag] || tag)) : data.newText;
@@ -240,10 +234,7 @@ io.on('connection', (socket) => {
         if (!data || !data.room || !data.msgId) return;
         if (messagesDatabase[data.room]) {
             const msg = messagesDatabase[data.room].find(m => m.id === data.msgId);
-            if (msg) {
-                msg.reactions = data.reactions || {};
-                saveDatabase();
-            }
+            if (msg) { msg.reactions = data.reactions || {}; saveDatabase(); }
         }
         socket.to(data.room).emit('message_reaction', data);
     });
@@ -274,6 +265,7 @@ io.on('connection', (socket) => {
     socket.on('call_answer', (data) => socket.to(data.room).emit('call_answer', data));
     socket.on('call_ice_candidate', (data) => socket.to(data.room).emit('call_ice_candidate', data));
     socket.on('call_end', (data) => socket.to(data.room).emit('call_end', data));
+    socket.on('call_reject', (data) => socket.to(data.room).emit('call_reject', data)); // Додано подію відхилення
 
     socket.on('disconnect', () => {
         if (socket.id in activeConnections) delete activeConnections[socket.id];
