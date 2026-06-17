@@ -6,16 +6,14 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-
-// Ліміт 100MB для кружків, фото та голосових
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
-
+// Збільшено ліміт для кружків та фото до 100MB
+const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
 let userProfiles = {};
 let messagesDatabase = {};
-let activeConnections = {}; // username -> socket.id
+let activeConnections = {}; 
 
 // --- ЗАВАНТАЖЕННЯ ТА ЗБЕРЕЖЕННЯ БД ---
 function loadDatabase() {
@@ -37,30 +35,18 @@ function saveDatabase() {
         const dataToSave = { messagesDatabase, userProfiles };
         fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
     } catch (e) {
-        console.error('Помилка при збереженні бази даних:', e);
+        console.error('Помилка при збереженні бази даних. Можливо файл занадто великий:', e.message);
     }
 }
 
 loadDatabase();
 
-// --- МАРШРУТИЗАЦІЯ (Ось тут виправлено помилку Cannot GET) ---
-
-// Дозволяємо Express шукати статичні файли в колірні сайту та в папці public (якщо вона є)
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Якщо користувач переходить на головну сторінку (http://.../)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'chat.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'chat.html')));
+app.get('/chat', (req, res) => res.sendFile(path.join(__dirname, 'chat.html')));
 
-// Якщо користувач переходить на сторінку чату (http://.../chat)
-app.get('/chat', (req, res) => {
-    res.sendFile(path.join(__dirname, 'chat.html'));
-});
-
-
-// --- SOCKET.IO ЛОГІКА ---
 io.on('connection', (socket) => {
     let sessionUser = null;
 
@@ -69,12 +55,8 @@ io.on('connection', (socket) => {
         sessionUser = data.username;
         activeConnections[sessionUser] = socket.id;
 
-        if (!userProfiles[sessionUser]) {
-            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '' };
-        }
-        if (!userProfiles[sessionUser].chatList) {
-            userProfiles[sessionUser].chatList = [];
-        }
+        if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '' };
+        if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
         io.emit('online_list', Object.keys(activeConnections));
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
@@ -86,14 +68,13 @@ io.on('connection', (socket) => {
 
     socket.on('check_user_exists', (data) => {
         if (!data || !data.username) return;
-        const exists = userProfiles[data.username] ? true : false;
+        const exists = !!userProfiles[data.username];
         socket.emit('user_exists_result', { username: data.username, exists });
     });
 
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
-
         const pinnedKey = data.room + '_pinned';
         if (messagesDatabase[pinnedKey] && messagesDatabase[pinnedKey].length > 0) {
             socket.emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
@@ -102,8 +83,7 @@ io.on('connection', (socket) => {
 
     socket.on('request_history', (data) => {
         if (!data || !data.room) return;
-        const history = messagesDatabase[data.room] || [];
-        socket.emit('room_history', history);
+        socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
     socket.on('chat_message', (msg) => {
@@ -111,21 +91,15 @@ io.on('connection', (socket) => {
 
         if (!userProfiles[msg.from]) userProfiles[msg.from] = { chatList: [], displayName: msg.from, bio: '' };
         if (!userProfiles[msg.to]) userProfiles[msg.to] = { chatList: [], displayName: msg.to, bio: '' };
-        if (!userProfiles[msg.from].chatList) userProfiles[msg.from].chatList = [];
-        if (!userProfiles[msg.to].chatList) userProfiles[msg.to].chatList = [];
 
         if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
         messagesDatabase[msg.room].push(msg);
 
-        if (!userProfiles[msg.from].chatList.includes(msg.to)) {
-            userProfiles[msg.from].chatList.push(msg.to);
-        }
+        if (!userProfiles[msg.from].chatList.includes(msg.to)) userProfiles[msg.from].chatList.push(msg.to);
         if (!userProfiles[msg.to].chatList.includes(msg.from)) {
             userProfiles[msg.to].chatList.push(msg.from);
             const targetSocket = activeConnections[msg.to];
-            if (targetSocket) {
-                io.to(targetSocket).emit('restore_chats', userProfiles[msg.to].chatList);
-            }
+            if (targetSocket) io.to(targetSocket).emit('restore_chats', userProfiles[msg.to].chatList);
         }
 
         saveDatabase();
@@ -143,17 +117,13 @@ io.on('connection', (socket) => {
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('webrtc_signal', data);
-        }
+        if (targetSocketId) io.to(targetSocketId).emit('webrtc_signal', data);
     });
 
     socket.on('mark_read', (data) => {
         if (!data || !data.room || !data.reader) return;
-        if (messagesDatabase[data.room] && Array.isArray(messagesDatabase[data.room])) {
-            messagesDatabase[data.room].forEach(m => {
-                if (m && m.from !== data.reader) m.status = 'read';
-            });
+        if (Array.isArray(messagesDatabase[data.room])) {
+            messagesDatabase[data.room].forEach(m => { if (m && m.from !== data.reader) m.status = 'read'; });
             saveDatabase();
         }
         socket.to(data.room).emit('messages_read', data);
@@ -161,20 +131,16 @@ io.on('connection', (socket) => {
 
     socket.on('edit_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
-        if (messagesDatabase[data.room] && Array.isArray(messagesDatabase[data.room])) {
+        if (Array.isArray(messagesDatabase[data.room])) {
             const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) {
-                msg.text = data.newText;
-                msg.edited = true;
-                saveDatabase();
-            }
+            if (msg) { msg.text = data.newText; msg.edited = true; saveDatabase(); }
         }
         socket.to(data.room).emit('edit_message', data);
     });
 
     socket.on('delete_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
-        if (messagesDatabase[data.room] && Array.isArray(messagesDatabase[data.room])) {
+        if (Array.isArray(messagesDatabase[data.room])) {
             messagesDatabase[data.room] = messagesDatabase[data.room].filter(m => m && m.id !== data.msgId);
             saveDatabase();
         }
@@ -183,12 +149,9 @@ io.on('connection', (socket) => {
 
     socket.on('message_reaction', (data) => {
         if (!data || !data.room || !data.msgId) return;
-        if (messagesDatabase[data.room] && Array.isArray(messagesDatabase[data.room])) {
+        if (Array.isArray(messagesDatabase[data.room])) {
             const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) {
-                msg.reactions = data.reactions || {};
-                saveDatabase();
-            }
+            if (msg) { msg.reactions = data.reactions || {}; saveDatabase(); }
         }
         socket.to(data.room).emit('message_reaction', data);
     });
@@ -199,20 +162,6 @@ io.on('connection', (socket) => {
         messagesDatabase[pinnedKey] = data.pinned || [];
         saveDatabase();
         socket.to(data.room).emit('pin_message', data);
-    });
-
-    socket.on('typing', (data) => {
-        if (!data || !data.room) return;
-        socket.to(data.room).emit('typing_status', data);
-    });
-
-    socket.on('update_profile', (packet) => {
-        if (packet && packet.username && packet.data) {
-            if (!userProfiles[packet.username]) userProfiles[packet.username] = { chatList: [] };
-            userProfiles[packet.username] = { ...userProfiles[packet.username], ...packet.data };
-            saveDatabase();
-            socket.broadcast.emit('profile_broadcast', packet);
-        }
     });
 
     socket.on('disconnect', () => {
