@@ -7,8 +7,7 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 // Збільшуємо ліміт для передачі фотографій, кружечків та аудіо
-const io = new Server(server, { maxHttpBufferSize: 1e8 }); 
-
+const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
@@ -99,7 +98,6 @@ io.on('connection', (socket) => {
         socket.join(data.room);
     });
 
-    // --- ДОДАНО: ОБРОБКА БЛОКУВАННЯ ---
     socket.on('block_user', (data) => {
         if (!socket.username || !data.target) return;
         
@@ -114,7 +112,6 @@ io.on('connection', (socket) => {
                 userProfiles[socket.username].blockedUsers.push(data.target);
                 saveDatabase();
             }
-            // Сповіщаємо заблокованого, щоб у нього одразу оновився інтерфейс
             for (let [sId, uname] of Object.entries(activeConnections)) {
                 if (uname === data.target) io.to(sId).emit('user_blocked_you', { room: room, blocked: true });
             }
@@ -138,15 +135,19 @@ io.on('connection', (socket) => {
             status: data.status || 'sent', edited: false
         };
 
-        // --- ДОДАНО: Захист від заблокованих відправників ---
         if (packetToSend.to && userProfiles[packetToSend.to] && userProfiles[packetToSend.to].blockedUsers) {
             if (userProfiles[packetToSend.to].blockedUsers.includes(packetToSend.from)) {
-                // Сервер блокує доставку повідомлення, якщо відправник в чорному списку
                 return; 
             }
         }
 
-        // Зберігаємо в БД тільки текст та стікери, щоб не перевантажувати сервер
+        // БЕЗПЕКА (Сервер): фільтруємо текстові повідомлення від HTML
+        if (packetToSend.type === 'text' && typeof packetToSend.text === 'string') {
+            packetToSend.text = packetToSend.text.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
+
         if (packetToSend.type === 'text' || packetToSend.type === 'sticker') {
             if (!messagesDatabase[room]) messagesDatabase[room] = [];
             if (!messagesDatabase[room].some(m => m.id === packetToSend.id)) {
@@ -185,17 +186,20 @@ io.on('connection', (socket) => {
         if (messagesDatabase[room]) {
             const msg = messagesDatabase[room].find(m => m.id === data.msgId);
             if (msg && msg.from === socket.username) {
-                msg.text = data.newText;
+                // БЕЗПЕКА: фільтруємо редагування тексту
+                msg.text = typeof data.newText === 'string' ? data.newText.replace(/[&<>'"]/g, tag => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+                }[tag] || tag)) : data.newText;
                 msg.edited = true;
                 saveDatabase();
                 
-                socket.to(room).emit('edit_message', { room, msgId: data.msgId, newText: data.newText });
+                socket.to(room).emit('edit_message', { room, msgId: data.msgId, newText: msg.text });
                 
                 const users = room.replace('room_', '').split('_');
                 const receiver = users.find(u => u !== socket.username);
                 if (receiver) {
                     for (let [sId, uname] of Object.entries(activeConnections)) {
-                        if (uname === receiver) io.to(sId).emit('edit_message', { room, msgId: data.msgId, newText: data.newText });
+                        if (uname === receiver) io.to(sId).emit('edit_message', { room, msgId: data.msgId, newText: msg.text });
                     }
                 }
             }
