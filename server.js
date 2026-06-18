@@ -12,8 +12,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
 // --- СЮДИ ВСТАВ ПОСИЛАННЯ З GOOGLE APPS SCRIPT ---
-// (Важливо: потрібне нове посилання після додавання функції search_users)
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE_OSiBrSYlcNLCsp9W6pKP80x7IClsOVz2yvruKDpY4wECMgK76x5dLFdVoqvq06DvA/exec"; 
+const GAS_WEB_APP_URL = "ВСТАВИТИ_ТУТ_URL_APPS_SCRIPT"; 
 
 let userProfiles = {};
 let messagesDatabase = {};
@@ -46,6 +45,23 @@ function saveDatabase() {
     }
 }
 
+// --- БЕЗПЕЧНА ІНІЦІАЛІЗАЦІЯ ПРОФІЛЮ (Щоб не стирало аватарки) ---
+function initProfile(username) {
+    if (!username) return false;
+    let changed = false;
+    if (!userProfiles[username]) {
+        userProfiles[username] = { chatList: [], displayName: username, bio: '', avatar: '' };
+        changed = true;
+    }
+    // Відновлення полів, якщо вони якось затерлись
+    if (typeof userProfiles[username].avatar === 'undefined') { userProfiles[username].avatar = ''; changed = true; }
+    if (typeof userProfiles[username].displayName === 'undefined') { userProfiles[username].displayName = username; changed = true; }
+    if (typeof userProfiles[username].bio === 'undefined') { userProfiles[username].bio = ''; changed = true; }
+    if (!userProfiles[username].chatList) { userProfiles[username].chatList = []; changed = true; }
+    
+    return changed;
+}
+
 loadDatabase();
 
 app.use(express.static(__dirname));
@@ -62,16 +78,7 @@ io.on('connection', (socket) => {
         sessionUser = data.username;
         activeConnections[sessionUser] = socket.id;
 
-        let isChanged = false;
-        if (!userProfiles[sessionUser]) {
-            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '' };
-            isChanged = true;
-        }
-        if (!userProfiles[sessionUser].chatList) { 
-            userProfiles[sessionUser].chatList = []; 
-            isChanged = true; 
-        }
-        
+        const isChanged = initProfile(sessionUser);
         if (isChanged) saveDatabase();
 
         io.emit('online_list', Object.keys(activeConnections));
@@ -98,7 +105,6 @@ io.on('connection', (socket) => {
         const results = [];
         const seenUsernames = new Set();
 
-        // 1. Спочатку шукаємо локально
         Object.keys(userProfiles).forEach(username => {
             const p = userProfiles[username] || {};
             const dName = (p.displayName || '').toLowerCase();
@@ -114,10 +120,8 @@ io.on('connection', (socket) => {
             }
         });
 
-        // Відправляємо швидкі локальні результати
         socket.emit('search_results', { query: data.query, results });
 
-        // 2. Робимо запит до Apps Script (Google Sheets)
         if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.startsWith("http")) {
             try {
                 const response = await fetch(GAS_WEB_APP_URL, {
@@ -143,7 +147,6 @@ io.on('connection', (socket) => {
                         }
                     });
                     
-                    // Якщо знайшли когось нового в таблиці - оновлюємо результати клієнту
                     if (hasNew) {
                         socket.emit('search_results', { query: data.query, results });
                     }
@@ -159,7 +162,6 @@ io.on('connection', (socket) => {
         if (!data || !data.username) return;
         const target = data.username.toLowerCase().trim();
         
-        // 1. Шукаємо локально
         const localMatch = Object.keys(userProfiles).find(u => u.toLowerCase() === target);
         if (localMatch) {
             const uProfile = userProfiles[localMatch];
@@ -171,7 +173,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // 2. Якщо локально немає, перевіряємо через Apps Script
         if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.startsWith("http")) {
             try {
                 const response = await fetch(GAS_WEB_APP_URL, {
@@ -194,19 +195,20 @@ io.on('connection', (socket) => {
             }
         }
 
-        // Якщо ніде немає
         socket.emit('user_exists_result', { username: data.username, exists: false, profile: null });
     });
 
-    // Оновлення особистого профілю
+    // --- БЕЗПЕЧНЕ ОНОВЛЕННЯ ПРОФІЛЮ ---
     socket.on('update_profile', (data) => {
         if (!sessionUser || !data) return;
-        if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
+        initProfile(sessionUser); // Захист структури
         
         const profileData = data.data || data;
-        userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
-        userProfiles[sessionUser].bio = profileData.bio || '';
-        userProfiles[sessionUser].avatar = profileData.avatar || ''; 
+        
+        // Зберігаємо тільки те, що реально прийшло, не затираючи пустими рядками
+        if (profileData.displayName !== undefined) userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
+        if (profileData.bio !== undefined) userProfiles[sessionUser].bio = profileData.bio;
+        if (profileData.avatar !== undefined) userProfiles[sessionUser].avatar = profileData.avatar; 
         
         saveDatabase();
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
@@ -244,7 +246,7 @@ io.on('connection', (socket) => {
         socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
     });
 
-    // --- ЗАЛІЗОБЕТОННІ WebRTC ДЗВІНКИ (Твій оригінал) ---
+    // --- ЗАЛІЗОБЕТОННІ WebRTC ДЗВІНКИ ---
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
@@ -267,16 +269,15 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
+    // --- БЕЗПЕЧНЕ ВІДПРАВЛЕННЯ ПОВІДОМЛЕННЯ ---
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
         if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
         messagesDatabase[msg.room].push(msg);
 
-        if (!userProfiles[msg.from]) userProfiles[msg.from] = { chatList: [] };
-        if (!userProfiles[msg.to]) userProfiles[msg.to] = { chatList: [] };
-        if (!userProfiles[msg.from].chatList) userProfiles[msg.from].chatList = [];
-        if (!userProfiles[msg.to].chatList) userProfiles[msg.to].chatList = [];
+        initProfile(msg.from);
+        initProfile(msg.to);
 
         if (!userProfiles[msg.from].chatList.includes(msg.to)) userProfiles[msg.from].chatList.push(msg.to);
         if (!userProfiles[msg.to].chatList.includes(msg.from)) userProfiles[msg.to].chatList.push(msg.from);
@@ -300,7 +301,7 @@ io.on('connection', (socket) => {
 
     socket.on('sync_chat_list', (data) => {
         if (sessionUser && data && data.chatList) {
-            if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
+            initProfile(sessionUser);
             userProfiles[sessionUser].chatList = data.chatList;
             saveDatabase();
         }
