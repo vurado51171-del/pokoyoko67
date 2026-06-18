@@ -7,8 +7,8 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 
-// Максимальний ліміт пакетів (100MB) для великих аватарок та кружків
-const io = new Server(server, { maxHttpBufferSize: 1e8 });
+// Обмежуємо ліміт буфера до 50MB (для Render цього більш ніж достатньо, щоб не падала пам'ять)
+const io = new Server(server, { maxHttpBufferSize: 5e7 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
@@ -16,7 +16,7 @@ let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {}; 
 
-// --- ШВИДКОДІЙНЕ АСИНХРОННЕ ЗАВАНТАЖЕННЯ БД ---
+// --- ЛЕГКЕ АСИНХРОННЕ ЗАВАНТАЖЕННЯ БД ---
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -25,26 +25,15 @@ function loadDatabase() {
                 const parsed = JSON.parse(rawData);
                 messagesDatabase = parsed.messagesDatabase || {};
                 userProfiles = parsed.userProfiles || {};
-                console.log(`[БД] Успішно завантажено. Профілів: ${Object.keys(userProfiles).length}`);
+                console.log(`[БД] Завантажено успішно. Користувачів: ${Object.keys(userProfiles).length}`);
             }
         }
     } catch (e) {
-        console.error('[БД] Помилка читання, спроба відновити з .tmp...', e.message);
-        try {
-            const tmpFile = DB_FILE + '.tmp';
-            if (fs.existsSync(tmpFile)) {
-                const parsed = JSON.parse(fs.readFileSync(tmpFile, 'utf8'));
-                messagesDatabase = parsed.messagesDatabase || {};
-                userProfiles = parsed.userProfiles || {};
-                console.log('[БД] Відновлено з резервної копії .tmp');
-            }
-        } catch (err) {
-            console.error('[КРИТ] Не вдалося прочитати базу:', err.message);
-        }
+        console.error('[БД] Помилка читання файлу:', e.message);
     }
 }
 
-// ПОВНІСТЮ АСИНХРОННЕ НЕБЛОКУЮЧЕ ЗБЕРЕЖЕННЯ (Сервер більше не висне через аватарки!)
+// ОПТИМІЗОВАНЕ ФОНОВЕ ЗБЕРЕЖЕННЯ (Дебаунс запису на диск)
 let isSaving = false;
 let saveQueued = false;
 
@@ -58,20 +47,14 @@ function saveDatabase() {
     const dataToSave = { messagesDatabase, userProfiles };
     const tempFile = DB_FILE + '.tmp';
 
-    // Фоновий асинхронний запис, який не зупиняє роботу Node.js
+    // Асинхронний фоновий запис, щоб Render не "тупив" під час надсилання повідомлень
     fs.writeFile(tempFile, JSON.stringify(dataToSave), 'utf8', (err) => {
         if (err) {
-            console.error('[БД] Помилка фонового запису:', err.message);
             isSaving = false;
             return;
         }
-        
-        // Атомарна швидка підміна файлу
-        fs.rename(tempFile, DB_FILE, (renameErr) => {
+        fs.rename(tempFile, DB_FILE, () => {
             isSaving = false;
-            if (renameErr) {
-                console.error('[БД] Помилка перейменування:', renameErr.message);
-            }
             if (saveQueued) {
                 saveQueued = false;
                 saveDatabase();
@@ -102,19 +85,23 @@ io.on('connection', (socket) => {
             isChanged = true;
         }
         if (!userProfiles[sessionUser].chatList) { userProfiles[sessionUser].chatList = []; isChanged = true; }
-        if (!userProfiles[sessionUser].avatar) { userProfiles[sessionUser].avatar = ''; isChanged = true; }
-
+        
         if (isChanged) saveDatabase();
 
         io.emit('online_list', Object.keys(activeConnections));
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Передача профілів
+        // ОПТИМІЗАЦІЯ ПРИСКОРЕННЯ: Надсилаємо список користувачів БЕЗ важких аватарок під час входу
         Object.keys(userProfiles).forEach(username => {
-            socket.emit('profile_broadcast', { username, data: userProfiles[username] });
+            const p = userProfiles[username];
+            socket.emit('profile_broadcast', { 
+                username, 
+                data: { displayName: p.displayName || username, bio: p.bio || '', chatList: p.chatList || [] } 
+            });
         });
     });
 
+    // Окремий запит аватарки або повного профілю (викликається тільки коли відкривається потрібний чат)
     socket.on('request_profile', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -138,34 +125,61 @@ io.on('connection', (socket) => {
         });
     });
 
-    // МИТТЄВИЙ ПОШУК (Оптимізовано)
-    socket.on('search_users', (data) => {
-        if (!data || !data.query) return;
+    // === ШВИДКИЙ ГЛОБАЛЬНИЙ ПОШУК (ЛЮДИ + ПОВІДОМЛЕННЯ) ===
+    socket.on('global_search', (data) => {
+        if (!data || !data.query || !sessionUser) return;
         const query = data.query.toLowerCase().trim();
         
         if (!query) {
-            socket.emit('search_results', { query: data.query, results: [] });
+            socket.emit('global_search_results', { query: data.query, users: [], messages: [] });
             return;
         }
 
-        const results = [];
-        const keys = Object.keys(userProfiles);
-        
-        for (let i = 0; i < keys.length; i++) {
-            const username = keys[i];
-            const profile = userProfiles[username] || {};
-            const displayName = (profile.displayName || '').toLowerCase();
-            
-            if (username.toLowerCase().includes(query) || displayName.includes(query)) {
-                results.push({
+        const foundUsers = [];
+        const foundMessages = [];
+
+        // 1. Пошук по людях
+        Object.keys(userProfiles).forEach(username => {
+            const p = userProfiles[username] || {};
+            const dName = (p.displayName || '').toLowerCase();
+            if (username.toLowerCase().includes(query) || dName.includes(query)) {
+                foundUsers.push({
                     username: username,
-                    displayName: profile.displayName || username,
-                    avatar: profile.avatar || '',
-                    bio: profile.bio || ''
+                    displayName: p.displayName || username,
+                    avatar: p.avatar || '',
+                    bio: p.bio || ''
                 });
             }
-        }
-        socket.emit('search_results', { query: data.query, results });
+        });
+
+        // 2. Пошук по повідомленнях (тільки в чатах поточного користувача)
+        Object.keys(messagesDatabase).forEach(room => {
+            if (room.includes(sessionUser)) {
+                const roomMsgs = messagesDatabase[room] || [];
+                roomMsgs.forEach(msg => {
+                    if (msg && msg.text && msg.text.toLowerCase().includes(query)) {
+                        const partner = msg.from === sessionUser ? msg.to : msg.from;
+                        foundMessages.push({
+                            id: msg.id,
+                            room: room,
+                            partner: partner,
+                            from: msg.from,
+                            text: msg.text,
+                            timestamp: msg.timestamp
+                        });
+                    }
+                });
+            }
+        });
+
+        // Сортуємо знайдені повідомлення (спочатку нові)
+        foundMessages.sort((a, b) => b.timestamp - a.timestamp);
+
+        socket.emit('global_search_results', {
+            query: data.query,
+            users: foundUsers,
+            messages: foundMessages
+        });
     });
 
     socket.on('update_profile', (data) => {
@@ -173,7 +187,6 @@ io.on('connection', (socket) => {
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
         
         const profileData = data.data || data;
-
         userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
         userProfiles[sessionUser].bio = profileData.bio || '';
         userProfiles[sessionUser].avatar = profileData.avatar || ''; 
@@ -199,50 +212,51 @@ io.on('connection', (socket) => {
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
-        if (!userProfiles[msg.from]) userProfiles[msg.from] = { chatList: [], displayName: msg.from, bio: '', avatar: '' };
-        if (!userProfiles[msg.to]) userProfiles[msg.to] = { chatList: [], displayName: msg.to, bio: '', avatar: '' };
-
         if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
         messagesDatabase[msg.room].push(msg);
+
+        if (!userProfiles[msg.from]) userProfiles[msg.from] = { chatList: [] };
+        if (!userProfiles[msg.to]) userProfiles[msg.to] = { chatList: [] };
 
         if (!userProfiles[msg.from].chatList.includes(msg.to)) userProfiles[msg.from].chatList.push(msg.to);
         if (!userProfiles[msg.to].chatList.includes(msg.from)) userProfiles[msg.to].chatList.push(msg.from);
 
         saveDatabase();
 
-        io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
-        io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
-
         const targetSocketId = activeConnections[msg.to];
         if (targetSocketId) {
             io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
-            const targetSocketInstance = io.sockets.sockets.get(targetSocketId);
-            const isAlreadyInRoom = targetSocketInstance && targetSocketInstance.rooms.has(msg.room);
-
-            if (!isAlreadyInRoom) {
-                io.to(targetSocketId).emit('chat_message', msg);
-            }
+            io.to(targetSocketId).emit('chat_message', msg);
         }
         socket.to(msg.room).emit('chat_message', msg);
     });
 
-    socket.on('typing', (data) => {
+    // === ЗАЛІЗОБЕТОННІ ЗАКРІПЛЕННЯ ===
+    socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
-        socket.to(data.room).emit('typing', data);
-    });
+        const pinnedKey = data.room + '_pinned';
+        if (!messagesDatabase[pinnedKey]) messagesDatabase[pinnedKey] = [];
 
-    socket.on('sync_chat_list', (data) => {
-        if (sessionUser && data && data.chatList) {
-            if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
-            userProfiles[sessionUser].chatList = data.chatList;
-            saveDatabase();
+        if (data.action === 'remove') {
+            const targetId = data.msgId || (data.pinData ? data.pinData.id : null) || (data.msg ? data.msg.id : null);
+            if (targetId) {
+                messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
+            }
+        } else if (data.action === 'add') {
+            const activeMsg = data.msg || data.pinData;
+            if (activeMsg && !messagesDatabase[pinnedKey].some(p => p.id === activeMsg.id)) {
+                messagesDatabase[pinnedKey].push(activeMsg);
+            }
+        } else if (data.pinned) {
+            messagesDatabase[pinnedKey] = data.pinned;
         }
+
+        saveDatabase();
+        io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
-    socket.on('webrtc_signal', (data) => {
-        if (!data || !data.target) return;
-        const targetSocketId = activeConnections[data.target];
-        if (targetSocketId) io.to(targetSocketId).emit('webrtc_signal', data);
+    socket.on('typing', (data) => {
+        if (data && data.room) socket.to(data.room).emit('typing', data);
     });
 
     socket.on('mark_read', (data) => {
@@ -254,71 +268,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('messages_read', data);
     });
 
-    socket.on('edit_message', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) { msg.text = data.newText; msg.edited = true; saveDatabase(); }
-        }
-        socket.to(data.room).emit('edit_message', data);
-    });
-
-    socket.on('delete_message', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            messagesDatabase[data.room] = messagesDatabase[data.room].filter(m => m && m.id !== data.msgId);
-            saveDatabase();
-        }
-        socket.to(data.room).emit('delete_message', data);
-    });
-
-    socket.on('message_reaction', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) { msg.reactions = data.reactions || {}; saveDatabase(); }
-        }
-        socket.to(data.room).emit('message_reaction', data);
-    });
-
-    // === ЗАЛІЗОБЕТОННІ ЗАКРІПЛЕННЯ (Універсальний фікс) ===
-    socket.on('pin_message', (data) => {
-        if (!data || !data.room) return;
-        const pinnedKey = data.room + '_pinned';
-        
-        if (!messagesDatabase[pinnedKey]) messagesDatabase[pinnedKey] = [];
-
-        // Визначаємо дію (додати чи видалити)
-        if (data.action === 'remove') {
-            // Шукаємо ID будь-яким можливим способом з пакету клієнта
-            const targetId = data.msgId || (data.pinData ? data.pinData.id : null) || (data.msg ? data.msg.id : null);
-            if (targetId) {
-                messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
-            }
-        } else if (data.action === 'add') {
-            // Приймаємо об'єкт повідомлення як з поля msg, так і з pinData
-            const activeMsg = data.msg || data.pinData;
-            if (activeMsg && !messagesDatabase[pinnedKey].some(p => p.id === activeMsg.id)) {
-                messagesDatabase[pinnedKey].push(activeMsg);
-            }
-        } else if (data.pinned) {
-            messagesDatabase[pinnedKey] = data.pinned;
-        }
-
-        saveDatabase();
-        // Разом з кімнатою оновлюємо глобально всіх у ній
-        io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
-    });
-
-    socket.on('clear_history', (data) => {
-        if (!data || !data.room) return;
-        if (messagesDatabase[data.room]) {
-            messagesDatabase[data.room] = [];
-            saveDatabase();
-        }
-        socket.to(data.room).emit('clear_history', data);
-    });
-
     socket.on('disconnect', () => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
@@ -327,6 +276,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`=== Швидкісний сервер запущено на порту ${PORT} ===`);
-});
+server.listen(PORT, () => console.log(`=== Сервер запущено на порту ${PORT} ===`));
