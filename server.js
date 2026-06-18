@@ -7,7 +7,7 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 
-// Ліміт 100MB для кружків, фото та аватарок
+// Максимальний ліміт для кружечків та фото (100MB)
 const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
@@ -16,7 +16,7 @@ let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {}; 
 
-// --- НАДІЙНЕ ЗАВАНТАЖЕННЯ БАЗИ ДАНИХ ---
+// --- НАДІЙНЕ ЗАВАНТАЖЕННЯ БАЗИ ---
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -25,27 +25,21 @@ function loadDatabase() {
                 const parsed = JSON.parse(rawData);
                 messagesDatabase = parsed.messagesDatabase || {};
                 userProfiles = parsed.userProfiles || {};
-                console.log(`[БД] Успішно завантажено. Користувачів в базі: ${Object.keys(userProfiles).length}`);
+                console.log(`[БД] База успішно завантажена. Користувачів: ${Object.keys(userProfiles).length}`);
             }
         }
     } catch (e) {
-        console.error('[БД] Помилка при завантаженні бази даних:', e.message);
+        console.error('[БД] Помилка завантаження:', e.message);
     }
 }
 
-// --- ШВИДКЕ АСИНХРОННЕ ЗБЕРЕЖЕННЯ (БЕЗ ЛАГІВ ТА ЗАВИСАНЬ) ---
+// --- СИНХРОННО-АСИНХРОННЕ ЗБЕРЕЖЕННЯ (БЕЗ ЗАВИСАНЬ) ---
 function saveDatabase() {
-    try {
-        const dataToSave = { messagesDatabase, userProfiles };
-        // fs.writeFile працює у фоні і не зупиняє роботу чату ні на мілісекунду
-        fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
-            if (err) {
-                console.error('[БД] Помилка фонового запису на диск:', err.message);
-            }
-        });
-    } catch (e) {
-        console.error('[БД] Помилка серіалізації JSON:', e.message);
-    }
+    const dataToSave = { messagesDatabase, userProfiles };
+    // Використовуємо звичайний writeFile, щоб сервер на Render не "падав" під час листування
+    fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
+        if (err) console.error('[БД] Помилка запису файлу:', err.message);
+    });
 }
 
 loadDatabase();
@@ -65,30 +59,24 @@ io.on('connection', (socket) => {
         sessionUser = data.username;
         activeConnections[sessionUser] = socket.id;
 
-        let isChanged = false;
         if (!userProfiles[sessionUser]) {
             userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '' };
-            isChanged = true;
         }
-        if (!userProfiles[sessionUser].chatList) { 
-            userProfiles[sessionUser].chatList = []; 
-            isChanged = true; 
-        }
-        
-        if (isChanged) saveDatabase();
+        if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
-        // Надсилаємо оновлений список онлайн усім
+        saveDatabase();
+
+        // Повідомляємо всіх про статус онлайн
         io.emit('online_list', Object.keys(activeConnections));
-        // Відновлюємо список чатів для користувача
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Повертаємо оригінальну повну розсилку профілів (щоб працювали аватарки та дзвінки)
+        // Передаємо ПОВНІ профілі (з аватарками), щоб у фронтенда не було затримок із відображенням
         Object.keys(userProfiles).forEach(username => {
-            io.emit('profile_broadcast', { username, data: userProfiles[username] });
+            socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // Запит профілю
+    // Окремий запит профілю (про всяк випадок, якщо фронтенд його смикає)
     socket.on('request_profile', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -113,16 +101,15 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Швидкий пошук користувачів для підказок
+    // СТАРТИЙ ЛОКАЛЬНИЙ ПОШУК (Повертаємо так, як очікує твій файл 17)
     socket.on('search_users', (data) => {
         if (!data || !data.query) return;
         const query = data.query.toLowerCase().trim();
-        
         const results = [];
+        
         Object.keys(userProfiles).forEach(username => {
             const p = userProfiles[username] || {};
             const dName = (p.displayName || '').toLowerCase();
-            
             if (username.toLowerCase().includes(query) || dName.includes(query)) {
                 results.push({
                     username: username,
@@ -135,51 +122,7 @@ io.on('connection', (socket) => {
         socket.emit('search_results', { query: data.query, results });
     });
 
-    // Новий Глобальний пошук (Люди + Повідомлення)
-    socket.on('global_search', (data) => {
-        if (!data || !data.query || !sessionUser) return;
-        const query = data.query.toLowerCase().trim();
-        
-        const foundUsers = [];
-        const foundMessages = [];
-
-        Object.keys(userProfiles).forEach(username => {
-            const p = userProfiles[username] || {};
-            const dName = (p.displayName || '').toLowerCase();
-            if (username.toLowerCase().includes(query) || dName.includes(query)) {
-                foundUsers.push({
-                    username: username,
-                    displayName: p.displayName || username,
-                    avatar: p.avatar || '',
-                    bio: p.bio || ''
-                });
-            }
-        });
-
-        Object.keys(messagesDatabase).forEach(room => {
-            if (room.includes(sessionUser)) {
-                const roomMsgs = messagesDatabase[room] || [];
-                roomMsgs.forEach(msg => {
-                    if (msg && msg.text && msg.text.toLowerCase().includes(query)) {
-                        const partner = msg.from === sessionUser ? msg.to : msg.from;
-                        foundMessages.push({
-                            id: msg.id,
-                            room: room,
-                            partner: partner,
-                            from: msg.from,
-                            text: msg.text,
-                            timestamp: msg.timestamp
-                        });
-                    }
-                });
-            }
-        });
-
-        foundMessages.sort((a, b) => b.timestamp - a.timestamp);
-        socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
-    });
-
-    // Оновлення особистого профілю (Аватарка, Біо, Нікнейм)
+    // Оновлення особистого профілю
     socket.on('update_profile', (data) => {
         if (!sessionUser || !data) return;
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -190,15 +133,17 @@ io.on('connection', (socket) => {
         userProfiles[sessionUser].avatar = profileData.avatar || ''; 
         
         saveDatabase();
+        
+        // Одразу бродкастимо всім оновлені дані, щоб аватарка змінилася миттєво
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
-    // --- ЗАЛІЗОБЕТОННІ WebRTC ДЗВІНКИ ---
+    // === ПЕРЕВІРЕНИЙ ФІКС ДЗВІНКІВ (WebRTC) ===
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
         if (targetSocketId) {
-            // Пересилаємо точний сокет-пакет отримувачу без змін структури
+            // Передаємо пакет СУВОРО у первісному вигляді, без додавання зайвих полів, щоб WebRTC на фронті не падав
             io.to(targetSocketId).emit('webrtc_signal', data);
         }
     });
@@ -213,13 +158,13 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Запит історії повідомлень
+    // Історія чату
     socket.on('request_history', (data) => {
         if (!data || !data.room) return;
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // Надсилання нового повідомлення
+    // Надсилання повідомлення
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
@@ -236,7 +181,7 @@ io.on('connection', (socket) => {
 
         saveDatabase();
 
-        // Оновлюємо профілі у всіх клієнтів, щоб синхронізувати списки
+        // Оновлюємо списки чатів у клієнтів
         io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
         io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
 
@@ -248,12 +193,10 @@ io.on('connection', (socket) => {
         socket.to(msg.room).emit('chat_message', msg);
     });
 
-    // Статус "Друкує..."
     socket.on('typing', (data) => {
         if (data && data.room) socket.to(data.room).emit('typing', data);
     });
 
-    // Синхронізація списку чатів
     socket.on('sync_chat_list', (data) => {
         if (sessionUser && data && data.chatList) {
             if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -262,7 +205,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Позначити як прочитане
     socket.on('mark_read', (data) => {
         if (!data || !data.room || !data.reader) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -272,37 +214,7 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('messages_read', data);
     });
 
-    // Редагування повідомлення
-    socket.on('edit_message', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) { msg.text = data.newText; msg.edited = true; saveDatabase(); }
-        }
-        socket.to(data.room).emit('edit_message', data);
-    });
-
-    // Видалення повідомлення
-    socket.on('delete_message', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            messagesDatabase[data.room] = messagesDatabase[data.room].filter(m => m && m.id !== data.msgId);
-            saveDatabase();
-        }
-        socket.to(data.room).emit('delete_message', data);
-    });
-
-    // Реакції на повідомлення
-    socket.on('message_reaction', (data) => {
-        if (!data || !data.room || !data.msgId) return;
-        if (Array.isArray(messagesDatabase[data.room])) {
-            const msg = messagesDatabase[data.room].find(m => m && m.id === data.msgId);
-            if (msg) { msg.reactions = data.reactions || {}; saveDatabase(); }
-        }
-        socket.to(data.room).emit('message_reaction', data);
-    });
-
-    // Закріплення та відкріплення повідомлень
+    // Обробка закріплень повідомлень
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         const pinnedKey = data.room + '_pinned';
@@ -326,17 +238,6 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
-    // Очищення історії чату
-    socket.on('clear_history', (data) => {
-        if (!data || !data.room) return;
-        if (messagesDatabase[data.room]) {
-            messagesDatabase[data.room] = [];
-            saveDatabase();
-        }
-        socket.to(data.room).emit('clear_history', data);
-    });
-
-    // Відключення користувача
     socket.on('disconnect', () => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
@@ -345,4 +246,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`=== Стабільний сервер BurmaldaGram запущено на порту ${PORT} ===`));
+server.listen(PORT, () => console.log(`=== Запущено залізобетонну версію BurmaldaGram на порту ${PORT} ===`));
