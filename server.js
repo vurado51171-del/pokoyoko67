@@ -31,24 +31,23 @@ function loadDatabase() {
     }
 }
 
-// ОПТИМІЗАЦІЯ: Асинхронне відкладене збереження (Debounce) для захисту від перевантаження
+// Оптимізоване асинхронне збереження (Debounce)
 let saveTimeout = null;
 function saveDatabase() {
-    if (saveTimeout) return; // Якщо запис уже заплановано, не спамимо диск
+    if (saveTimeout) return; 
 
     saveTimeout = setTimeout(() => {
         const dataToSave = { messagesDatabase, userProfiles };
-        // ОПТИМІЗАЦІЯ: Прибрано 'null, 2' для стиснення файлу та економії процесорного часу на Base64
         fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
             saveTimeout = null;
             if (err) {
                 console.error('Помилка при асинхронному збереженні бази даних:', err.message);
             }
         });
-    }, 2000); // Зберігаємо на диск не частіше ніж раз на 2 секунди
+    }, 2000); 
 }
 
-// Примусове збереження при коректному завершенні роботи сервера (наприклад, Ctrl+C)
+// Примусове збереження при зупинці сервера
 process.on('SIGINT', () => {
     console.log('\n[Сервер] Збереження бази даних перед виходом...');
     try {
@@ -77,7 +76,6 @@ io.on('connection', (socket) => {
         sessionUser = data.username;
         activeConnections[sessionUser] = socket.id;
 
-        // Ініціалізація з підтримкою поля аватарки
         if (!userProfiles[sessionUser]) {
             userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '' };
         }
@@ -87,13 +85,11 @@ io.on('connection', (socket) => {
         io.emit('online_list', Object.keys(activeConnections));
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Оптимізований послідовний перебір, щоб не забити мережевий буфер великими даними аватарок
         Object.keys(userProfiles).forEach(username => {
             socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // Модернізована перевірка користувача
     socket.on('check_user_exists', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -109,7 +105,6 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ПОШУК КОРИСТУВАЧІВ З ПІДКАЗКАМИ
     socket.on('search_users', (data) => {
         if (!data || !data.query) return;
         const query = data.query.toLowerCase().trim();
@@ -149,6 +144,14 @@ io.on('connection', (socket) => {
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
+    // ВИПРАВЛЕННЯ 1: Додано обробник для запиту профілю (аватарок)
+    socket.on('request_profile', (data) => {
+        if (!data || !data.username) return;
+        if (userProfiles[data.username]) {
+            socket.emit('profile_broadcast', { username: data.username, data: userProfiles[data.username] });
+        }
+    });
+
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
@@ -163,7 +166,6 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // НАДСИЛАННЯ ПОВІДОМЛЕННЯ
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
@@ -210,10 +212,13 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Оновлена маршрутизація для дзвінків
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
-        if (targetSocketId) io.to(targetSocketId).emit('webrtc_signal', data);
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('webrtc_signal', data);
+        }
     });
 
     socket.on('mark_read', (data) => {
@@ -252,6 +257,7 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('message_reaction', data);
     });
 
+    // ВИПРАВЛЕННЯ 2: Замінено data.msg на data.pinData для коректної обробки
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         const pinnedKey = data.room + '_pinned';
@@ -261,12 +267,10 @@ io.on('connection', (socket) => {
         if (data.action === 'remove') {
             if (data.pinData && data.pinData.id) {
                 messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== data.pinData.id);
-            } else if (data.msgId) {
-                messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== data.msgId);
             }
-        } else if (data.action === 'add' && data.msg) {
-            if (!messagesDatabase[pinnedKey].some(p => p.id === data.msg.id)) {
-                messagesDatabase[pinnedKey].push(data.msg);
+        } else if (data.action === 'add' && data.pinData) {
+            if (!messagesDatabase[pinnedKey].some(p => p.id === data.pinData.id)) {
+                messagesDatabase[pinnedKey].push(data.pinData);
             }
         } else if (data.pinned) {
             messagesDatabase[pinnedKey] = data.pinned;
@@ -286,9 +290,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        // ОПТИМІЗАЦІЯ Й ВИПРАВЛЕННЯ БАГУ: видаляємо користувача з активних підключень
-        // тільки у випадку, якщо закривається саме той сокет, який записаний як активний.
-        // Це повністю виправляє баг із дзвінками «через раз» після оновлення сторінки!
         if (sessionUser && activeConnections[sessionUser] === socket.id) {
             delete activeConnections[sessionUser];
             io.emit('online_list', Object.keys(activeConnections));
