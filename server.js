@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
 // --- СЮДИ ВСТАВ ПОСИЛАННЯ З GOOGLE APPS SCRIPT ---
-const GAS_WEB_APP_URL = "ВСТАВИТИ_ТУТ_URL_APPS_SCRIPT"; 
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE_OSiBrSYlcNLCsp9W6pKP80x7IClsOVz2yvruKDpY4wECMgK76x5dLFdVoqvq06DvA/exec"; 
 
 let userProfiles = {};
 let messagesDatabase = {};
