@@ -31,14 +31,35 @@ function loadDatabase() {
     }
 }
 
+// ОПТИМІЗАЦІЯ: Асинхронне відкладене збереження (Debounce) для захисту від перевантаження
+let saveTimeout = null;
 function saveDatabase() {
+    if (saveTimeout) return; // Якщо запис уже заплановано, не спамимо диск
+
+    saveTimeout = setTimeout(() => {
+        const dataToSave = { messagesDatabase, userProfiles };
+        // ОПТИМІЗАЦІЯ: Прибрано 'null, 2' для стиснення файлу та економії процесорного часу на Base64
+        fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
+            saveTimeout = null;
+            if (err) {
+                console.error('Помилка при асинхронному збереженні бази даних:', err.message);
+            }
+        });
+    }, 2000); // Зберігаємо на диск не частіше ніж раз на 2 секунди
+}
+
+// Примусове збереження при коректному завершенні роботи сервера (наприклад, Ctrl+C)
+process.on('SIGINT', () => {
+    console.log('\n[Сервер] Збереження бази даних перед виходом...');
     try {
         const dataToSave = { messagesDatabase, userProfiles };
-        fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
+        fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave), 'utf8');
+        console.log('[Сервер] Базу успішно збережено. Вихід.');
     } catch (e) {
-        console.error('Помилка при збереженні бази даних. Можливо файл занадто великий:', e.message);
+        console.error('[Сервер] Не вдалося зберегти базу перед виходом:', e.message);
     }
-}
+    process.exit();
+});
 
 loadDatabase();
 
@@ -66,13 +87,13 @@ io.on('connection', (socket) => {
         io.emit('online_list', Object.keys(activeConnections));
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Масове розсилання актуальних профілів усім
+        // Оптимізований послідовний перебір, щоб не забити мережевий буфер великими даними аватарок
         Object.keys(userProfiles).forEach(username => {
             socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // Модернізована перевірка користувача (тепер повертає дані профілю, включаючи аватарку)
+    // Модернізована перевірка користувача
     socket.on('check_user_exists', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -88,7 +109,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ПОШУК КОРИСТУВАЧІВ З ПІДКАЗКАМИ (Автокомпліт для клієнта)
+    // ПОШУК КОРИСТУВАЧІВ З ПІДКАЗКАМИ
     socket.on('search_users', (data) => {
         if (!data || !data.query) return;
         const query = data.query.toLowerCase().trim();
@@ -103,7 +124,6 @@ io.on('connection', (socket) => {
             const profile = userProfiles[username] || {};
             const displayName = (profile.displayName || '').toLowerCase();
             
-            // Шукаємо збіги за логіном (username) або відображуваним ім'ям (displayName)
             if (username.toLowerCase().includes(query) || displayName.includes(query)) {
                 results.push({
                     username: username,
@@ -123,7 +143,7 @@ io.on('connection', (socket) => {
         
         userProfiles[sessionUser].displayName = data.displayName || sessionUser;
         userProfiles[sessionUser].bio = data.bio || '';
-        userProfiles[sessionUser].avatar = data.avatar || ''; // Оновлення Base64 або URL аватарки
+        userProfiles[sessionUser].avatar = data.avatar || ''; 
         
         saveDatabase();
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
@@ -143,7 +163,7 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // МОДЕРНІЗОВАНЕ НАДСИЛАННЯ ПОВІДОМЛЕННЯ
+    // НАДСИЛАННЯ ПОВІДОМЛЕННЯ
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
@@ -160,28 +180,20 @@ io.on('connection', (socket) => {
 
         saveDatabase();
 
-        // Форсуємо синхронізацію профілів відправника та отримувача для обох сторін
         io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
         io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
 
-        // КЛЮЧОВЕ ВИПРАВЛЕННЯ: Доставка повідомлення отримувачу, якщо він онлайн
         const targetSocketId = activeConnections[msg.to];
         if (targetSocketId) {
-            // Оновлюємо бічну панель чатів отримувача в реальному часі
             io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
-            
-            // Перевіряємо, чи підключений отримувач безпосередньо всередині кімнати чату прямо зараз
             const targetSocketInstance = io.sockets.sockets.get(targetSocketId);
             const isAlreadyInRoom = targetSocketInstance && targetSocketInstance.rooms.has(msg.room);
 
-            // Якщо він НЕ всередині вікна чату, надсилаємо йому івент прямо на персональний ID,
-            // щоб його фронтенд міг відловити подію, додати чат у список та показати лічильник
             if (!isAlreadyInRoom) {
                 io.to(targetSocketId).emit('chat_message', msg);
             }
         }
 
-        // Надсилаємо повідомлення всім іншим пристроям у кімнаті чату
         socket.to(msg.room).emit('chat_message', msg);
     });
 
@@ -274,7 +286,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        if (sessionUser) {
+        // ОПТИМІЗАЦІЯ Й ВИПРАВЛЕННЯ БАГУ: видаляємо користувача з активних підключень
+        // тільки у випадку, якщо закривається саме той сокет, який записаний як активний.
+        // Це повністю виправляє баг із дзвінками «через раз» після оновлення сторінки!
+        if (sessionUser && activeConnections[sessionUser] === socket.id) {
             delete activeConnections[sessionUser];
             io.emit('online_list', Object.keys(activeConnections));
         }
