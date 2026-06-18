@@ -11,11 +11,14 @@ const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
+// --- СЮДИ ВСТАВ ПОСИЛАННЯ З GOOGLE APPS SCRIPT ---
+// (Важливо: потрібне нове посилання після додавання функції search_users)
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE_OSiBrSYlcNLCsp9W6pKP80x7IClsOVz2yvruKDpY4wECMgK76x5dLFdVoqvq06DvA/exec"; 
+
 let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {}; 
 
-// --- НАДІЙНЕ ЗАВАНТАЖЕННЯ БАЗИ ДАНИХ ---
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -32,15 +35,11 @@ function loadDatabase() {
     }
 }
 
-// --- ШВИДКЕ АСИНХРОННЕ ЗБЕРЕЖЕННЯ (БЕЗ ЛАГІВ ТА ЗАВИСАНЬ) ---
 function saveDatabase() {
     try {
         const dataToSave = { messagesDatabase, userProfiles };
-        // fs.writeFile працює у фоні і не зупиняє роботу чату ні на мілісекунду
         fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
-            if (err) {
-                console.error('[БД] Помилка фонового запису на диск:', err.message);
-            }
+            if (err) console.error('[БД] Помилка фонового запису на диск:', err.message);
         });
     } catch (e) {
         console.error('[БД] Помилка серіалізації JSON:', e.message);
@@ -75,18 +74,14 @@ io.on('connection', (socket) => {
         
         if (isChanged) saveDatabase();
 
-        // Надсилаємо оновлений список онлайн усім
         io.emit('online_list', Object.keys(activeConnections));
-        // Відновлюємо список чатів для користувача
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Повертаємо оригінальну повну розсилку профілів (щоб працювали аватарки та дзвінки)
         Object.keys(userProfiles).forEach(username => {
             io.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // Запит профілю
     socket.on('request_profile', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -95,111 +90,115 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Перевірка існування користувача
-    socket.on('check_user_exists', (data) => {
-        if (!data || !data.username) return;
-        const uProfile = userProfiles[data.username];
-        const exists = !!uProfile;
-        socket.emit('user_exists_result', { 
-            username: data.username, 
-            exists,
-            profile: exists ? {
-                displayName: uProfile.displayName || data.username,
-                avatar: uProfile.avatar || '',
-                bio: uProfile.bio || ''
-            } : null
-        });
-    });
-
-    // --- ЖЕЛЕЗОБЕТОННЫЙ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ---
-    socket.on('search_users', (data) => {
+    // --- РОЗУМНИЙ ПОШУК (Локально + Google Sheets через Apps Script) ---
+    socket.on('search_users', async (data) => {
         if (!data || typeof data.query !== 'string') return;
         const query = data.query.toLowerCase().trim();
         
         const results = [];
-        if (!query) {
-            socket.emit('search_results', { query: '', results });
-            return;
-        }
+        const seenUsernames = new Set();
 
-        // Ищем по всем когда-либо сохраненным профилям (онлайн и оффлайн)
+        // 1. Спочатку шукаємо локально
         Object.keys(userProfiles).forEach(username => {
             const p = userProfiles[username] || {};
-            const dName = (typeof p.displayName === 'string' ? p.displayName : '').toLowerCase();
-            const bio = (typeof p.bio === 'string' ? p.bio : '').toLowerCase();
-            const uName = username.toLowerCase();
-            
-            if (uName.includes(query) || dName.includes(query) || bio.includes(query)) {
+            const dName = (p.displayName || '').toLowerCase();
+            if (username.toLowerCase().includes(query) || dName.includes(query)) {
                 results.push({
-                    username: username,
-                    displayName: p.displayName || username,
-                    avatar: p.avatar || '',
-                    bio: p.bio || '',
-                    isOnline: !!activeConnections[username] // Передаем статус сети
-                });
-            }
-        });
-        socket.emit('search_results', { query: data.query, results });
-    });
-
-    // --- ЖЕЛЕЗОБЕТОННЫЙ ГЛОБАЛЬНЫЙ ПОИСК (Люди + Повідомлення) ---
-    socket.on('global_search', (data) => {
-        if (!data || typeof data.query !== 'string' || !sessionUser) return;
-        const query = data.query.toLowerCase().trim();
-        
-        const foundUsers = [];
-        const foundMessages = [];
-
-        if (!query) {
-            socket.emit('global_search_results', { query: '', users: [], messages: [] });
-            return;
-        }
-
-        // Поиск пользователей (оффлайн + онлайн)
-        Object.keys(userProfiles).forEach(username => {
-            const p = userProfiles[username] || {};
-            const dName = (typeof p.displayName === 'string' ? p.displayName : '').toLowerCase();
-            const bio = (typeof p.bio === 'string' ? p.bio : '').toLowerCase();
-            const uName = username.toLowerCase();
-
-            if (uName.includes(query) || dName.includes(query) || bio.includes(query)) {
-                foundUsers.push({
                     username: username,
                     displayName: p.displayName || username,
                     avatar: p.avatar || '',
                     bio: p.bio || '',
                     isOnline: !!activeConnections[username]
                 });
+                seenUsernames.add(username.toLowerCase());
             }
         });
 
-        // Поиск сообщений
-        Object.keys(messagesDatabase).forEach(room => {
-            if (room.includes(sessionUser)) {
-                const roomMsgs = messagesDatabase[room] || [];
-                roomMsgs.forEach(msg => {
-                    // Строгая проверка, что msg.text существует и является строкой
-                    if (msg && typeof msg.text === 'string' && msg.text.toLowerCase().includes(query)) {
-                        const partner = msg.from === sessionUser ? msg.to : msg.from;
-                        foundMessages.push({
-                            id: msg.id,
-                            room: room,
-                            partner: partner,
-                            from: msg.from,
-                            text: msg.text,
-                            timestamp: msg.timestamp
-                        });
-                    }
+        // Відправляємо швидкі локальні результати
+        socket.emit('search_results', { query: data.query, results });
+
+        // 2. Робимо запит до Apps Script (Google Sheets)
+        if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.startsWith("http")) {
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'search_users', query: query }),
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                const gasData = await response.json();
+                
+                if (gasData.status === 'success' && gasData.data) {
+                    let hasNew = false;
+                    gasData.data.forEach(user => {
+                        if (!seenUsernames.has(user.username.toLowerCase())) {
+                            results.push({
+                                username: user.username,
+                                displayName: user.displayName,
+                                avatar: '',
+                                bio: 'Знайдено в базі',
+                                isOnline: false
+                            });
+                            seenUsernames.add(user.username.toLowerCase());
+                            hasNew = true;
+                        }
+                    });
+                    
+                    // Якщо знайшли когось нового в таблиці - оновлюємо результати клієнту
+                    if (hasNew) {
+                        socket.emit('search_results', { query: data.query, results });
+                    }
+                }
+            } catch (err) {
+                console.error('[GAS Search] Помилка:', err.message);
             }
-        });
-
-        // Сортировка сообщений от новых к старым
-        foundMessages.sort((a, b) => b.timestamp - a.timestamp);
-        socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
+        }
     });
 
-    // Оновлення особистого профілю (Аватарка, Біо, Нікнейм)
+    // --- ПЕРЕВІРКА ІСНУВАННЯ КОРИСТУВАЧА ---
+    socket.on('check_user_exists', async (data) => {
+        if (!data || !data.username) return;
+        const target = data.username.toLowerCase().trim();
+        
+        // 1. Шукаємо локально
+        const localMatch = Object.keys(userProfiles).find(u => u.toLowerCase() === target);
+        if (localMatch) {
+            const uProfile = userProfiles[localMatch];
+            socket.emit('user_exists_result', { 
+                username: localMatch, 
+                exists: true,
+                profile: { displayName: uProfile.displayName || localMatch, avatar: uProfile.avatar || '', bio: uProfile.bio || '' }
+            });
+            return;
+        }
+
+        // 2. Якщо локально немає, перевіряємо через Apps Script
+        if (GAS_WEB_APP_URL && GAS_WEB_APP_URL.startsWith("http")) {
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'check_user', targetUser: target }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const gasData = await response.json();
+
+                if (gasData.status === 'success' && gasData.exists) {
+                    socket.emit('user_exists_result', { 
+                        username: gasData.username || data.username, 
+                        exists: true,
+                        profile: { displayName: gasData.username || data.username, avatar: '', bio: '' }
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.error('[GAS Check] Помилка:', err.message);
+            }
+        }
+
+        // Якщо ніде немає
+        socket.emit('user_exists_result', { username: data.username, exists: false, profile: null });
+    });
+
+    // Оновлення особистого профілю
     socket.on('update_profile', (data) => {
         if (!sessionUser || !data) return;
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -213,17 +212,47 @@ io.on('connection', (socket) => {
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
-    // --- ЗАЛІЗОБЕТОННІ WebRTC ДЗВІНКИ ---
+    // Глобальний пошук (повідомлення)
+    socket.on('global_search', (data) => {
+        if (!data || !data.query || !sessionUser) return;
+        const query = data.query.toLowerCase().trim();
+        
+        const foundUsers = [];
+        const foundMessages = [];
+
+        Object.keys(userProfiles).forEach(username => {
+            const p = userProfiles[username] || {};
+            const dName = (p.displayName || '').toLowerCase();
+            if (username.toLowerCase().includes(query) || dName.includes(query)) {
+                foundUsers.push({ username, displayName: p.displayName || username, avatar: p.avatar || '', bio: p.bio || '' });
+            }
+        });
+
+        Object.keys(messagesDatabase).forEach(room => {
+            if (room.includes(sessionUser)) {
+                const roomMsgs = messagesDatabase[room] || [];
+                roomMsgs.forEach(msg => {
+                    if (msg && msg.text && msg.text.toLowerCase().includes(query)) {
+                        const partner = msg.from === sessionUser ? msg.to : msg.from;
+                        foundMessages.push({ id: msg.id, room: room, partner: partner, from: msg.from, text: msg.text, timestamp: msg.timestamp });
+                    }
+                });
+            }
+        });
+
+        foundMessages.sort((a, b) => b.timestamp - a.timestamp);
+        socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
+    });
+
+    // --- ЗАЛІЗОБЕТОННІ WebRTC ДЗВІНКИ (Твій оригінал) ---
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
         if (targetSocketId) {
-            // Пересилаємо точний сокет-пакет отримувачу без змін структури
             io.to(targetSocketId).emit('webrtc_signal', data);
         }
     });
 
-    // Вхід в кімнату чату
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
@@ -233,13 +262,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Запит історії повідомлень
     socket.on('request_history', (data) => {
         if (!data || !data.room) return;
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // Надсилання нового повідомлення
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
@@ -256,7 +283,6 @@ io.on('connection', (socket) => {
 
         saveDatabase();
 
-        // Оновлюємо профілі у всіх клієнтів, щоб синхронізувати списки
         io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
         io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
 
@@ -268,12 +294,10 @@ io.on('connection', (socket) => {
         socket.to(msg.room).emit('chat_message', msg);
     });
 
-    // Статус "Друкує..."
     socket.on('typing', (data) => {
         if (data && data.room) socket.to(data.room).emit('typing', data);
     });
 
-    // Синхронізація списку чатів
     socket.on('sync_chat_list', (data) => {
         if (sessionUser && data && data.chatList) {
             if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -282,7 +306,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Позначити як прочитане
     socket.on('mark_read', (data) => {
         if (!data || !data.room || !data.reader) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -292,7 +315,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('messages_read', data);
     });
 
-    // Редагування повідомлення
     socket.on('edit_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -302,7 +324,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('edit_message', data);
     });
 
-    // Видалення повідомлення
     socket.on('delete_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -312,7 +333,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('delete_message', data);
     });
 
-    // Реакції на повідомлення
     socket.on('message_reaction', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -322,7 +342,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('message_reaction', data);
     });
 
-    // Закріплення та відкріплення повідомлень
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         const pinnedKey = data.room + '_pinned';
@@ -346,7 +365,6 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
-    // Очищення історії чату
     socket.on('clear_history', (data) => {
         if (!data || !data.room) return;
         if (messagesDatabase[data.room]) {
@@ -356,7 +374,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('clear_history', data);
     });
 
-    // Відключення користувача
     socket.on('disconnect', () => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
