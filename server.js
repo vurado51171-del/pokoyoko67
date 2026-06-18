@@ -47,7 +47,6 @@ function saveDatabase() {
     }, 2000); 
 }
 
-// Примусове збереження при зупинці сервера
 process.on('SIGINT', () => {
     console.log('\n[Сервер] Збереження бази даних перед виходом...');
     try {
@@ -132,19 +131,22 @@ io.on('connection', (socket) => {
         socket.emit('search_results', { query: data.query, results });
     });
 
-    socket.on('update_profile', (data) => {
-        if (!sessionUser || !data) return;
+    // === ГОЛОВНИЙ ФІКС ДЛЯ АВАТАРОК ===
+    socket.on('update_profile', (payload) => {
+        if (!sessionUser || !payload) return;
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
         
-        userProfiles[sessionUser].displayName = data.displayName || sessionUser;
-        userProfiles[sessionUser].bio = data.bio || '';
-        userProfiles[sessionUser].avatar = data.avatar || ''; 
+        // Витягуємо дані правильно, бо клієнт надсилає об'єкт всередині об'єкта
+        const profileData = payload.data || payload;
+
+        userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
+        userProfiles[sessionUser].bio = profileData.bio || '';
+        userProfiles[sessionUser].avatar = profileData.avatar || ''; 
         
         saveDatabase();
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
-    // ВИПРАВЛЕННЯ 1: Додано обробник для запиту профілю (аватарок)
     socket.on('request_profile', (data) => {
         if (!data || !data.username) return;
         if (userProfiles[data.username]) {
@@ -212,7 +214,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Оновлена маршрутизація для дзвінків
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target) return;
         const targetSocketId = activeConnections[data.target];
@@ -257,7 +258,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('message_reaction', data);
     });
 
-    // ВИПРАВЛЕННЯ 2: Замінено data.msg на data.pinData для коректної обробки
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         const pinnedKey = data.room + '_pinned';
