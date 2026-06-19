@@ -7,7 +7,7 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 
-// Максимальний ліміт для передачі медіафайлів (100MB). 
+// Максимальний ліміт для передачі медіафайлів (100MB).
 // УВАГА: Великі аватарки в Base64 будуть вантажитися довго. В ідеалі їх треба стискати на фронтенді.
 const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
@@ -19,7 +19,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 // 1. Посилання на твій розгорнутий Google Apps Script.
 // Якщо поки не налаштував, залиш пусті лапки "".
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsYCWRnv42x3mGh6C3eelXJKw573UeNY10z6X2IhOlXFAb4oc8-lfHxJFv0PLd6X6Xw/exec"; 
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsYCWRnv42x3mGh6C3eelXJKw573UeNY10z6X2IhOlXFAb4oc8-lfHxJFv0PLd6X6Xw/exec";
 
 // 2. Дані для стабільних дзвінків від Metered.ca
 // Заміни "ТВІЙ_USERNAME" та "ТВІЙ_ПАСВОРД" на ті, що дали після реєстрації.
@@ -28,16 +28,17 @@ const METERED_RTC_CONFIG = {
         { urls: 'stun:stun.l.google.com:19302' },
         {
             urls: "turn:openrelay.metered.ca:443",
-            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
-            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
+            username: "ТВІЙ_USERNAME", // <-- Вставляти сюди
+            credential: "ТВІЙ_ПАСВОРД" // <-- Вставляти сюди
         },
         {
             urls: "turn:openrelay.metered.ca:80",
-            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
-            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
+            username: "ТВІЙ_USERNAME", // <-- Вставляти сюди
+            credential: "ТВІЙ_ПАСВОРД" // <-- Вставляти сюди
         }
     ]
 };
+
 // ============================================================================
 
 let userProfiles = {};
@@ -89,6 +90,7 @@ io.on('connection', (socket) => {
         if (!userProfiles[sessionUser]) {
             userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '' };
         }
+    
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
         saveDatabase();
@@ -102,7 +104,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Маршрутизація сигналів дзвінків (WebRTC) - Пофікшено sender
+    // Маршрутизація сигналів дзвінків (WebRTC)
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target || !sessionUser) return;
         const targetSocketId = activeConnections[data.target];
@@ -129,15 +131,23 @@ io.on('connection', (socket) => {
         if (!exists && GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=check&username=${encodeURIComponent(data.username)}`);
+                const responseText = await res.text(); // Спочатку читаємо як текст
+
                 if (res.ok) {
-                    const gasData = await res.json();
-                    if (gasData.exists) {
-                        exists = true;
-                        profile = gasData.profile || { displayName: data.username, avatar: '', bio: '' };
-                        // Зберігаємо знайденого юзера в локальний кеш
-                        userProfiles[data.username] = { chatList: [], ...profile };
-                        saveDatabase();
+                    try {
+                        const gasData = JSON.parse(responseText);
+                        if (gasData.exists) {
+                            exists = true;
+                            profile = gasData.profile || { displayName: data.username, avatar: '', bio: '' };
+                            // Зберігаємо знайденого юзера в локальний кеш
+                            userProfiles[data.username] = { chatList: [], ...profile };
+                            saveDatabase();
+                        }
+                    } catch (parseErr) {
+                        console.error(`[ПОМИЛКА GAS у check_user_exists] Очікувався JSON, але прийшло:`, responseText.substring(0, 300));
                     }
+                } else {
+                    console.error("[ПОМИЛКА GAS у check_user_exists] Статус HTTP:", res.status);
                 }
             } catch (err) {
                 console.error("Помилка запиту до Google Script (check):", err);
@@ -187,24 +197,33 @@ io.on('connection', (socket) => {
         if (GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&query=${encodeURIComponent(query)}`);
+                const responseText = await response.text(); // Спочатку читаємо як текст
+                
                 if (response.ok) {
-                    const googleResults = await response.json(); 
-                    if (Array.isArray(googleResults)) {
-                        googleResults.forEach(gu => {
-                            if (!foundUsernames.has(gu.username)) {
-                                results.push({
-                                    username: gu.username,
-                                    displayName: gu.displayName || gu.username,
-                                    avatar: gu.avatar || '',
-                                    bio: gu.bio || ''
-                                });
-                                foundUsernames.add(gu.username);
-                            }
-                        });
+                    try {
+                        const googleResults = JSON.parse(responseText);
+                        
+                        if (Array.isArray(googleResults)) {
+                            googleResults.forEach(gu => {
+                                if (!foundUsernames.has(gu.username)) {
+                                    results.push({
+                                        username: gu.username,
+                                        displayName: gu.displayName || gu.username,
+                                        avatar: gu.avatar || '',
+                                        bio: gu.bio || ''
+                                    });
+                                    foundUsernames.add(gu.username);
+                                }
+                            });
+                        }
+                    } catch (parseErr) {
+                        console.error("[ПОМИЛКА GAS у search_users] Google повернув не JSON! Ось що прийшло:", responseText.substring(0, 300));
                     }
+                } else {
+                    console.error("[ПОМИЛКА GAS у search_users] Статус HTTP:", response.status);
                 }
             } catch (error) {
-                console.error("Помилка під час пошуку в Google Таблицях:", error);
+                console.error("Помилка під час підключення до Google Таблиць:", error);
             }
         }
 
@@ -219,7 +238,7 @@ io.on('connection', (socket) => {
             socket.emit('global_search_results', { query: data.query, users: [], messages: [] });
             return;
         }
-        
+     
         const foundUsers = [];
         const foundMessages = [];
 
@@ -228,6 +247,7 @@ io.on('connection', (socket) => {
             if (!p) return;
             const safeUsername = String(username).toLowerCase();
             const safeDisplayName = String(p.displayName || '').toLowerCase();
+    
             if (safeUsername.includes(query) || safeDisplayName.includes(query)) {
                 foundUsers.push({
                     username: username,
@@ -249,7 +269,6 @@ io.on('connection', (socket) => {
                 });
             }
         });
-
         foundMessages.sort((a, b) => b.timestamp - a.timestamp);
         socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
     });
@@ -263,7 +282,7 @@ io.on('connection', (socket) => {
         userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
         userProfiles[sessionUser].bio = profileData.bio || '';
         userProfiles[sessionUser].avatar = profileData.avatar || ''; 
-        
+      
         saveDatabase();
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
@@ -365,7 +384,7 @@ io.on('connection', (socket) => {
         if (data.action === 'remove') {
             const targetId = data.msgId || (data.pinData ? data.pinData.id : null) || (data.msg ? data.msg.id : null);
             if (targetId) {
-                messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
+                 messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
             }
         } else if (data.action === 'add') {
             const activeMsg = data.msg || data.pinData;
