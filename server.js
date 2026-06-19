@@ -19,7 +19,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 
 // 1. Посилання на твій розгорнутий Google Apps Script.
 // Якщо поки не налаштував, залиш пусті лапки "".
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCsYCWRnv42x3mGh6C3eelXJKw573UeNY10z6X2IhOlXFAb4oc8-lfHxJFv0PLd6X6Xw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyIYy5XiD82rQAir07gdhBCvm2eCoNP9KfMOf_CrHgyIzQqpwsu5OgSJpvtQJym_oc6dg/exec";
 
 // 2. Дані для стабільних дзвінків від Metered.ca
 // Заміни "ТВІЙ_USERNAME" та "ТВІЙ_ПАСВОРД" на ті, що дали після реєстрації.
