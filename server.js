@@ -28,13 +28,13 @@ const METERED_RTC_CONFIG = {
         { urls: 'stun:stun.l.google.com:19302' },
         {
             urls: "turn:openrelay.metered.ca:443",
-            username: "ТВІЙ_USERNAME", // <-- Вставляти сюди
-            credential: "ТВІЙ_ПАСВОРД" // <-- Вставляти сюди
+            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
+            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
         },
         {
             urls: "turn:openrelay.metered.ca:80",
-            username: "ТВІЙ_USERNAME", // <-- Вставляти сюди
-            credential: "ТВІЙ_ПАСВОРД" // <-- Вставляти сюди
+            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
+            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
         }
     ]
 };
