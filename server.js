@@ -12,7 +12,7 @@ const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// --- ДАНІ ТВОГО TURN-СЕРВЕРА ВІД METERED ---
+// --- ДАНІ TURN-СЕРВЕРА ВІД METERED ---
 const METERED_RTC_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -53,16 +53,18 @@ function loadDatabase() {
 // --- ФОНОВЕ ЗБЕРЕЖЕННЯ ДАНИХ (БЕЗ ЛАГІВ СЕРВЕРА) ---
 function saveDatabase() {
     const dataToSave = { messagesDatabase, userProfiles };
-    fs.writeFile(DB_FILE, JSON.stringify(dataToSave), 'utf8', (err) => {
+    fs.writeFile(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8', (err) => {
         if (err) console.error('[БД] Помилка запису на диск:', err.message);
     });
 }
 
 loadDatabase();
 
+// Статика: роздаємо файли з коріння та папки public
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Маршрути для chat.html
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'chat.html')));
 app.get('/chat', (req, res) => res.sendFile(path.join(__dirname, 'chat.html')));
 
@@ -82,17 +84,30 @@ io.on('connection', (socket) => {
 
         saveDatabase();
 
-        // Відправляємо список онлайн та історію чатів користувача
+        // Список онлайн та історія чатів
         io.emit('online_list', Object.keys(activeConnections));
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
 
-        // Автоматично віддаємо клієнту налаштування TURN-сервера від Metered
+        // Передаємо налаштування WebRTC клієнту
         socket.emit('rtc_config', METERED_RTC_CONFIG);
 
-        // Розсилаємо профілі всіх зареєстрованих людей (для відображення аватарок)
+        // Розсилка профілів для аватарок
         Object.keys(userProfiles).forEach(username => {
             socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
+    });
+
+    // Маршрутизація сигналів дзвінків (WebRTC) + Фікс ідентифікації відправника
+    socket.on('webrtc_signal', (data) => {
+        if (!data || !data.target || !sessionUser) return;
+        const targetSocketId = activeConnections[data.target];
+        if (targetSocketId) {
+            // Обов'язково прокидаємо sender, щоб отримувач знав, від кого дзвінок/ice-кандидат
+            io.to(targetSocketId).emit('webrtc_signal', {
+                ...data,
+                sender: sessionUser 
+            });
+        }
     });
 
     // Запит конкретного профілю
@@ -104,7 +119,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Перевірка існування користувача в базі
+    // Перевірка існування користувача
     socket.on('check_user_exists', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -120,7 +135,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Швидкі підказки при введенні імені
+    // Швидкі підказки при пошуку
     socket.on('search_users', (data) => {
         if (!data || !data.query) return;
         const query = data.query.toLowerCase().trim();
@@ -141,7 +156,7 @@ io.on('connection', (socket) => {
         socket.emit('search_results', { query: data.query, results });
     });
 
-    // --- ПОТУЖНИЙ ГЛОБАЛЬНИЙ ПОШУК (Шукає ВСІХ: і онлайн, і офлайн) ---
+    // Глобальний пошук (люди + повідомлення)
     socket.on('global_search', (data) => {
         if (!data || !data.query || !sessionUser) return;
         const query = data.query.toLowerCase().trim();
@@ -149,7 +164,6 @@ io.on('connection', (socket) => {
         const foundUsers = [];
         const foundMessages = [];
 
-        // 1. Шукаємо серед абсолютно всіх користувачів, які є у файлі бази даних
         Object.keys(userProfiles).forEach(username => {
             const p = userProfiles[username] || {};
             const dName = (p.displayName || '').toLowerCase();
@@ -164,7 +178,6 @@ io.on('connection', (socket) => {
             }
         });
 
-        // 2. Шукаємо збіги по тексту повідомлень у твоїх діалогах
         Object.keys(messagesDatabase).forEach(room => {
             if (room.includes(sessionUser)) {
                 const roomMsgs = messagesDatabase[room] || [];
@@ -184,10 +197,7 @@ io.on('connection', (socket) => {
             }
         });
 
-        // Сортуємо знайдені повідомлення від новіших до старіших
         foundMessages.sort((a, b) => b.timestamp - a.timestamp);
-        
-        // Повертаємо результат на фронтенд
         socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
     });
 
@@ -205,15 +215,7 @@ io.on('connection', (socket) => {
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
-    // Маршрутизація сигналів дзвінків (WebRTC)
-    socket.on('webrtc_signal', (data) => {
-        if (!data || !data.target) return;
-        const targetSocketId = activeConnections[data.target];
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('webrtc_signal', data);
-        }
-    });
-
+    // Кімнати та робота з закріпленими повідомленнями
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
@@ -228,6 +230,7 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
+    // Обробка повідомлень
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
