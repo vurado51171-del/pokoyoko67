@@ -9,7 +9,11 @@ const server = http.createServer(app);
 
 // Максимальний ліміт для передачі медіафайлів (100MB).
 // УВАГА: Великі аватарки в Base64 будуть вантажитися довго. В ідеалі їх треба стискати на фронтенді.
-const io = new Server(server, { maxHttpBufferSize: 1e8 });
+const io = new Server(server, { 
+    maxHttpBufferSize: 1e8,
+    cors: { origin: "*" } // Добавлено для избежания проблем с CORS
+});
+
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
@@ -17,28 +21,25 @@ const DB_FILE = path.join(__dirname, 'database.json');
 // 🛑 НАЛАШТУВАННЯ: ВСТАВ СВОЇ ДАНІ ТУТ
 // ============================================================================
 
-// 1. Посилання на твій розгорнутий Google Apps Script.
-// Якщо поки не налаштував, залиш пусті лапки "".
+// 1. Посилання на розгорнутий Google Apps Script.
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDPbd2dYEJmsECYI5Uc-lbwB9wL5ffM6zSkWcTOnPAhLaZUEP5C3Gbv_ui8MtaeLFcXQ/exec";
 
 // 2. Дані для стабільних дзвінків від Metered.ca
-// Заміни "ТВІЙ_USERNAME" та "ТВІЙ_ПАСВОРД" на ті, що дали після реєстрації.
 const METERED_RTC_CONFIG = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         {
             urls: "turn:openrelay.metered.ca:443",
-            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
-            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
+            username: "cc09a57d4063ee260e675fae",
+            credential: "c1Pc28HiQXoD/Adt"
         },
         {
             urls: "turn:openrelay.metered.ca:80",
-            username: "cc09a57d4063ee260e675fae", // <-- Вставляти сюди
-            credential: "c1Pc28HiQXoD/Adt" // <-- Вставляти сюди
+            username: "cc09a57d4063ee260e675fae",
+            credential: "c1Pc28HiQXoD/Adt"
         }
     ]
 };
-
 // ============================================================================
 
 let userProfiles = {};
@@ -90,7 +91,7 @@ io.on('connection', (socket) => {
         if (!userProfiles[sessionUser]) {
             userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '' };
         }
-    
+        
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
         saveDatabase();
@@ -127,11 +128,11 @@ io.on('connection', (socket) => {
         let exists = !!userProfiles[data.username];
         let profile = exists ? userProfiles[data.username] : null;
 
-        // Перевірка в Google Таблицях, якщо вказано URL
         if (!exists && GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
+                const fetch = (await import('node-fetch')).default; // Используем динамический импорт для fetch, если Node.js старой версии
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=check&username=${encodeURIComponent(data.username)}`);
-                const responseText = await res.text(); // Спочатку читаємо як текст
+                const responseText = await res.text();
 
                 if (res.ok) {
                     try {
@@ -139,18 +140,17 @@ io.on('connection', (socket) => {
                         if (gasData.exists) {
                             exists = true;
                             profile = gasData.profile || { displayName: data.username, avatar: '', bio: '' };
-                            // Зберігаємо знайденого юзера в локальний кеш
                             userProfiles[data.username] = { chatList: [], ...profile };
                             saveDatabase();
                         }
                     } catch (parseErr) {
-                        console.error(`[ПОМИЛКА GAS у check_user_exists] Очікувався JSON, але прийшло:`, responseText.substring(0, 300));
+                        console.error(`[ПОМИЛКА GAS] Очікувався JSON, прийшло:`, responseText.substring(0, 300));
                     }
                 } else {
-                    console.error("[ПОМИЛКА GAS у check_user_exists] Статус HTTP:", res.status);
+                    console.error("[ПОМИЛКА GAS] Статус HTTP:", res.status);
                 }
             } catch (err) {
-                console.error("Помилка запиту до Google Script (check):", err);
+                console.error("Помилка запиту до Google Script:", err);
             }
         }
 
@@ -165,7 +165,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ЗАЛІЗОБЕТОННИЙ ПОШУК (З підключенням до Google Apps Script)
+    // Пошук користувачів
     socket.on('search_users', async (data) => {
         if (!data || typeof data.query !== 'string') return;
         const query = data.query.toLowerCase().trim();
@@ -174,7 +174,6 @@ io.on('connection', (socket) => {
         let results = [];
         let foundUsernames = new Set();
         
-        // 1. Жорсткий перебір локальної бази
         Object.keys(userProfiles).forEach(username => {
             const p = userProfiles[username];
             if (!p) return; 
@@ -193,16 +192,15 @@ io.on('connection', (socket) => {
             }
         });
 
-        // 2. Запит до Google Apps Script (якщо лінка є)
         if (GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
+                const fetch = (await import('node-fetch')).default;
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&query=${encodeURIComponent(query)}`);
-                const responseText = await response.text(); // Спочатку читаємо як текст
+                const responseText = await response.text(); 
                 
                 if (response.ok) {
                     try {
                         const googleResults = JSON.parse(responseText);
-                        
                         if (Array.isArray(googleResults)) {
                             googleResults.forEach(gu => {
                                 if (!foundUsernames.has(gu.username)) {
@@ -217,20 +215,17 @@ io.on('connection', (socket) => {
                             });
                         }
                     } catch (parseErr) {
-                        console.error("[ПОМИЛКА GAS у search_users] Google повернув не JSON! Ось що прийшло:", responseText.substring(0, 300));
+                        console.error("[ПОМИЛКА GAS] Не JSON:", responseText.substring(0, 300));
                     }
-                } else {
-                    console.error("[ПОМИЛКА GAS у search_users] Статус HTTP:", response.status);
                 }
             } catch (error) {
-                console.error("Помилка під час підключення до Google Таблиць:", error);
+                console.error("Помилка підключення до Google Таблиць:", error);
             }
         }
 
         socket.emit('search_results', { query: data.query, results });
     });
 
-    // Глобальний пошук (тільки локальний, бо повідомлення лежать на сервері)
     socket.on('global_search', (data) => {
         if (!data || typeof data.query !== 'string' || !sessionUser) return;
         const query = data.query.toLowerCase().trim();
@@ -238,7 +233,7 @@ io.on('connection', (socket) => {
             socket.emit('global_search_results', { query: data.query, users: [], messages: [] });
             return;
         }
-     
+        
         const foundUsers = [];
         const foundMessages = [];
 
@@ -269,11 +264,11 @@ io.on('connection', (socket) => {
                 });
             }
         });
+        
         foundMessages.sort((a, b) => b.timestamp - a.timestamp);
         socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
     });
 
-    // Редагування профілю
     socket.on('update_profile', (data) => {
         if (!sessionUser || !data) return;
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -282,7 +277,7 @@ io.on('connection', (socket) => {
         userProfiles[sessionUser].displayName = profileData.displayName || sessionUser;
         userProfiles[sessionUser].bio = profileData.bio || '';
         userProfiles[sessionUser].avatar = profileData.avatar || ''; 
-      
+        
         saveDatabase();
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
@@ -384,7 +379,7 @@ io.on('connection', (socket) => {
         if (data.action === 'remove') {
             const targetId = data.msgId || (data.pinData ? data.pinData.id : null) || (data.msg ? data.msg.id : null);
             if (targetId) {
-                 messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
+                messagesDatabase[pinnedKey] = messagesDatabase[pinnedKey].filter(p => p.id !== targetId);
             }
         } else if (data.action === 'add') {
             const activeMsg = data.msg || data.pinData;
