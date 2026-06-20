@@ -1,0 +1,172 @@
+/* Базові змінні для тем */
+:root {
+    --accent: #0088cc;
+    --accent-rgb: 0, 136, 204;
+    --bg-main: #0f0f0f;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --danger: #ff3b30;
+    --glass-bg: rgba(25, 25, 25, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+.theme-black {
+    --bg-main: #000000;
+    --glass-bg: rgba(10, 10, 10, 0.6);
+}
+
+.theme-vintage {
+    --bg-main: #f0f0f5;
+    --text-main: #000000;
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+/* Скидання та база */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-main);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    /* Анімований фон */
+    background: linear-gradient(-45deg, #0f0f0f, #1a1a1a, #001f3f, #0f0f0f);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Лейаут: Сайдбар та Основний чат */
+#sidebar {
+    width: 300px;
+    border-right: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+#chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Напівпрозорі бульбашки повідомлень (Liquid Glass) */
+#messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    align-self: flex-start;
+}
+
+.message.my-message {
+    align-self: flex-end;
+    background: rgba(var(--accent-rgb), 0.4);
+    border-bottom-right-radius: 4px;
+}
+
+.message.partner-message {
+    border-bottom-left-radius: 4px;
+}
+
+/* Відео-кружечки (Круглі відеоповідомлення) */
+.video-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent);
+    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+}
+
+/* Панель вводу */
+#input-panel-container {
+    padding: 15px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+}
+
+#form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#input {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 25px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-main);
+    outline: none;
+}
+
+/* Модалки та оверлеї */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-main);
+    padding: 25px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid var(--glass-border);
+}
+
+/* Дзвінки */
+.video-chat-container video {
+    width: 100%;
+    border-radius: 15px;
+    background: #000;
+}
+
+#local-video {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
