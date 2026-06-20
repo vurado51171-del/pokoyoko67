@@ -169,7 +169,7 @@
         .header-meta { display: flex;
             align-items: center; gap: 12px; overflow: hidden; }
         #chat-title-text { cursor: pointer; display: flex;
-            align-items: flex-start; gap: 8px; flex-direction: column;
+            align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         #chat-title-text:hover { color: var(--accent);
         }
@@ -494,6 +494,7 @@
     </div>
     
     <div class="search-container" id="search-frame">
+      
         <div style="position: relative;">
             <input type="text" id="search-input" autocomplete="off" placeholder="Введіть ім'я або повідомлення...">
             <div id="search-results-dropdown" class="search-results-dropdown"></div>
@@ -515,14 +516,16 @@ flex-direction: column; height: 100%; position: relative;">
         <div id="chat-header">
             <div class="header-meta">
                 <button class="back-btn" id="btn-back">⬅ Назад</button>
-                <div id="chat-title-text" onclick="openPartnerProfile()">Чат</div>
+                <span id="chat-title-text" onclick="openPartnerProfile()">Чат</span>
             </div>
             <div class="header-actions">
+           
                 <div id="chat-typing-status" class="typing-indicator"></div>
                 <button class="call-btn" id="btn-call-video" onclick="startCall(true)" title="Відеодзвінок">🎥</button>
                 <button class="call-btn" id="btn-call-audio" onclick="startCall(false)" title="Аудіодзвінок">📞</button>
                 <button class="search-trigger-btn" onclick="toggleChatMenu(event)" style="margin-left: 5px;" title="Опції чату">⋮</button>
                 <div id="chat-options-menu">
+              
                     <button id="btn-mute-user" onclick="toggleChatPref(currentActiveChatPartner, 'muted')">🔕 Вимкнути звук</button>
                     <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати</button>
                     <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button>
@@ -530,12 +533,14 @@ flex-direction: column; height: 100%; position: relative;">
             </div>
         </div>
 
+   
         <div id="pinned-message-bar" onclick="cyclePinnedMessages()">
             <div class="pinned-bar-content">
                 <span class="pinned-bar-title" id="lbl-pinned-title">
                     Закріплене повідомлення <span class="pin-counter" id="pin-counter-badge">1/1</span>
                 </span>
                 <span class="pinned-bar-text" id="pinned-bar-text-content">...</span>
+    
             </div>
             <button class="unpin-btn-x" onclick="requestUnpin(event)">×</button>
         </div>
@@ -546,33 +551,39 @@ flex-direction: column; height: 100%; position: relative;">
         <div id="input-panel-container">
             <div id="reply-preview-bar">
                 <div id="reply-preview-text">Відповідь на повідомлення</div>
+ 
                 <button id="reply-close-btn" onclick="cancelAction()">×</button>
             </div>
             
             <form id="form">
                 <label class="media-btn-label" title="Надіслати фотографію">
                     📎
+       
                     <input type="file" id="media-file-input" accept="image/*" style="display: none;" onchange="uploadMediaFile(this)">
                 </label>
                 
                 <button type="button" class="tool-btn" id="btn-sticker" title="Стікери" onclick="toggleStickerMenu()">🦄</button>
                 <button type="button" class="tool-btn" id="btn-audio-rec" title="Записати аудіо" onclick="startMediaRecording('audio')">🎤</button>
+      
                 <button type="button" class="tool-btn" id="btn-video-rec" title="Записати кружечок" onclick="startMediaRecording('video_circle')">🔵</button>
                 
                 <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." />
                 <button id="button" type="submit">Надіслати</button>
             </form>
             
+     
             <div id="record-overlay" class="record-overlay" style="display: none;">
                 <button class="tool-btn" onclick="deleteRecord()" style="color: var(--danger);
 font-size: 20px;">🗑</button>
-                <div style="display:flex; align-items:center; gap: 10px;">
+                <div style="display:flex; align-items:center;
+gap: 10px;">
                     <video id="record-preview" class="record-preview" autoplay muted playsinline></video>
                     <span id="record-timer" style="font-size:16px;
 font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 </div>
                 <button class="tool-btn" id="btn-pause-record" onclick="pauseResumeRecord()">⏸</button>
-                <button class="tool-btn" onclick="finishAndSendRecord()" style="background: var(--accent); color: white;">✈</button>
+                <button class="tool-btn" onclick="finishAndSendRecord()" style="background: var(--accent);
+color: white;">✈</button>
             </div>
 
             <div id="sticker-menu" class="popup-menu"></div>
@@ -587,6 +598,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
       
+   
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
             <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
@@ -594,25 +606,26 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         </div>
         <div id="account-info">
             <div class="account-property"><label id="lbl-profile-name">Ім'я в чаті (Нік):</label><input type="text" id="profile-display-name" class="profile-name-input" oninput="saveMyDisplayName(this.value)"></div>
+        
             <div class="account-property"><span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: var(--text-muted);">...</strong></div>
             <div class="account-property"><span id="lbl-status">Статус:</span> <strong id="lbl-online-status">В мережі</strong></div>
             <div class="account-property"><label id="lbl-bio-title">Про себе / Опис:</label><textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea></div>
-            <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: var(--accent);"></span></div>
-            <div class="account-property" style="display:flex; align-items:center; gap:8px; margin-top:10px;">
-                <input type="checkbox" id="hide-last-seen-checkbox" onchange="toggleLastSeen(this.checked)" style="width:16px; height:16px;">
-                <label id="lbl-hide-status" for="hide-last-seen-checkbox" style="margin:0; font-size:13px;">Приховати мій статус 'в мережі'</label>
-            </div>
+            <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold;
+color: var(--accent);"></span></div>
         </div>
         
         <div class="sticker-pack-creator" id="sticker-creator-block">
-            <label style="display:block; font-size:12px; color:var(--text-muted); font-weight:600;">Ваші стікери (додати):</label>
+            <label style="display:block;
+font-size:12px; color:var(--text-muted); font-weight:600;">Ваші стікери (додати):</label>
             <input type="file" id="sticker-upload-input" accept="image/*" multiple style="display: none;" onchange="uploadCustomStickers(this)">
-            <button class="upload-btn" style="margin-top: 5px; width: 100%;" onclick="document.getElementById('sticker-upload-input').click()">+ Додати зображення як стікер</button>
+            <button class="upload-btn" style="margin-top: 5px;
+width: 100%;" onclick="document.getElementById('sticker-upload-input').click()">+ Додати зображення як стікер</button>
             <div class="pack-list" id="my-stickers-preview"></div>
         </div>
 
         <div class="lang-select-container" id="theme-select-block" style="margin-top: 15px;">
-            <label id="lbl-theme-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Тема оформлення / Тема:</label>
+            <label id="lbl-theme-title" style="display:block;
+font-size:12px; color:var(--text-muted); margin-bottom:4px;">Тема оформлення / Тема:</label>
             <select id="theme-select" class="lang-select" onchange="changeTheme(this.value)">
                 <option value="theme-dark">Стандартна (Темна)</option>
                 <option value="theme-black">AMOLED (Чорна)</option>
@@ -620,8 +633,10 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             </select>
         </div>
 
+     
         <div class="lang-select-container" id="lang-select-block" style="margin-top: 15px;">
-            <label id="lbl-lang-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Мова додатка / Язык:</label>
+            <label id="lbl-lang-title" style="display:block;
+font-size:12px; color:var(--text-muted); margin-bottom:4px;">Мова додатка / Язык:</label>
             <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)"><option value="uk">Українська</option><option value="ru">Русский</option><option value="en">English</option></select>
         </div>
         <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Вийти з профілю 🚪</button>
@@ -629,20 +644,27 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
 </div>
 
 <div class="modal-overlay" id="call-modal">
-    <div class="modal-content" style="text-align: center; max-width: 400px;">
-        <div class="modal-avatar-placeholder" id="call-avatar" style="margin: 0 auto 15px auto; width: 80px; height: 80px; font-size: 30px; background: var(--accent);">?</div>
-        <h3 id="call-status-text" style="color: var(--text-main); margin-bottom: 20px;">Вхідний дзвінок...</h3>
+    <div class="modal-content" style="text-align: center;
+max-width: 400px;">
+        <div class="modal-avatar-placeholder" id="call-avatar" style="margin: 0 auto 15px auto; width: 80px;
+height: 80px; font-size: 30px; background: var(--accent);">?</div>
+        <h3 id="call-status-text" style="color: var(--text-main);
+margin-bottom: 20px;">Вхідний дзвінок...</h3>
         
         <div class="video-chat-container" id="call-video-container" style="display: none;">
             <video id="remote-video" autoplay playsinline></video>
             <video id="local-video" autoplay playsinline muted></video>
         </div>
 
-        <div id="call-controls-wrapper" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-            <button id="btn-accept-call" style="background: #4cd964; padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer; display:none;">📞 Прийняти</button>
+        <div id="call-controls-wrapper" style="display: flex;
+justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+            <button id="btn-accept-call" style="background: #4cd964;
+padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer;
+display:none;">📞 Прийняти</button>
             <button id="toggle-mic-btn" onclick="toggleCallMic()" class="call-btn-control" style="display: none;">🎤 Мікр: Увімк</button>
             <button id="toggle-cam-btn" onclick="toggleCallCam()" class="call-btn-control" style="display: none;">📷 Камера: Увімк</button>
-            <button id="btn-end-call" onclick="endCall()" style="background: var(--danger); padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer;">Відхилити / Завершити</button>
+            <button id="btn-end-call" onclick="endCall()" style="background: var(--danger);
+padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer;">Відхилити / Завершити</button>
         </div>
     </div>
 </div>
@@ -683,12 +705,12 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     }
 
     const translations = {
-        uk: { searchPlaceholder: "Введіть ім'я...", dialogsTitle: "Ваші діалоги", placeholderText: "BurmaldaGram Premium<br><span style='font-size: 13px; color: var(--text-muted);'>Оберіть чат 🔍</span>", backBtn: "⬅ Назад", inputPlaceholder: "Напишіть повідомлення...", btnSend: "Надіслати", settingsTitle: "⚙️ Налаштування", profileTitle: "👤 Профіль", profile: "Юзернейм:", profileName: "Нік:", status: "Статус:", online: "в мережі", offline: "офлайн", loginTime: "Вхід:", logoutBtn: "Вийти 🚪", emptyList: "Список порожній", selfChatError: "Не можна створювати чат із собою!", ctxReply: "Відповісти ↩", ctxEdit: "Редагувати ✏️", userNotFound: "Не знайдено!", ctxPin: "Закріпити повідомлення 📌", ctxUnpin: "Відкріпити повідомлення 🔓", ctxDeleteMy: "Видалити (своє) 🗑", chatStatusOnline: "● онлайн", chatStatusOffline: "офлайн", typingText: "пише...", recordingAudioText: "записує голосове...", recordingVideoText: "записує відео...", lastSeenPrefix: "був(ла): ", hideLastSeenLabel: "Приховати мій статус 'в мережі'",
+        uk: { searchPlaceholder: "Введіть ім'я...", dialogsTitle: "Ваші діалоги", placeholderText: "BurmaldaGram Premium<br><span style='font-size: 13px; color: var(--text-muted);'>Оберіть чат 🔍</span>", backBtn: "⬅ Назад", inputPlaceholder: "Напишіть повідомлення...", btnSend: "Надіслати", settingsTitle: "⚙️ Налаштування", profileTitle: "👤 Профіль", profile: "Юзернейм:", profileName: "Нік:", status: "Статус:", online: "в мережі", offline: "офлайн", loginTime: "Вхід:", logoutBtn: "Вийти 🚪", emptyList: "Список порожній", selfChatError: "Не можна створювати чат із собою!", ctxReply: "Відповісти ↩", ctxEdit: "Редагувати ✏️", userNotFound: "Не знайдено!", ctxPin: "Закріпити повідомлення 📌", ctxUnpin: "Відкріпити повідомлення 🔓", ctxDeleteMy: "Видалити (своє) 🗑", chatStatusOnline: "● онлайн", chatStatusOffline: "офлайн", typingText: "пише...", 
             uploadBtn: "📁 Завантажити", bioPlaceholder: "Про себе:", bioEmpty: "Пусто", replyPrefix: "Відповідь на: ", pinnedLabel: "Закріплено", blockedMeText: "Цей користувач вас заблокував.", themeTitle: "Тема оформлення:" },
-        ru: { searchPlaceholder: "Введите имя...", dialogsTitle: "Диалоги", placeholderText: "BurmaldaGram Premium", backBtn: "⬅ Назад", inputPlaceholder: "Напишите...", btnSend: "Отправить", settingsTitle: "⚙️ Настройки", profileTitle: "👤 Профиль", profile: "Юзернейм:", profileName: "Ник:", status: "Статус:", online: "в сети", offline: "офлайн", loginTime: "Вход:", logoutBtn: "Выйти 🚪", emptyList: "Пусто", selfChatError: "Нельзя с собой!", ctxReply: "Ответить ↩", ctxEdit: "Изменить ✏️", userNotFound: "Не найден!", ctxPin: "Закрепить 📌", ctxUnpin: "Открепить 🔓", ctxDeleteMy: "Удалить 🗑", chatStatusOnline: "● онлайн", chatStatusOffline: "офлайн", typingText: "печатает...", recordingAudioText: "записывает голосовое...", recordingVideoText: "записывает видео...", lastSeenPrefix: "был(а): ", hideLastSeenLabel: "Скрыть мой статус 'в сети'",
+        ru: { searchPlaceholder: "Введите имя...", dialogsTitle: "Диалоги", placeholderText: "BurmaldaGram Premium", backBtn: "⬅ Назад", inputPlaceholder: "Напишите...", btnSend: "Отправить", settingsTitle: "⚙️ Настройки", profileTitle: "👤 Профиль", profile: "Юзернейм:", profileName: "Ник:", status: "Статус:", online: "в сети", offline: "офлайн", loginTime: "Вход:", logoutBtn: "Выйти 🚪", emptyList: "Пусто", selfChatError: "Нельзя с собой!", ctxReply: "Ответить ↩", ctxEdit: "Изменить ✏️", userNotFound: "Не найден!", ctxPin: "Закрепить 📌", ctxUnpin: "Открепить 🔓", ctxDeleteMy: "Удалить 🗑", chatStatusOnline: "● онлайн", chatStatusOffline: "офлайн", typingText: "печатает...", 
             uploadBtn: "📁 Загрузить", bioPlaceholder: "О себе:", bioEmpty: "Пусто", replyPrefix: "Ответ: ", pinnedLabel: "Закреплено", blockedMeText: "Этот пользователь вас заблокировал.", themeTitle: "Тема оформления:" },
-        en: { searchPlaceholder: "Search...", dialogsTitle: "Chats", placeholderText: "BurmaldaGram Premium", backBtn: "⬅ Back", inputPlaceholder: "Message...", btnSend: "Send", settingsTitle: "⚙️ Settings", profileTitle: "👤 Profile", profile: "ID:", profileName: "Name:", status: "Status:", online: "online", offline: "offline", loginTime: "Login:", logoutBtn: "Log out 🚪", emptyList: "Empty", selfChatError: "Can't chat with yourself!", ctxReply: "Reply ↩", ctxEdit: "Edit ✏️", userNotFound: "Not found!", ctxPin: "Pin 📌", ctxUnpin: "Unpin 🔓", ctxDeleteMy: "Delete 🗑", chatStatusOnline: "● online", chatStatusOffline: "offline", typingText: "typing...", recordingAudioText: "recording audio...", recordingVideoText: "recording video...", lastSeenPrefix: "last seen: ", hideLastSeenLabel: "Hide my online status",
-            uploadBtn: "📁 Upload", bioPlaceholder: "Bio:", bioEmpty: "Empty", replyPrefix: "Reply: ", pinnedLabel: "Pinned", blockedMeText: "You are blocked by this user.", themeTitle: "Theme:" }
+        en: { searchPlaceholder: "Search...", dialogsTitle: "Chats", placeholderText: "BurmaldaGram Premium", backBtn: "⬅ Back", inputPlaceholder: "Message...", btnSend: "Send", settingsTitle: "⚙️ Settings", profileTitle: "👤 Profile", profile: "ID:", profileName: "Name:", status: "Status:", online: "online", offline: "offline", loginTime: "Login:", logoutBtn: "Log out 🚪", emptyList: "Empty", selfChatError: "Can't chat with yourself!", ctxReply: "Reply ↩", ctxEdit: "Edit ✏️", userNotFound: "Not found!", ctxPin: "Pin 📌", ctxUnpin: "Unpin 🔓", ctxDeleteMy: "Delete 🗑", chatStatusOnline: "● online", chatStatusOffline: "offline", typingText: "typing...", uploadBtn: 
+            "📁 Upload", bioPlaceholder: "Bio:", bioEmpty: "Empty", replyPrefix: "Reply: ", pinnedLabel: "Pinned", blockedMeText: "You are blocked by this user.", themeTitle: "Theme:" }
     };
     let currentLang = localStorage.getItem('burmalda_lang') || 'uk';
     let currentTheme = localStorage.getItem('burmalda_theme') || 'theme-dark';
@@ -730,7 +752,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     let currentRoom = null;
     let currentActiveChatPartner = null;
     let onlineUsers = [];
-    let previousOnlineUsers = [];
     let savedMessages = {};
     function safeSaveHistory() {
         try {
@@ -833,7 +854,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.getElementById('btn-logout').textContent = t.logoutBtn; 
         document.getElementById('lbl-upload-btn').textContent = t.uploadBtn; 
         document.getElementById('lbl-theme-title').textContent = t.themeTitle;
-        document.getElementById('lbl-hide-status').textContent = t.hideLastSeenLabel;
         if (settingsModal.classList.contains('active')) { 
             const openedNick = document.getElementById('info-nick').textContent;
             const isMe = (openedNick === myNick);
@@ -843,7 +863,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             statusLabel.textContent = isOnline ? t.online : t.offline; 
             statusLabel.style.color = isOnline ? '#4cd964' : '#ff3b30';
         } 
-        renderChatsList(); loadMessagesHistory(); renderStickersList(); updateHeaderStatus();
+        renderChatsList(); loadMessagesHistory(); renderStickersList();
     }
 
     function changeLanguage(lang) { currentLang = lang; localStorage.setItem('burmalda_lang', lang); applyLanguage();
@@ -858,7 +878,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     function openMyProfile() { 
         const t = translations[currentLang];
         document.getElementById('info-nick').textContent = myNick; 
-        const myData = localProfiles[myNick] || { avatar: '', bio: '', displayName: '', hideLastSeen: false }; 
+        const myData = localProfiles[myNick] || { avatar: '', bio: '', displayName: '' }; 
         document.getElementById('profile-display-name').disabled = false;
         document.getElementById('profile-display-name').value = myData.displayName || myNick; 
         document.getElementById('profile-desc').disabled = false; document.getElementById('profile-desc').value = myData.bio || ''; document.getElementById('profile-desc').placeholder = t.bioEmpty; 
@@ -867,8 +887,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.getElementById('lbl-upload-btn').style.display = 'block'; document.getElementById('btn-logout').style.display = 'block'; 
         document.getElementById('lang-select-block').style.display = 'block'; document.getElementById('theme-select-block').style.display = 'block'; document.getElementById('login-time-block').style.display = 'block';
         document.getElementById('sticker-creator-block').style.display = 'block';
-        document.getElementById('hide-last-seen-checkbox').checked = myData.hideLastSeen;
-        document.getElementById('hide-last-seen-checkbox').disabled = false;
         applyLanguage(); settingsModal.classList.add('active');
     }
 
@@ -882,7 +900,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.getElementById('lbl-upload-btn').style.display = 'none'; document.getElementById('btn-logout').style.display = 'none'; 
         document.getElementById('lang-select-block').style.display = 'none'; document.getElementById('theme-select-block').style.display = 'none'; document.getElementById('login-time-block').style.display = 'none';
         document.getElementById('sticker-creator-block').style.display = 'none';
-        document.getElementById('hide-last-seen-checkbox').disabled = true;
         applyLanguage();
         settingsModal.classList.add('active');
     }
@@ -898,13 +915,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         if (!localProfiles[myNick]) localProfiles[myNick] = {};
         localProfiles[myNick].bio = val; 
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles)); socket.emit('update_profile', { username: myNick, data: localProfiles[myNick] });
-    }
-
-    function toggleLastSeen(val) {
-        if (!localProfiles[myNick]) localProfiles[myNick] = {};
-        localProfiles[myNick].hideLastSeen = val;
-        localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
-        socket.emit('update_profile', { username: myNick, data: localProfiles[myNick] });
     }
 
     function handleAvatarUpload(inputEl) { 
@@ -927,6 +937,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 localStorage.setItem('burmalda_custom_stickers', JSON.stringify(myCustomStickers));
                 renderStickersList();
             };
+     
             reader.readAsDataURL(file);
         });
         inputEl.value = '';
@@ -941,6 +952,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             img.className = 'pack-item-preview';
             img.onclick = () => {
                 if (confirm("Видалити цей стікер?")) {
+               
                     myCustomStickers.splice(idx, 1);
                     localStorage.setItem('burmalda_custom_stickers', JSON.stringify(myCustomStickers));
                     renderStickersList();
@@ -957,6 +969,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 img.src = st;
                 img.className = 'sticker-item';
                 img.onclick = () => sendSpecialMessage(st, 'sticker');
+    
                 stickerMenu.appendChild(img);
             });
         }
@@ -966,7 +979,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     }
 
     searchToggleBtn.onclick = () => { searchFrame.classList.toggle('active'); if (searchFrame.classList.contains('active')) searchInput.focus(); };
-    
+    // --- ГЛОБАЛЬНИЙ ПОШУК (ЛЮДИ ТА ПОВІДОМЛЕННЯ) ---
     let searchTimeout;
     let latestSearchUsers = [];
     let latestSearchMessages = [];
@@ -976,8 +989,10 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         const val = e.target.value.trim();
         if (val.length > 0) {
             searchTimeout = setTimeout(() => {
+                // Відправляємо відразу ДВА запити: один для повідомлень, другий для юзерів у Google
                 socket.emit('global_search', { query: val });
                 socket.emit('search_users', { query: val });
+        
             }, 300);
         } else {
             searchDropdown.style.display = 'none';
@@ -1005,23 +1020,25 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 if(user.avatar) localProfiles[user.username].avatar = user.avatar;
                 if(user.bio) localProfiles[user.username].bio = user.bio;
 
+               
                 const item = document.createElement('div');
                 item.className = 'search-result-item';
                 item.innerHTML = `
                     ${getAvatarHTML(user.username)}
                     <div>
+                    
                         <div style="font-weight:bold;font-size:13px;color:var(--text-main);">${escapeHTML(user.displayName)}</div>
                         <div style="font-size:11px;color:var(--text-muted);">@${escapeHTML(user.username)}</div>
                    </div>
                 `;
                 item.onclick = () => {
+               
                     searchInput.value = '';
                     searchDropdown.style.display = 'none';
                     searchFrame.classList.remove('active');
-                    if (user.username === myNick) { alert(translations[currentLang].selfChatError); return;
-                    }
+                    if (user.username === myNick) { alert(translations[currentLang].selfChatError); return; }
                     if (!activeChats.includes(user.username)) { activeChats.push(user.username);
-                    saveActiveChats(); }
+                        saveActiveChats(); }
                     openChatWith(user.username);
                 };
                 searchDropdown.appendChild(item);
@@ -1039,14 +1056,17 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 item.className = 'search-result-item';
                 const partnerName = msg.partner === myNick ? "Ви" : getVisibleName(msg.partner);
                 const senderName = msg.from === myNick ? "Ви" : getVisibleName(msg.from);
+    
                 
                 item.innerHTML = `
                     ${getAvatarHTML(msg.partner)}
                     <div style="overflow: hidden; width: 100%;">
                         <div style="font-weight:bold;font-size:13px;color:var(--accent);">${escapeHTML(partnerName)}</div>
+ 
                         <div style="font-size:11px;color:var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <strong>${escapeHTML(senderName)}:</strong> ${escapeHTML(msg.text)}
                         </div>
+                  
                     </div>
                 `;
                 item.onclick = () => {
@@ -1062,15 +1082,16 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         searchDropdown.style.display = 'block';
     }
 
+    // Слухаємо результати для повідомлень
     socket.on('global_search_results', (data) => {
         latestSearchMessages = data.messages || [];
         renderCombinedSearchResults();
     });
+    // Слухаємо результати для нових юзерів (включаючи тих, що з Google)
     socket.on('search_results', (data) => {
         latestSearchUsers = data.results || [];
         renderCombinedSearchResults();
     });
-
     function renderChatsList() { 
         chatsList.innerHTML = '';
         if (activeChats.length === 0) { 
@@ -1089,6 +1110,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             const prefs = chatSettings[user] || {};
             const activeClass = (currentActiveChatPartner === user) ? 'active' : ''; 
             const glowClass = glowingChats[user] ? 'glow-active' : '';
+   
             const blockedClass = prefs.blocked ? 'blocked' : '';
 
             const item = document.createElement('div'); 
@@ -1096,6 +1118,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             
             let flagsHtml = '';
             if (prefs.pinned) flagsHtml += '📌';
+       
             if (prefs.muted) flagsHtml += '🔇';
             if (prefs.blocked) flagsHtml += '🚫';
 
@@ -1103,26 +1126,33 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 <div class="chat-info-block">
                     ${getAvatarHTML(user)}
                     <div>
-                        <div style="font-weight:600; font-size:14px;">${escapeHTML(getVisibleName(user))}</div>
-                        <div id="bio-${user}" style="font-size:12px; color:var(--text-muted);">${escapeHTML(localProfiles[user]?.bio || '')}</div>
+    
+                        <div style="font-weight:600;
+font-size:14px;">${escapeHTML(getVisibleName(user))}</div>
+                        <div id="bio-${user}" style="font-size:12px;
+color:var(--text-muted);">${escapeHTML(localProfiles[user]?.bio || '')}</div>
                     </div>
                 </div>
                 <div class="chat-flags">${flagsHtml}</div>
-                <div class="status-dot ${isOnline ? 'online' : ''}">${statusText}</div>
+                <div class="status-dot ${isOnline ?
+'online' : ''}">${statusText}</div>
             `;
             
             item.oncontextmenu = (e) => { 
                 e.preventDefault();
                 showContextMenu(e, [
-                    { text: prefs.pinned ? "Відкріпити чат" : "📌 Закріпити чат", action: () => toggleChatPref(user, 'pinned') },
+                    { text: prefs.pinned ? 
+"Відкріпити чат" : "📌 Закріпити чат", action: () => toggleChatPref(user, 'pinned') },
                     { text: prefs.muted ? "Увімкнути звук" : "🔇 Вимкнути звук", action: () => toggleChatPref(user, 'muted') },
                     { text: prefs.blocked ? "Розблокувати" : "🚫 Заблокувати", action: () => toggleChatPref(user, 'blocked') },
-                    { text: translations[currentLang].ctxDeleteMy, class: 'delete-btn', action: () => { deleteChatLocally(user); } }
+                    { 
+text: translations[currentLang].ctxDeleteMy, class: 'delete-btn', action: () => { deleteChatLocally(user); } }
                 ]); 
             };
             item.onclick = () => { 
                 if (glowingChats[user]) { delete glowingChats[user]; localStorage.setItem('burmalda_glow_chats', JSON.stringify(glowingChats)); }
                 openChatWith(user); 
+    
             };
             chatsList.appendChild(item);
         }); 
@@ -1175,27 +1205,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         const prefs = chatSettings[currentActiveChatPartner] || {};
         document.getElementById('btn-mute-user').textContent = prefs.muted ? "🔔 Увімкнути звук" : "🔕 Вимкнути звук";
         document.getElementById('btn-block-user').textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
-        updateHeaderStatus();
-    }
-
-    function updateHeaderStatus() {
-        if (!currentActiveChatPartner) return;
-        const isOnline = onlineUsers.includes(currentActiveChatPartner);
-        let statusHtml = '';
-        if (isOnline) {
-            statusHtml = `<small style="color:#4cd964; font-size:11px;">● ${translations[currentLang].online}</small>`;
-        } else {
-            const pData = localProfiles[currentActiveChatPartner] || {};
-            if (pData.hideLastSeen) {
-                statusHtml = `<small style="color:var(--text-muted); font-size:11px;">${translations[currentLang].offline}</small>`;
-            } else if (pData.lastSeen) {
-                const dateStr = new Date(pData.lastSeen).toLocaleString(currentLang, {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
-                statusHtml = `<small style="color:var(--text-muted); font-size:11px;">${translations[currentLang].lastSeenPrefix}${dateStr}</small>`;
-            } else {
-                statusHtml = `<small style="color:var(--text-muted); font-size:11px;">${translations[currentLang].offline}</small>`;
-            }
-        }
-        chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <div style="display:flex; flex-direction:column; align-items:flex-start;"><span>${escapeHTML(getVisibleName(currentActiveChatPartner))}</span> ${statusHtml}</div>`;
     }
 
     function openChatWith(username) { 
@@ -1205,6 +1214,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         
         document.body.classList.add('chat-opened'); chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex'; 
         
+        const isOnline = onlineUsers.includes(username);
+        chatTitleText.innerHTML = `${getAvatarHTML(username)} <span>${escapeHTML(getVisibleName(username))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`;
         const cleanUrl = window.location.pathname + '?auth=' + urlParams.get('auth') + '&chat=' + username; window.history.pushState({}, "", cleanUrl);
         
         socket.emit('request_profile', { username: username });
@@ -1214,7 +1225,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         const prefs = chatSettings[username] || {};
         if (prefs.blocked) { input.disabled = true; input.placeholder = "Користувач заблокований"; button.disabled = true;
         } else { input.disabled = false;
-        input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false;
+            input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false;
         }
 
         updateChatHeaderUI();
@@ -1225,7 +1236,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     function renderPinnedBar() {
         if (!currentRoom) return;
         if (!Array.isArray(pinnedMessages[currentRoom])) {
-            pinnedMessages[currentRoom] = pinnedMessages[currentRoom] ? [pinnedMessages[currentRoom]] : [];
+            pinnedMessages[currentRoom] = pinnedMessages[currentRoom] ?
+                [pinnedMessages[currentRoom]] : [];
         }
         const pins = pinnedMessages[currentRoom];
         if (pins && pins.length > 0) {
@@ -1240,7 +1252,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     }
 
     function cyclePinnedMessages() {
-        const pins = pinnedMessages[currentRoom] || [];
+        const pins = pinnedMessages[currentRoom] ||
+            [];
         if (pins.length > 1) { currentPinIndex = (currentPinIndex + 1) % pins.length; renderPinnedBar();
         }
         scrollToPinnedMessage();
@@ -1326,12 +1339,9 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     let recordSeconds = 0;
     async function startMediaRecording(type) {
         try {
-            const constraints = type === 'video_circle' ? { video: { facingMode: "user" }, audio: true } : { audio: true };
+            const constraints = type === 'video_circle' ?
+                { video: { facingMode: "user" }, audio: true } : { audio: true };
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            
-            // Інформуємо про зміну статусу
-            socket.emit('typing', { room: currentRoom, user: myNick, isTyping: true, actionType: type });
-
             document.getElementById('form').style.display = 'none';
             const overlay = document.getElementById('record-overlay');
             overlay.style.display = 'flex';
@@ -1355,7 +1365,9 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
                 const s = String(recordSeconds % 60).padStart(2, '0');
                 document.getElementById('record-timer').textContent = `${m}:${s}`;
+         
             }, 1000);
+
             mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
                 clearInterval(recordTimerInterval);
@@ -1364,7 +1376,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 preview.classList.remove('recording');
                 
                 if (!window.cancelCurrentRecord) {
-                    const mimeType = type === 'video_circle' ? 'video/webm' : 'audio/webm';
+                    const mimeType = type === 'video_circle' ?
+                        'video/webm' : 'audio/webm';
                     const blob = new Blob(recordedChunks, { type: mimeType });
                     const reader = new FileReader();
                     reader.onloadend = () => { sendSpecialMessage(reader.result, type); };
@@ -1424,7 +1437,6 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.getElementById('record-overlay').style.display = 'none';
         document.getElementById('form').style.display = 'flex';
         currentRecordType = null;
-        socket.emit('typing', { room: currentRoom, user: myNick, isTyping: false, actionType: 'none' });
     }
 
     function appendSingleMessage(msg, isHistoryBuild = false) { 
@@ -1540,7 +1552,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
     }
 
     function toggleMessageReaction(msgId, reaction) {
-        const chatMsgs = savedMessages[currentRoom] || []; const msg = chatMsgs.find(m => m.id === msgId); if (!msg) return;
+        const chatMsgs = savedMessages[currentRoom] ||
+            []; const msg = chatMsgs.find(m => m.id === msgId); if (!msg) return;
         if (!msg.reactions) msg.reactions = {};
         if (!msg.reactions[reaction]) msg.reactions[reaction] = [];
         if (msg.reactions[reaction].includes(myNick)) { msg.reactions[reaction] = msg.reactions[reaction].filter(u => u !== myNick); } else { msg.reactions[reaction].push(myNick);
@@ -1590,6 +1603,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 const div = document.createElement('div'); div.className = 'date-divider'; div.textContent = msgDate;
                 messagesContainer.appendChild(div);
                 lastDate = msgDate;
+       
             }
             appendSingleMessage(msg, true); 
         });
@@ -1630,12 +1644,12 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         if (!currentRoom) return;
         const now = Date.now();
         if (now - lastTypingEmit > 2000) {
-            socket.emit('typing', { room: currentRoom, user: myNick, isTyping: true, actionType: 'typing' });
+            socket.emit('typing', { room: currentRoom, user: myNick, isTyping: true });
             lastTypingEmit = now;
         }
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => { 
-            socket.emit('typing', { room: currentRoom, user: myNick, isTyping: false, actionType: 'none' }); 
+            socket.emit('typing', { room: currentRoom, user: myNick, isTyping: false }); 
             lastTypingEmit = 0;
         }, 1500);
     };
@@ -1662,7 +1676,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none'); 
     };
 
-    // --- PEERJS ---
+    // --- ПОВНІСТЮ НОВІ ДЗВІНКИ ЧЕРЕЗ PEERJS ---
     let myPeer = null;
     let localStream = null;
     let currentCall = null;
@@ -1675,6 +1689,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         myPeer.on('open', (id) => {
             console.log('[PeerJS] Готовий до роботи, ID:', id);
         });
+
+        // Вхідний дзвінок
         myPeer.on('call', async (call) => {
             currentCall = call;
             isCurrentCallVideo = true;
@@ -1707,6 +1723,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                         document.getElementById('call-status-text').textContent = 'Розмова...';
                         document.getElementById('remote-video').srcObject = remoteStream;
                     });
+
                     call.on('close', () => { endCall(false); });
                 } catch (err) {
                     alert('Помилка камери/мікрофона: ' + err.message);
@@ -1714,6 +1731,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 }
             };
         });
+
         myPeer.on('error', (err) => {
             console.error('[PeerJS Error]:', err);
         });
@@ -1745,6 +1763,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
                 if (!isVideo) document.getElementById('call-video-container').style.display = 'flex';
                 document.getElementById('remote-video').srcObject = remoteStream;
             });
+
             currentCall.on('close', () => { endCall(false); });
             
         } catch(e) {
@@ -1759,10 +1778,8 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             if(track) {
                 track.enabled = !track.enabled;
                 const micBtn = document.getElementById('toggle-mic-btn');
-                if(!track.enabled) { micBtn.innerText = "🔇 Мікр: Вимк"; micBtn.classList.add('active-control');
-                } 
-                else { micBtn.innerText = "🎤 Мікр: Увімк";
-                micBtn.classList.remove('active-control'); }
+                if(!track.enabled) { micBtn.innerText = "🔇 Мікр: Вимк"; micBtn.classList.add('active-control'); } 
+                else { micBtn.innerText = "🎤 Мікр: Увімк"; micBtn.classList.remove('active-control'); }
             }
         }
     }
@@ -1773,16 +1790,15 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             if(track) {
                 track.enabled = !track.enabled;
                 const camBtn = document.getElementById('toggle-cam-btn');
-                if(!track.enabled) { camBtn.innerText = "📷 Камера: Вимк"; camBtn.classList.add('active-control');
-                } 
-                else { camBtn.innerText = "📷 Камера: Увімк";
-                camBtn.classList.remove('active-control'); }
+                if(!track.enabled) { camBtn.innerText = "📷 Камера: Вимк"; camBtn.classList.add('active-control'); } 
+                else { camBtn.innerText = "📷 Камера: Увімк"; camBtn.classList.remove('active-control'); }
             }
         }
     }
 
     function endCall(notifyPartner = true) {
         stopRingtone();
+        
         if (currentCall) {
             currentCall.close();
             currentCall = null;
@@ -1803,33 +1819,22 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
         document.getElementById('toggle-cam-btn').innerText = "📷 Камера: Увімк";
         document.getElementById('toggle-cam-btn').classList.remove('active-control');
     }
+    // ------------------------------------------
 
     // --- SOCKET EVENTS ---
     socket.on('connect', () => { 
         socket.emit('online_ping', { username: myNick }); 
         socket.emit('sync_contacts', { user: myNick, chats: activeChats });
     });
-
+    
     socket.on('online_list', (users) => { 
-        // Логіка для "останній раз в мережі"
-        previousOnlineUsers.forEach(u => {
-            if (!users.includes(u) && u !== myNick) {
-                if (!localProfiles[u]) localProfiles[u] = {};
-                localProfiles[u].lastSeen = Date.now();
-            }
-        });
-        
         onlineUsers = users; 
-        previousOnlineUsers = [...users];
-        localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
-        
         applyLanguage(); 
         if (myNick && myNick !== 'Анонім') {
             initPeerJS(myNick);
         }
-        updateHeaderStatus();
     });
-
+    
     socket.on('contacts_synced', (serverChats) => {
         if (Array.isArray(serverChats)) {
             activeChats = serverChats;
@@ -1837,13 +1842,13 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             renderChatsList();
         }
     });
-
+    
     socket.on('user_blocked_you', (data) => {
         if (data.room === currentRoom && data.blocked) {
             input.disabled = true; input.placeholder = translations[currentLang].blockedMeText || "Цей користувач вас заблокував."; button.disabled = true;
         }
     });
-
+    
     socket.on('chat_message', (msg) => { 
         if (chatSettings[myNick] && chatSettings[myNick].blocked) return; 
         if (chatSettings[msg.from]?.blocked) return;
@@ -1854,34 +1859,37 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
 
         if (msg.room !== currentRoom) {
             if (!activeChats.includes(msg.from)) { activeChats.push(msg.from); saveActiveChats(); }
+  
             glowingChats[msg.from] = true; localStorage.setItem('burmalda_glow_chats', JSON.stringify(glowingChats));
             
             if (!savedMessages[msg.room]) savedMessages[msg.room] = [];
             if (!savedMessages[msg.room].some(m => m.id === msg.id)) { savedMessages[msg.room].push(msg); safeSaveHistory(); }
             renderChatsList();
             
-            if (!chatSettings[msg.from]?.muted) audioReceiveOutChat.play().catch(e=>console.log(e));
+            if 
+(!chatSettings[msg.from]?.muted) audioReceiveOutChat.play().catch(e=>console.log(e));
 
         } else {
             if (!activeChats.includes(msg.from)) { activeChats.push(msg.from);
-            saveActiveChats(); renderChatsList(); }
+saveActiveChats(); renderChatsList(); }
             if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
-            if (!savedMessages[currentRoom].some(m => m.id === msg.id)) { 
+if (!savedMessages[currentRoom].some(m => m.id === msg.id)) { 
                 savedMessages[currentRoom].push(msg);
-                safeSaveHistory();
+safeSaveHistory();
                 appendSingleMessage(msg); messagesContainer.scrollTop = messagesContainer.scrollHeight; 
                 if (msg.from !== myNick) socket.emit('mark_read', { room: currentRoom, reader: myNick });
                 if (!chatSettings[msg.from]?.muted) audioReceiveInChat.play().catch(e=>console.log(e));
-            } 
+} 
         }
     });
-
+    
     socket.on('messages_read', (data) => {
         if (savedMessages[data.room]) {
             let updated = false;
             savedMessages[data.room].forEach(msg => {
                 if (msg.from !== data.reader && msg.status !== 'read') {
                     msg.status = 'read'; updated = true;
+         
                     const statusEl = document.getElementById(`status-${msg.id}`);
                     if (statusEl) { statusEl.textContent = '✓✓'; statusEl.classList.add('read'); }
                 }
@@ -1897,21 +1905,21 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             if (msg) { msg.text = data.newText; msg.edited = true; safeSaveHistory(); }
         }
     });
-
+    
     socket.on('delete_message', (data) => {
         if (currentRoom === data.room) { executeLocalDeletion(data.msgId); } 
         else if (savedMessages[data.room]) {
             savedMessages[data.room] = savedMessages[data.room].filter(m => m.id !== data.msgId); safeSaveHistory();
         }
     });
-
+    
     socket.on('message_reaction', (data) => {
         if (savedMessages[data.room]) {
             const msg = savedMessages[data.room].find(m => m.id === data.msgId);
             if (msg) { msg.reactions = data.reactions || {}; safeSaveHistory(); if (currentRoom === data.room) loadMessagesHistory(); }
         }
     });
-
+    
     socket.on('pin_message', (data) => {
         const room = data.room;
         if (!Array.isArray(pinnedMessages[room])) pinnedMessages[room] = [];
@@ -1920,6 +1928,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             if (!pinnedMessages[room].some(p => p.id === data.pinData.id)) pinnedMessages[room].push(data.pinData);
         } else if (data.action === 'remove') {
             pinnedMessages[room] = pinnedMessages[room].filter(p => p.id !== data.pinData.id);
+    
         } else if (data.pinned) {
             pinnedMessages[room] = data.pinned;
         }
@@ -1929,43 +1938,36 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             renderPinnedBar();
         }
     });
-
+    
     socket.on('typing_status', (data) => { 
         if (currentRoom === data.room && data.user !== myNick) { 
-            let displayText = translations[currentLang].typingText;
-            if (data.actionType === 'audio') displayText = translations[currentLang].recordingAudioText;
-            if (data.actionType === 'video_circle') displayText = translations[currentLang].recordingVideoText;
-
-            typingStatusEl.textContent = `${getVisibleName(data.user)} ${displayText}`; 
-            typingStatusEl.style.display = data.isTyping ? 'block' : 'none'; 
+            typingStatusEl.textContent = `${getVisibleName(data.user)} ${translations[currentLang].typingText}`; typingStatusEl.style.display = data.isTyping ? 'block' : 'none'; 
         }
         
         const bioEl = document.getElementById(`bio-${data.user}`);
         if (bioEl) {
             if (data.isTyping) {
+     
                 if (!bioEl.dataset.orig) bioEl.dataset.orig = bioEl.innerText;
-                
-                let displayText = translations[currentLang].typingText;
-                if (data.actionType === 'audio') displayText = translations[currentLang].recordingAudioText;
-                if (data.actionType === 'video_circle') displayText = translations[currentLang].recordingVideoText;
-                
-                bioEl.innerText = displayText;
+                bioEl.innerText = translations[currentLang].typingText;
                 bioEl.style.color = '#4cd964';
             } else {
                 bioEl.innerText = bioEl.dataset.orig || '';
+               
                 bioEl.style.color = 'var(--text-muted)';
                 delete bioEl.dataset.orig;
             }
         }
     });
-
+    
     socket.on('profile_broadcast', (profileUpdate) => { 
         localProfiles[profileUpdate.username] = profileUpdate.data; localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles)); 
         if (profileUpdate.username === currentActiveChatPartner || profileUpdate.username === myNick) { 
-            updateHeaderStatus();
+            const isOnline = onlineUsers.includes(currentActiveChatPartner);
+            if (currentActiveChatPartner) { chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${escapeHTML(getVisibleName(currentActiveChatPartner))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`; }
         } renderChatsList(); 
     });
-
+    
     function logout() { localStorage.removeItem('burmalda_auth_token'); window.location.href = '/'; }
 
     if (window.visualViewport) { 
@@ -1974,6 +1976,7 @@ font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
             if (window.visualViewport.height < window.innerHeight) { 
                 const keyboardHeight = window.innerHeight - window.visualViewport.height; 
                 containerEl.style.position = 'fixed'; 
+
                 containerEl.style.bottom = keyboardHeight + 'px'; messagesContainer.style.paddingBottom = '90px'; setTimeout(() => { messagesContainer.scrollTop = messagesContainer.scrollHeight; }, 60); 
             } else { containerEl.style.position = 'relative'; containerEl.style.bottom = '0px'; messagesContainer.style.paddingBottom = '20px'; } 
         });
