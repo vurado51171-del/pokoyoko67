@@ -1269,3 +1269,4 @@ visibleName.charAt(0) : '?';
 
     applyLanguage();
     const initialChatPartner = urlParams.get('chat'); if (initialChatPartner && activeChats.includes(initialChatPartner)) openChatWith(initialChatPartner);
+ 
