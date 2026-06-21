@@ -174,11 +174,40 @@
         .media-btn-label, .tool-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
         .media-btn-label:hover, .tool-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.2); transform: scale(1.05); }
         
-        .record-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-panel); z-index: 200; display: flex; align-items: center; justify-content: space-around; padding: 0 20px; }
-        .record-preview { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--danger); background: #000; transition: border-color 0.3s; }
+        /* === НОВІ СТИЛІ: ПОВНОЕКРАННИЙ ЗАПИС МЕДІА (ПО ЦЕНТРУ) === */
+        .record-overlay-fullscreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); z-index: 6000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px); padding: 20px; box-sizing: border-box;
+        }
+        .record-preview {
+            width: 280px; height: 280px; border-radius: 50%;
+            object-fit: cover; border: 4px solid var(--danger); background: #000;
+            margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: border-color 0.3s;
+        }
+        .record-preview.audio-mode {
+            border-radius: 20px; height: 100px; border-color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; background: rgba(0,136,204, 0.2);
+        }
         .record-preview.recording { animation: pulseRecord 1s infinite; }
         
-        @keyframes pulseRecord { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255,59,48, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); } }
+        @keyframes pulseRecord { 
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 
+            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255,59,48, 0); } 
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); } 
+        }
+
+        .record-timer-text {
+            font-size: 26px; font-weight: 700; color: white; font-variant-numeric: tabular-nums;
+            background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 25px; margin-bottom: 30px;
+        }
+
+        .record-controls-row { display: flex; gap: 25px; align-items: center; }
+        .record-controls-row .tool-btn { width: 55px; height: 55px; font-size: 22px; }
+        .record-controls-row .tool-btn.send { background: var(--accent); color: white; border-color: var(--accent-hover); }
 
         #button { padding: 10px 16px; background: var(--accent); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-weight: 700; font-size: 14px; flex-shrink: 0; transition: all 0.2s; }
         #button:hover { background: var(--accent-hover); transform: scale(1.02); }
@@ -198,7 +227,7 @@
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); overflow-y: auto; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; width: 100%; max-width: 360px; border: 1px solid var(--border-color); box-shadow: 0 8px 30px rgba(0,0,0,0.5); margin: auto; color: var(--text-main); }
+        .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; width: 100%; max-width: 360px; border: 1px solid var(--border-color); box-shadow: 0 8px 30px rgba(0,0,0,0.5); margin: auto; color: var(--text-main); position: relative;}
         .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
         .modal-close { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; outline: none; }
         .modal-close:hover { color: var(--text-main); }
@@ -223,7 +252,7 @@
         .settings-logout-btn { width: 100%; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 16px; font-size: 14px; transition: background 0.2s; }
         .settings-logout-btn:hover { opacity: 0.8; }
         
-        .video-chat-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; align-items: center; }
+        .video-chat-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; align-items: center; position: relative; }
         #remote-video { width: 100%; max-width: 300px; border-radius: 12px; background: #000; border: 2px solid #333; }
         #local-video { width: 100px; border-radius: 8px; background: #222; border: 1px solid #4cd964; margin-top: -60px; margin-right: -180px; z-index: 10; position: relative; }
         
@@ -235,6 +264,12 @@
         .scroll-to-bottom:hover { transform: scale(1.1); }
         
         .date-divider { text-align: center; margin: 15px 0; font-size: 12px; color: var(--text-muted); background: rgba(128,128,128,0.1); padding: 4px 12px; border-radius: 12px; align-self: center; user-select: none; }
+
+        /* === ПОВНОЕКРАННИЙ ПЕРЕГЛЯД ФОТО === */
+        #image-viewer-modal { z-index: 10000; padding: 0; background: rgba(0,0,0,0.9); }
+        #image-viewer-img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; }
+        .close-viewer-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none; }
+        .close-viewer-btn:hover { color: var(--danger); }
 
         @media (max-width: 768px) {
             #sidebar { width: 100%; display: flex; }
@@ -248,6 +283,7 @@
             .tool-btn, .media-btn-label { width: 34px; height: 34px; font-size: 16px; }
             #input { padding: 10px; font-size: 14px; min-width: 50px; }
             #button { padding: 8px 12px; font-size: 12px; }
+            .record-preview { width: 220px; height: 220px; }
         }
     </style>
 </head>
@@ -330,19 +366,28 @@
                 <button id="button" type="submit">Надіслати</button>
             </form>
             
-            <div id="record-overlay" class="record-overlay" style="display: none;">
-                <button class="tool-btn" onclick="deleteRecord()" style="color: var(--danger); font-size: 20px;">🗑</button>
-                <div style="display:flex; align-items:center; gap: 10px;">
-                    <video id="record-preview" class="record-preview" autoplay muted playsinline></video>
-                    <span id="record-timer" style="font-size:16px; font-weight:600; font-variant-numeric: tabular-nums;">00:00</span>
-                </div>
-                <button class="tool-btn" id="btn-pause-record" onclick="pauseResumeRecord()">⏸</button>
-                <button class="tool-btn" onclick="finishAndSendRecord()" style="background: var(--accent); color: white;">✈</button>
-            </div>
-
             <div id="sticker-menu" class="popup-menu"></div>
         </div>
     </div>
+</div>
+
+<div id="record-overlay" class="record-overlay-fullscreen" style="display: none;">
+    <video id="record-preview" class="record-preview" autoplay muted playsinline></video>
+    <div id="record-audio-icon" class="record-preview audio-mode" style="display:none;">🎤</div>
+    
+    <span id="record-timer" class="record-timer-text">00:00</span>
+    
+    <div class="record-controls-row">
+        <button class="tool-btn" onclick="deleteRecord()" style="color: var(--danger);" title="Видалити">🗑</button>
+        <button class="tool-btn" id="btn-pause-record" onclick="pauseResumeRecord()" title="Пауза">⏸</button>
+        <button class="tool-btn" id="btn-switch-record-cam" onclick="switchRecordCamera()" title="Поміняти камеру">🔄</button>
+        <button class="tool-btn send" onclick="finishAndSendRecord()" title="Надіслати">✈</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="image-viewer-modal" onclick="closeImageViewer()">
+    <button class="close-viewer-btn" onclick="closeImageViewer()">&times;</button>
+    <img id="image-viewer-img" src="">
 </div>
 
 <div class="modal-overlay" id="settings-modal">
@@ -395,6 +440,7 @@
         <h3 id="call-status-text" style="color: var(--text-main); margin-bottom: 20px;">Вхідний дзвінок...</h3>
         
         <div class="video-chat-container" id="call-video-container" style="display: none;">
+            <button class="tool-btn" onclick="switchCallCamera()" style="position:absolute; top:10px; right:10px; z-index:15; background:rgba(0,0,0,0.5); color:white; border:none;">🔄</button>
             <video id="remote-video" autoplay playsinline></video>
             <video id="local-video" autoplay playsinline muted></video>
         </div>
@@ -422,7 +468,7 @@
             Анонімно (приховати справжнього автора)
         </label>
         <div id="forward-chat-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);">
-            </div>
+        </div>
     </div>
 </div>
 
