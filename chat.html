@@ -61,8 +61,7 @@
         ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.5); }
 
         #sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex;
-            flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10;
-        }
+            flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; }
         .sidebar-header { padding: 16px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-color); }
         .my-profile { font-weight: 600; color: var(--accent); font-size: 15px;
@@ -73,7 +72,8 @@
             cursor: pointer; color: var(--text-muted); transition: all 0.2s; padding: 8px; border-radius: 50%; outline: none; display: flex; align-items: center; justify-content: center; }
         .search-trigger-btn:hover, .settings-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
 
-        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); display: none; }
+        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color);
+            display: none; }
         .search-container.active { display: block; }
         .search-container input { width: 100%; padding: 10px 14px; background: var(--bg-input);
             border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
@@ -82,18 +82,23 @@
         .search-results-dropdown { position: absolute; top: calc(100% + 5px); left: 0; width: 100%;
             background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; z-index: 200; max-height: 250px; overflow-y: auto; display: none;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .search-result-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
+        .search-result-item { padding: 10px; display: flex;
+            align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
         .search-result-item:hover { background: var(--bg-header); }
         .search-result-item:last-child { border-bottom: none; }
-        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--accent); background: rgba(128,128,128,0.1); }
+        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+            color: var(--accent); background: rgba(128,128,128,0.1); }
 
-        /* === НОВЕ: Папки для чатів === */
-        .chat-folders-bar { display: flex; overflow-x: auto; background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 10px; gap: 8px; }
-        .folder-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 14px; cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; }
+        /* === ПАПКИ === */
+        .chat-folders-bar { display: flex;
+            overflow-x: auto; background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 10px; gap: 8px; }
+        .folder-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 14px;
+            cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; }
         .folder-tab:hover { background: rgba(128,128,128,0.2); color: var(--text-main); }
         .folder-tab.active { background: var(--accent); color: white; }
 
-        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1.5px; font-weight: 700; }
         #chats-list { flex-grow: 1; overflow-y: auto; }
         .chat-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color);
             cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative; }
@@ -115,12 +120,18 @@
 
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative; height: 100%; min-width: 0; }
         
-        /* === НОВЕ: Панель мульти-виділення === */
+        /* === АРХІВ СТИЛІ === */
+        #archive-reveal-zone { text-align: center; padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
+        #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); }
+        #archive-container { display: none; border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; background: var(--bg-input); }
+
+        /* === МУЛЬТИ-ВИДІЛЕННЯ (Виправлено сторони) === */
         .multi-select-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
         body.multi-select-mode .msg-checkbox { display: inline-block; }
         body.multi-select-mode .msg-container { flex-direction: row; align-items: center; justify-content: flex-start; }
-        body.multi-select-mode .msg-container.my-wrapper { align-self: flex-start; } /* Override right-alignment during selection */
+        body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; } /* ВИПРАВЛЕНО: залишаються справа */
+        body.multi-select-mode .my-wrapper .msg-checkbox { margin-right: 0; margin-left: 12px; }
 
         #chat-header { padding: 14px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; }
         .header-meta { display: flex; align-items: center; gap: 12px; overflow: hidden; }
@@ -132,7 +143,7 @@
         .call-btn { background: rgba(128, 128, 128, 0.1); color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .call-btn:hover { background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
 
-        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 170px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
+        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 190px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
         #chat-options-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer; }
         #chat-options-menu button:hover { background: var(--bg-header); }
         #chat-options-menu button.danger { color: var(--danger); }
@@ -165,14 +176,19 @@
         .sticker-img { width: 140px; height: 140px; object-fit: contain; display: block; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); }
         .audio-msg { border-radius: 20px; outline: none; height: 40px; }
 
-        /* === КРУЖЕЧКИ ТА ШВИДКІСТЬ === */
+        /* === КРУЖЕЧКИ ТА ШВИДКІСТЬ (Виправлено перегляд) === */
         .circle-video-wrapper { position: relative; display: inline-block; }
         .circle-video { width: 180px; height: 180px; display: block; border: 3px solid var(--accent); background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease; }
-        .circle-video.expanded { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; max-width: 400px; height: 80vw; max-height: 400px; z-index: 10001; box-shadow: 0 0 0 100vw rgba(0,0,0,0.85), 0 10px 50px rgba(0,0,0,0.6); }
         
-        /* Виправлено z-index для видимості під час розгортання */
-        .media-speed-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 12px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 10005; font-weight: bold; backdrop-filter: blur(4px); }
+        /* Логіка повноекранного кружка через обгортку */
+        .circle-video-wrapper.expanded { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10001; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 0; }
+        .circle-video.expanded { position: relative; top: auto; left: auto; transform: none; width: 80vw; max-width: 400px; height: 80vw; max-height: 400px; box-shadow: 0 10px 50px rgba(0,0,0,0.6); }
+        
+        .media-speed-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 12px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 10005; font-weight: bold; backdrop-filter: blur(4px); display: none; }
         .media-speed-btn:hover { background: rgba(0,0,0,0.8); }
+        
+        /* Зміна позиції швидкості при розгорнутому відео */
+        .circle-video-wrapper.expanded .media-speed-btn { position: relative; bottom: auto; left: auto; margin-top: 20px; font-size: 14px; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.2); }
         
         .audio-wrapper { display: flex; align-items: center; gap: 8px; }
         .audio-speed-btn { background: var(--bg-input); color: var(--accent); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
@@ -206,24 +222,27 @@
         #reply-close-btn { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
         #reply-close-btn:hover { color: var(--danger); }
 
-        #form { padding: 12px 10px; display: flex; align-items: center; width: 100%; gap: 8px; flex-wrap: wrap; }
+        #form { padding: 12px 10px; display: flex; align-items: center; width: 100%; gap: 8px; flex-wrap: wrap; position: relative; }
         #input { flex-grow: 1; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 20px; outline: none; font-size: 15px; transition: border-color 0.2s; min-width: 100px; }
         #input:focus { border-color: var(--accent); }
         
         .media-btn-label, .tool-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
         .media-btn-label:hover, .tool-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.2); transform: scale(1.05); }
         
+        /* === БУЛЬБАШКА ВКЛАДЕНЬ (Замість 100 кнопок) === */
+        .attachment-bubble { position: absolute; bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; width: 220px; }
+        .attachment-bubble.active { display: flex; }
+        .attachment-item-btn { display: flex; align-items: center; gap: 12px; background: none; border: none; color: var(--text-main); font-size: 14px; cursor: pointer; padding: 10px; border-radius: 8px; text-align: left; transition: background 0.2s; width: 100%; outline: none; }
+        .attachment-item-btn:hover { background: rgba(128,128,128,0.2); color: var(--accent); }
+        .attachment-item-btn i { font-style: normal; font-size: 18px; width: 24px; text-align: center; }
+
         /* ПОВНОЕКРАННИЙ ЗАПИС МЕДІА (ПО ЦЕНТРУ) */
         .record-overlay-fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; box-sizing: border-box; }
         .record-preview { width: 280px; height: 280px; border-radius: 50%; object-fit: cover; border: 4px solid var(--danger); background: #000; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: border-color 0.3s; }
         .record-preview.audio-mode { border-radius: 20px; height: 100px; border-color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 40px; background: rgba(0,136,204, 0.2); }
         .record-preview.recording { animation: pulseRecord 1s infinite; }
         
-        @keyframes pulseRecord { 
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 
-            50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255,59,48, 0); } 
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); } 
-        }
+        @keyframes pulseRecord { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255,59,48, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); } }
 
         .record-timer-text { font-size: 26px; font-weight: 700; color: white; font-variant-numeric: tabular-nums; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 25px; margin-bottom: 30px; }
         .record-controls-row { display: flex; gap: 25px; align-items: center; }
@@ -334,7 +353,16 @@
         <div class="folder-tab" data-folder="personal">Особисте</div>
         <div class="folder-tab" data-folder="work">Робота</div>
         <div class="folder-tab" data-folder="games">Ігри</div>
-        <button id="btn-add-folder" style="background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer;">+</button>
+        <button id="btn-add-folder" style="background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer;" onclick="openCreateFolderModal()">+</button>
+    </div>
+
+    <div id="archive-reveal-zone" onclick="toggleArchive()">
+        ⬇️ Потягніть або натисніть, щоб відкрити архів
+    </div>
+    
+    <div id="archive-container">
+        <div class="section-title">📦 Архівні чати</div>
+        <div id="archive-list"></div>
     </div>
 
     <div class="section-title" id="lbl-dialogs">Диалоги</div>
@@ -368,6 +396,7 @@
                 <button class="search-trigger-btn" onclick="toggleChatMenu(event)" style="margin-left: 5px;" title="Опції чату">⋮</button>
                 <div id="chat-options-menu">
                     <button onclick="toggleMultiSelectMode()">☑️ Вибрати повідомлення</button>
+                    <button onclick="openFolderAssignModal()">📂 Перемістити в папку/архів</button>
                     <button id="btn-mute-user" onclick="toggleChatPref(currentActiveChatPartner, 'muted')">🔕 Вимкнути звук</button>
                     <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати</button>
                     <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button>
@@ -395,24 +424,26 @@
             </div>
             
             <form id="form">
-                <label class="media-btn-label" title="Надіслати фотографію">
-                    📎
-                    <input type="file" id="media-file-input" accept="image/*" style="display: none;" onchange="uploadMediaFile(this)">
-                </label>
-                <label class="media-btn-label" title="Надіслати документ / файл">
-                    📄
-                    <input type="file" id="doc-file-input" style="display: none;" onchange="uploadDocumentFile(this)">
-                </label>
-                
-                <button type="button" class="tool-btn" id="btn-poll" title="Створити опитування" onclick="openPollModal()">📊</button>
-                <button type="button" class="tool-btn" id="btn-timer" title="Відкладене/Зникаюче повідомлення" onclick="openTimerModal()">⏱️</button>
-
-                <button type="button" class="tool-btn" id="btn-sticker" title="Стікери" onclick="toggleStickerMenu()">🦄</button>
-                <button type="button" class="tool-btn" id="btn-audio-rec" title="Записати аудіо" onclick="startMediaRecording('audio')">🎤</button>
-                <button type="button" class="tool-btn" id="btn-video-rec" title="Записати кружечок" onclick="startMediaRecording('video_circle')">🔵</button>
+                <button type="button" class="tool-btn" id="btn-attach" title="Прикріпити" onclick="toggleAttachmentMenu()">📎</button>
                 
                 <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." />
                 <button id="button" type="submit">Надіслати</button>
+
+                <div id="attachment-bubble" class="attachment-bubble">
+                    <label class="attachment-item-btn">
+                        <i>🖼️</i> Фото або Відео
+                        <input type="file" id="media-file-input" accept="image/*,video/*" style="display: none;" onchange="uploadMediaFile(this)">
+                    </label>
+                    <label class="attachment-item-btn">
+                        <i>📄</i> Документ / Файл
+                        <input type="file" id="doc-file-input" style="display: none;" onchange="uploadDocumentFile(this)">
+                    </label>
+                    <button type="button" class="attachment-item-btn" onclick="openPollModal()"><i>📊</i> Опитування</button>
+                    <button type="button" class="attachment-item-btn" onclick="openTimerModal()"><i>⏱️</i> Зникаюче/Відкладене</button>
+                    <button type="button" class="attachment-item-btn" onclick="toggleStickerMenu()"><i>🦄</i> Стікери</button>
+                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('audio'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🎤</i> Аудіо повідомлення</button>
+                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('video_circle'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🔵</i> Відеокружок</button>
+                </div>
             </form>
             
             <div id="sticker-menu" class="popup-menu"></div>
@@ -429,7 +460,7 @@
     <div class="record-controls-row">
         <button class="tool-btn" onclick="deleteRecord()" style="color: var(--danger);" title="Видалити">🗑</button>
         <button class="tool-btn" id="btn-pause-record" onclick="pauseResumeRecord()" title="Пауза">⏸</button>
-        <button class="tool-btn" id="btn-switch-record-cam" onclick="switchRecordCamera()" title="Поміняти камеру">🔄</button>
+        <button type="button" class="tool-btn" id="btn-switch-record-cam" onclick="switchRecordCamera()" title="Поміняти камеру">🔄</button>
         <button class="tool-btn send" onclick="finishAndSendRecord()" title="Надіслати">✈</button>
     </div>
 </div>
@@ -472,6 +503,23 @@
         </select>
         
         <button class="settings-logout-btn" style="background:var(--accent); margin-top:20px;" onclick="applyTimerSettings()">Застосувати та Надіслати</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="folder-assign-modal">
+    <div class="modal-content">
+        <div class="modal-title"><span>📂 Перемістити чат</span><button class="modal-close" onclick="document.getElementById('folder-assign-modal').classList.remove('active');">&times;</button></div>
+        <div id="folder-assign-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 15px;">
+            </div>
+        <button class="upload-btn" style="width:100%;" onclick="openCreateFolderModal()">+ Створити нову папку</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="create-folder-modal">
+    <div class="modal-content">
+        <div class="modal-title"><span>➕ Створити папку</span><button class="modal-close" onclick="document.getElementById('create-folder-modal').classList.remove('active');">&times;</button></div>
+        <input type="text" id="new-folder-name" class="profile-name-input" placeholder="Назва папки..." style="margin-bottom:15px; font-weight: bold;">
+        <button class="settings-logout-btn" style="background:var(--accent);" onclick="createNewFolder()">Створити</button>
     </div>
 </div>
 
