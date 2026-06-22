@@ -93,44 +93,30 @@
         .chat-folders-bar { display: flex;
             overflow-x: auto; background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 10px; gap: 8px; }
         .folder-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 14px;
-            cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; display: flex; align-items: center; gap: 4px; }
+            cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; }
         .folder-tab:hover { background: rgba(128,128,128,0.2); color: var(--text-main); }
         .folder-tab.active { background: var(--accent); color: white; }
-        .folder-lock-icon { font-size: 10px; }
 
         .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 1.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+            letter-spacing: 1.5px; font-weight: 700; }
         #chats-list { flex-grow: 1; overflow-y: auto; }
-        
-        /* === ЧАТ-ЕЛЕМЕНТИ ТА ЧОРНЕТКИ === */
         .chat-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color);
             cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative; }
         .chat-item:hover { background: var(--bg-header); }
         .chat-item.active { background: var(--bg-input); border-left: 4px solid var(--accent); }
         .chat-item.blocked { opacity: 0.5; filter: grayscale(100%); }
         .chat-flags { display: flex; gap: 6px; position: absolute; right: 16px; top: 14px; font-size: 12px; }
-        
-        .draft-badge { background: var(--danger); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-left: 6px; display: inline-block; animation: pulseDraft 2s infinite; }
-        @keyframes pulseDraft { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
-
-        .chat-checkbox-select { display: none; margin-right: 10px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
-        body.multi-chats-mode .chat-checkbox-select { display: inline-block; }
 
         @keyframes glowPulse { 0% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } 50% { background-color: var(--bg-header); box-shadow: inset 0 0 15px rgba(0, 136, 255, 0.4); } 100% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } }
         .chat-item.glow-active { animation: glowPulse 2s infinite ease-in-out; border-left: 4px solid #00e5ff; }
         
-        .chat-info-block { display: flex; align-items: center; gap: 12px; max-width: 80%; width: 100%; }
-        .status-dot { font-size: 11px; color: var(--text-muted); margin-top: 18px; white-space: nowrap; }
+        .chat-info-block { display: flex; align-items: center; gap: 12px; max-width: 80%; }
+        .status-dot { font-size: 11px; color: var(--text-muted); margin-top: 18px; }
         .status-dot.online { color: #4cd964; font-weight: bold; }
 
-        /* === СТИЛІ КАСТОМІЗАЦІЇ ПРОФІЛЮ === */
         .avatar, .avatar-placeholder, .modal-avatar, .modal-avatar-placeholder, .circle-video { border-radius: 50% !important; aspect-ratio: 1 / 1; object-fit: cover; }
-        .avatar { width: 40px; height: 40px; flex-shrink: 0; display: block; border: 2px solid transparent; }
-        .avatar-placeholder { width: 40px; height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; border: 2px solid transparent; }
-        
-        /* Користувацькі банери та блоки в профілі */
-        .profile-custom-banner { width: 100%; height: 80px; background: var(--bg-header); border-radius: 8px; margin-bottom: -40px; position: relative; border: 1px solid var(--border-color); background-size: cover; background-position: center; }
-        .profile-custom-card { background: var(--bg-input); border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-bottom: 15px; }
+        .avatar { width: 40px; height: 40px; flex-shrink: 0; display: block; border: 1px solid rgba(128,128,128,0.2); }
+        .avatar-placeholder { width: 40px; height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; }
 
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative; height: 100%; min-width: 0; }
         
@@ -139,18 +125,15 @@
         #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); }
         #archive-container { display: none; border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; background: var(--bg-input); }
 
-        /* === МУЛЬТИ-ВИДІЛЕННЯ ЧАТІВ ТА ПОВІДОМЛЕНЬ === */
-        .multi-select-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 120; position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        /* === МУЛЬТИ-ВИДІЛЕННЯ (Виправлено сторони) === */
+        .multi-select-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
         body.multi-select-mode .msg-checkbox { display: inline-block; }
         body.multi-select-mode .msg-container { flex-direction: row; align-items: center; justify-content: flex-start; }
-        body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; } 
+        body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; } /* ВИПРАВЛЕНО: залишаються справа */
         body.multi-select-mode .my-wrapper .msg-checkbox { margin-right: 0; margin-left: 12px; }
 
-        .multi-chats-bar-el { display: none; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--accent); font-size: 13px; }
-        body.multi-chats-mode .multi-chats-bar-el { display: flex; }
-
-        #chat-header { padding: 14px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; background-size: cover; background-position: center; }
+        #chat-header { padding: 14px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; }
         .header-meta { display: flex; align-items: center; gap: 12px; overflow: hidden; }
         #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #chat-title-text:hover { color: var(--accent); }
@@ -193,16 +176,18 @@
         .sticker-img { width: 140px; height: 140px; object-fit: contain; display: block; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); }
         .audio-msg { border-radius: 20px; outline: none; height: 40px; }
 
-        /* === КРУЖЕЧКИ ТА ШВИДКІСТЬ === */
+        /* === КРУЖЕЧКИ ТА ШВИДКІСТЬ (Виправлено перегляд) === */
         .circle-video-wrapper { position: relative; display: inline-block; }
         .circle-video { width: 180px; height: 180px; display: block; border: 3px solid var(--accent); background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease; }
         
+        /* Логіка повноекранного кружка через обгортку */
         .circle-video-wrapper.expanded { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10001; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 0; }
         .circle-video.expanded { position: relative; top: auto; left: auto; transform: none; width: 80vw; max-width: 400px; height: 80vw; max-height: 400px; box-shadow: 0 10px 50px rgba(0,0,0,0.6); }
         
         .media-speed-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 12px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 10005; font-weight: bold; backdrop-filter: blur(4px); display: none; }
         .media-speed-btn:hover { background: rgba(0,0,0,0.8); }
         
+        /* Зміна позиції швидкості при розгорнутому відео */
         .circle-video-wrapper.expanded .media-speed-btn { position: relative; bottom: auto; left: auto; margin-top: 20px; font-size: 14px; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.2); }
         
         .audio-wrapper { display: flex; align-items: center; gap: 8px; }
@@ -244,14 +229,14 @@
         .media-btn-label, .tool-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
         .media-btn-label:hover, .tool-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.2); transform: scale(1.05); }
         
-        /* === БУЛЬБАШКА ВКЛАДЕНЬ === */
+        /* === БУЛЬБАШКА ВКЛАДЕНЬ (Замість 100 кнопок) === */
         .attachment-bubble { position: absolute; bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; width: 220px; }
         .attachment-bubble.active { display: flex; }
         .attachment-item-btn { display: flex; align-items: center; gap: 12px; background: none; border: none; color: var(--text-main); font-size: 14px; cursor: pointer; padding: 10px; border-radius: 8px; text-align: left; transition: background 0.2s; width: 100%; outline: none; }
         .attachment-item-btn:hover { background: rgba(128,128,128,0.2); color: var(--accent); }
         .attachment-item-btn i { font-style: normal; font-size: 18px; width: 24px; text-align: center; }
 
-        /* ПОВНОЕКРАННИЙ ЗАПИС МЕДІА */
+        /* ПОВНОЕКРАННИЙ ЗАПИС МЕДІА (ПО ЦЕНТРУ) */
         .record-overlay-fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; box-sizing: border-box; }
         .record-preview { width: 280px; height: 280px; border-radius: 50%; object-fit: cover; border: 4px solid var(--danger); background: #000; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: border-color 0.3s; }
         .record-preview.audio-mode { border-radius: 20px; height: 100px; border-color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 40px; background: rgba(0,136,204, 0.2); }
@@ -293,17 +278,11 @@
         .profile-desc-input { resize: none; height: 65px; }
         .profile-name-input:disabled, .profile-desc-input:disabled { background: rgba(128,128,128,0.1); color: var(--text-muted); cursor: not-allowed; }
 
-        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; position: relative; z-index: 2; }
-        .modal-avatar { width: 85px; height: 85px; border: 3px solid var(--accent); }
-        .modal-avatar-placeholder { width: 85px; height: 85px; color: white; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; text-transform: uppercase; border: 3px solid var(--accent); }
+        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .modal-avatar { width: 85px; height: 85px; border: 2px solid var(--accent); }
+        .modal-avatar-placeholder { width: 85px; height: 85px; color: white; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; text-transform: uppercase; }
         .upload-btn { background: rgba(128,128,128,0.2); border: none; color: var(--text-main); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .upload-btn:hover { background: rgba(128,128,128,0.3); }
-
-        /* === БЛОК СПИСКУ ЗАБЛОКОВАНИХ === */
-        .blocked-list-wrapper { border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-input); max-height: 120px; overflow-y: auto; padding: 5px; margin-top: 5px; }
-        .blocked-user-row { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
-        .blocked-user-row:last-child { border-bottom: none; }
-        .unblock-row-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; font-weight: bold; }
 
         .sticker-pack-creator { margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
         .pack-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; }
@@ -357,7 +336,6 @@
     <div class="sidebar-header">
         <div class="my-profile" id="my-profile-name" onclick="openMyProfile()">...</div>
         <div class="header-controls">
-            <button class="search-trigger-btn" id="sidebar-multi-chats-btn" onclick="toggleMultiChatsMode()" title="Виділити декілька чатів">☑️</button>
             <button class="search-trigger-btn" id="search-toggle-btn">🔍</button>
             <button class="settings-btn" id="settings-toggle-btn">⚙️</button>
         </div>
@@ -370,16 +348,6 @@
         </div>
     </div>
 
-    <!-- МАСОВІ ДІЇ НАД ЧАТАМИ -->
-    <div id="multi-chats-bar" class="multi-chats-bar-el">
-        <div>Обрано чатів: <span id="multi-chats-count">0</span></div>
-        <div style="display:flex; gap:8px;">
-            <button style="background:none; border:none; cursor:pointer; font-size:16px;" onclick="executeMultiChatsArchive()" title="В архів/із архіву">📦</button>
-            <button style="background:none; border:none; cursor:pointer; font-size:16px; color:var(--danger);" onclick="executeMultiChatsDelete()" title="Видалити обрані чати">🗑</button>
-            <button style="background:none; border:none; cursor:pointer; font-size:16px;" onclick="toggleMultiChatsMode()">❌</button>
-        </div>
-    </div>
-
     <div class="chat-folders-bar" id="chat-folders-bar">
         <div class="folder-tab active" data-folder="all">Всі</div>
         <div class="folder-tab" data-folder="personal">Особисте</div>
@@ -389,7 +357,7 @@
     </div>
 
     <div id="archive-reveal-zone" onclick="toggleArchive()">
-        ⬇️ Потягніть або натисніть, щоб відкрити архів (Очистити/Забрати)
+        ⬇️ Потягніть або натисніть, щоб відкрити архів
     </div>
     
     <div id="archive-container">
@@ -397,7 +365,7 @@
         <div id="archive-list"></div>
     </div>
 
-    <div class="section-title" id="lbl-dialogs">Диалоги <button id="btn-manage-folders-del" style="background:none; border:none; color:var(--danger); font-size:11px; cursor:pointer; font-weight:normal;" onclick="openDeleteFolderModal()">[Видалити папки]</button></div>
+    <div class="section-title" id="lbl-dialogs">Диалоги</div>
     <div id="chats-list"></div>
 </div>
 
@@ -406,7 +374,6 @@
         <div>Обрано: <span id="multi-select-count">0</span></div>
         <div style="display:flex; gap:10px;">
             <button class="tool-btn" onclick="executeMultiForward()" title="Переслати">↪️</button>
-            <button class="tool-btn" onclick="executeMultiSave()" title="У збережене">💾</button>
             <button class="tool-btn" onclick="executeMultiDelete()" style="color:var(--danger);" title="Видалити">🗑</button>
             <button class="tool-btn" onclick="toggleMultiSelectMode()" title="Скасувати">❌</button>
         </div>
@@ -430,9 +397,8 @@
                 <div id="chat-options-menu">
                     <button onclick="toggleMultiSelectMode()">☑️ Вибрати повідомлення</button>
                     <button onclick="openFolderAssignModal()">📂 Перемістити в папку/архів</button>
-                    <button onclick="sendToSavedDirectly()">💾 Переслати в збережене</button>
                     <button id="btn-mute-user" onclick="toggleChatPref(currentActiveChatPartner, 'muted')">🔕 Вимкнути звук</button>
-                    <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати (Видалити історію)</button>
+                    <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати</button>
                     <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button>
                 </div>
             </div>
@@ -460,7 +426,7 @@
             <form id="form">
                 <button type="button" class="tool-btn" id="btn-attach" title="Прикріпити" onclick="toggleAttachmentMenu()">📎</button>
                 
-                <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." oninput="handleInputDraftNotify()" />
+                <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." />
                 <button id="button" type="submit">Надіслати</button>
 
                 <div id="attachment-bubble" class="attachment-bubble">
@@ -522,7 +488,7 @@
         <div class="modal-title"><span>⏱️ Налаштування таймера</span><button class="modal-close" onclick="closeTimerModal()">&times;</button></div>
         
         <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
-            <input type="radio" name="timer_mode" value="scheduled" checked> Відпустити пізніше
+            <input type="radio" name="timer_mode" value="scheduled" checked> Відправити пізніше
         </label>
         <input type="datetime-local" id="scheduled-time-input" class="profile-name-input" style="margin-bottom:20px;">
 
@@ -549,41 +515,11 @@
     </div>
 </div>
 
-<!-- МОДАЛКА ПАРОЛЮ ПАПКИ (ПРИ ВХОДІ В ЗАБЛОКОВАНУ ПАПКУ) -->
-<div class="modal-overlay" id="folder-pin-modal">
-    <div class="modal-content" style="max-width: 300px; text-align: center;">
-        <div class="modal-title"><span style="width:100%; text-align:center;">🔒 Доступ обмежено</span></div>
-        <p style="font-size:13px; margin-bottom:12px; color:var(--text-muted);">Введіть 4-значний код доступу для цієї папки</p>
-        <input type="password" id="folder-pin-input" maxlength="4" pattern="\d*" class="profile-name-input" style="text-align: center; font-size: 22px; letter-spacing: 8px; width: 140px; margin: 0 auto 15px auto;" placeholder="••••">
-        <button class="settings-logout-btn" style="background:var(--accent); margin-top:5px;" onclick="verifyFolderPinAccess()">Підтвердити</button>
-    </div>
-</div>
-
-<!-- МОДАЛКА СТВОРЕННЯ ПАПКИ З ПАРОЛЕМ -->
 <div class="modal-overlay" id="create-folder-modal">
     <div class="modal-content">
         <div class="modal-title"><span>➕ Створити папку</span><button class="modal-close" onclick="document.getElementById('create-folder-modal').classList.remove('active');">&times;</button></div>
         <input type="text" id="new-folder-name" class="profile-name-input" placeholder="Назва папки..." style="margin-bottom:15px; font-weight: bold;">
-        
-        <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:8px; cursor:pointer;">
-            <input type="checkbox" id="enable-folder-pin-check" onchange="document.getElementById('folder-pin-setup-block').style.display = this.checked ? 'block' : 'none'">
-            Захистити папку 4-значним паролем
-        </label>
-        
-        <div id="folder-pin-setup-block" style="display:none; margin-bottom:15px;">
-            <label style="font-size:11px; color:var(--text-muted);">Введіть 4 цифри:</label>
-            <input type="text" id="new-folder-pin" maxlength="4" placeholder="1234" class="profile-name-input" style="width:100px;">
-        </div>
-
         <button class="settings-logout-btn" style="background:var(--accent);" onclick="createNewFolder()">Створити</button>
-    </div>
-</div>
-
-<!-- МОДАЛКА ВИДАЛЕННЯ ПАПОК -->
-<div class="modal-overlay" id="delete-folder-modal">
-    <div class="modal-content">
-        <div class="modal-title"><span>🗑️ Видалити папки</span><button class="modal-close" onclick="document.getElementById('delete-folder-modal').classList.remove('active');">&times;</button></div>
-        <div id="delete-folder-list-container" style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; margin-bottom:15px;"></div>
     </div>
 </div>
 
@@ -593,51 +529,16 @@
             <span id="modal-title-text">⚙️ Налаштування</span>
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
-
-        <!-- КАРТКА ПРОФІЛЮ З КАСТОМІЗАЦІЄЮ БАНЕРА -->
-        <div class="profile-custom-banner" id="my-profile-banner-element"></div>
-        <div class="profile-custom-card">
-            <div class="profile-avatar-container">
-                <div id="modal-avatar-view"></div>
-                <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
-                <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Змінити фото</button>
-            </div>
+        <div class="profile-avatar-container">
+            <div id="modal-avatar-view"></div>
+            <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
+            <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Завантажити фото</button>
         </div>
-
-        <!-- БЛОК НАЛАШТУВАННЯ КУСТОМІЗАЦІЇ КОЛЬОРІВ -->
-        <div class="profile-custom-card" id="my-profile-colors-setup" style="margin-top:-5px;">
-            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px;">🎨 Кастомізація картки та ави:</label>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:12px;">
-                <div>
-                    <label>Колір банера:</label>
-                    <input type="color" id="custom-banner-color-picker" style="width:100%; height:25px; border:none; cursor:pointer;" onchange="saveProfileColors()">
-                </div>
-                <div>
-                    <label>Обводка ави:</label>
-                    <input type="color" id="custom-avatar-ring-picker" style="width:100%; height:25px; border:none; cursor:pointer;" onchange="saveProfileColors()">
-                </div>
-                <div style="grid-column: span 2;">
-                    <label>Загальний фоновий колір картки профілю:</label>
-                    <input type="color" id="custom-profile-bg-picker" style="width:100%; height:25px; border:none; cursor:pointer;" onchange="saveProfileColors()">
-                </div>
-            </div>
-        </div>
-
         <div id="account-info">
             <div class="account-property"><label id="lbl-profile-name">Ім'я в чаті (Нік):</label><input type="text" id="profile-display-name" class="profile-name-input" oninput="saveMyDisplayName(this.value)"></div>
             <div class="account-property"><span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: var(--text-muted);">...</strong></div>
             <div class="account-property"><span id="lbl-status">Статус:</span> <strong id="lbl-online-status">В мережі</strong></div>
             <div class="account-property"><label id="lbl-bio-title">Про себе / Опис:</label><textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea></div>
-            
-            <!-- СПИСОК ЗАБЛОКОВАНИХ ЮЗЕРІВ У НАЛАШТУВАННЯХ -->
-            <div class="account-property" id="blocked-users-settings-section">
-                <label style="color:var(--danger);">🚫 Заблоковані користувачі:</label>
-                <div class="blocked-list-wrapper" id="blocked-users-list-dom">
-                    <!-- Заповнюється динамічно з JS -->
-                    <div style="color:var(--text-muted); font-size:11px; text-align:center; padding:10px;">Список порожній</div>
-                </div>
-            </div>
-
             <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: var(--accent);"></span></div>
         </div>
         
@@ -646,21 +547,6 @@
             <input type="file" id="sticker-upload-input" accept="image/*" multiple style="display: none;" onchange="uploadCustomStickers(this)">
             <button class="upload-btn" style="margin-top: 5px; width: 100%;" onclick="document.getElementById('sticker-upload-input').click()">+ Додати зображення як стікер</button>
             <div class="pack-list" id="my-stickers-preview"></div>
-        </div>
-
-        <!-- ДОДАТКОВА ФУНКЦІЯ: НАЛАШТУВАННЯ РОЗМІРУ ШРИФТУ ТА ФОНУ ЧАТУ В НАЛАШТУВАННЯХ -->
-        <div class="profile-custom-card" style="margin-top:15px;">
-            <label style="display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px;">⚙️ Додаткові параметри:</label>
-            <div style="font-size:12px; display:flex; flex-direction:column; gap:8px;">
-                <label style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Розмір тексту повідомлень:</span>
-                    <select id="settings-font-size-select" class="lang-select" style="width:100px; padding:3px;" onchange="changeMessagesFontSize(this.value)">
-                        <option value="13px">Дрібний</option>
-                        <option value="15px" selected>Стандарт</option>
-                        <option value="18px">Великий</option>
-                    </select>
-                </label>
-            </div>
         </div>
 
         <div class="lang-select-container" id="theme-select-block" style="margin-top: 15px;">
