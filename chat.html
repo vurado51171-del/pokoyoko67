@@ -9,324 +9,587 @@
         /* === ТЕМИ ОФОРМЛЕННЯ (CSS Variables) === */
         :root {
             --bg-main: #0c0c0e;
-            --bg-panel: #131316; --bg-header: #1a1a1e; --bg-input: #1c1c21;
-            --border-color: #222227; --text-main: #f5f5f7; --text-muted: #aaa;
-            --msg-my-bg: #0088cc; --msg-my-text: #fff; --msg-their-bg: #1a1a1f; --msg-their-text: #f5f5f7;
-            --accent: #0088cc; --accent-hover: #2da5ff; --danger: #ff3b30;
-            --chat-bg-img: none; --bubble-shadow: 0 1px 3px rgba(0,0,0,0.15); --radius-bubble: 14px;
+            --bg-panel: #131316; --bg-header: #1a1a1e; --bg-input: #1c1c21; [cite: 2]
+            --border-color: #222227; --text-main: #f5f5f7; --text-muted: #aaa; [cite: 2]
+            --msg-my-bg: #0088cc; --msg-my-text: #fff; --msg-their-bg: #1a1a1f; --msg-their-text: #f5f5f7; [cite: 2]
+            --accent: #0088cc; --accent-hover: #2da5ff; --danger: #ff3b30; [cite: 3]
+            --chat-bg-img: none; --bubble-shadow: 0 1px 3px rgba(0,0,0,0.15); --radius-bubble: 14px; [cite: 3]
         }
 
         body.theme-black {
-            --bg-main: #000000;
-            --bg-panel: #050505; --bg-header: #0a0a0a; --bg-input: #111111;
-            --border-color: #1a1a1a; --msg-their-bg: #111111; --msg-my-bg: #005580;
+            --bg-main: #000000; [cite: 4]
+            --bg-panel: #050505; --bg-header: #0a0a0a; --bg-input: #111111; [cite: 5]
+            --border-color: #1a1a1a; --msg-their-bg: #111111; --msg-my-bg: #005580; [cite: 5]
         }
 
         body.theme-vintage {
-            --bg-main: url('https://www.transparenttextures.com/patterns/woven-light.png') #96a0ad;
-            --bg-panel: #cbd2d8; --bg-header: linear-gradient(180deg, #8ba1b9 0%, #4a6c9b 100%);
-            --bg-input: #ffffff; --border-color: #7b8896; --text-main: #000; --text-muted: #333;
-            --msg-my-bg: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%); --msg-my-text: #fff; 
-            --msg-their-bg: linear-gradient(180deg, #fdfdfd 0%, #e6e6e6 100%); --msg-their-text: #000;
-            --accent: #1583d9; --accent-hover: #0d5c9e;
-            --chat-bg-img: url('https://www.transparenttextures.com/patterns/linen.png');
-            --bubble-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.3); 
-            --radius-bubble: 16px;
+            --bg-main: url('https://www.transparenttextures.com/patterns/woven-light.png') #96a0ad; [cite: 6]
+            --bg-panel: #cbd2d8; --bg-header: linear-gradient(180deg, #8ba1b9 0%, #4a6c9b 100%); [cite: 7]
+            --bg-input: #ffffff; --border-color: #7b8896; --text-main: #000; --text-muted: #333; [cite: 7]
+            --msg-my-bg: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%); --msg-my-text: #fff;  [cite: 8]
+            --msg-their-bg: linear-gradient(180deg, #fdfdfd 0%, #e6e6e6 100%); --msg-their-text: #000; [cite: 8]
+            --accent: #1583d9; --accent-hover: #0d5c9e; [cite: 8]
+            --chat-bg-img: url('https://www.transparenttextures.com/patterns/linen.png'); [cite: 9]
+            --bubble-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.3);  [cite: 9]
+            --radius-bubble: 16px; [cite: 9]
         }
         
         body.theme-vintage #chat-header, body.theme-vintage .sidebar-header {
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.5);
-            color: #fff; border-bottom: 1px solid #283e59;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.5); [cite: 10]
+            color: #fff; border-bottom: 1px solid #283e59; [cite: 11]
         }
-        body.theme-vintage .my-profile, body.theme-vintage #chat-title-text { color: #fff;
-            text-shadow: 0 -1px 0 rgba(0,0,0,0.6); }
-        body.theme-vintage #input-panel-container { background: linear-gradient(180deg, #f0f0f0 0%, #cccccc 100%);
-            border-top: 1px solid #888; }
-        body.theme-vintage #input { border: 1px solid #999;
-            box-shadow: inset 0 2px 3px rgba(0,0,0,0.1); border-radius: 20px; }
-        body.theme-vintage .media-btn-label, body.theme-vintage .tool-btn { background: linear-gradient(180deg, #fff 0%, #e0e0e0 100%);
-            border: 1px solid #999; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        body.theme-vintage #button { background: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%);
-            border: 1px solid #0d5c9e; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.3);
+        body.theme-vintage .my-profile, body.theme-vintage #chat-title-text { color: #fff; [cite: 11]
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.6); } [cite: 12]
+        body.theme-vintage #input-panel-container { background: linear-gradient(180deg, #f0f0f0 0%, #cccccc 100%); [cite: 12]
+            border-top: 1px solid #888; } [cite: 13]
+        body.theme-vintage #input { border: 1px solid #999; [cite: 13]
+            box-shadow: inset 0 2px 3px rgba(0,0,0,0.1); border-radius: 20px; } [cite: 14]
+        body.theme-vintage .media-btn-label, body.theme-vintage .tool-btn { background: linear-gradient(180deg, #fff 0%, #e0e0e0 100%); [cite: 14]
+            border: 1px solid #999; box-shadow: 0 1px 2px rgba(0,0,0,0.2); } [cite: 15]
+        body.theme-vintage #button { background: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%); [cite: 15]
+            border: 1px solid #0d5c9e; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.3); [cite: 16]
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg-main); background-image: var(--chat-bg-img); color: var(--text-main); display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; max-width: 100%;
-            transition: background 0.3s, color 0.3s; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; [cite: 17]
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; [cite: 18]
+            background: var(--bg-main); background-image: var(--chat-bg-img); color: var(--text-main); display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; max-width: 100%; [cite: 19]
+            transition: background 0.3s, color 0.3s; } [cite: 20]
 
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
-        ::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.5); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; [cite: 20]
+        }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); [cite: 21]
+        }
+        ::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.3); border-radius: 10px; [cite: 22]
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.5); [cite: 23]
+        }
 
-        #sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex;
-            flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; }
-        .sidebar-header { padding: 16px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border-color); }
-        .my-profile { font-weight: 600; color: var(--accent); font-size: 15px;
-            cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; }
-        .my-profile:hover { color: var(--accent-hover); }
-        .header-controls { display: flex; gap: 10px; align-items: center; }
-        .search-trigger-btn, .settings-btn { background: rgba(128, 128, 128, 0.1); border: none; font-size: 16px;
-            cursor: pointer; color: var(--text-muted); transition: all 0.2s; padding: 8px; border-radius: 50%; outline: none; display: flex; align-items: center; justify-content: center; }
-        .search-trigger-btn:hover, .settings-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
+        #sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; [cite: 24]
+            flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; [cite: 25]
+        }
+        .sidebar-header { padding: 16px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center; [cite: 26]
+            border-bottom: 1px solid var(--border-color); } [cite: 27]
+        .my-profile { font-weight: 600; color: var(--accent); font-size: 15px; [cite: 27]
+            cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; [cite: 28]
+        }
+        .my-profile:hover { color: var(--accent-hover); [cite: 29]
+        }
+        .header-controls { display: flex; gap: 10px; align-items: center; [cite: 30]
+        }
+        .search-trigger-btn, .settings-btn { background: rgba(128, 128, 128, 0.1); border: none; font-size: 16px; [cite: 31]
+            cursor: pointer; color: var(--text-muted); transition: all 0.2s; padding: 8px; border-radius: 50%; outline: none; display: flex; align-items: center; justify-content: center; [cite: 32]
+        }
+        .search-trigger-btn:hover, .settings-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.25); transform: scale(1.05); [cite: 33]
+        }
 
-        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color);
-            display: none; }
-        .search-container.active { display: block; }
-        .search-container input { width: 100%; padding: 10px 14px; background: var(--bg-input);
-            border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
-        .search-container input:focus { border-color: var(--accent); }
+        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); [cite: 34]
+            display: none; } [cite: 35]
+        .search-container.active { display: block; [cite: 35]
+        }
+        .search-container input { width: 100%; padding: 10px 14px; background: var(--bg-input); [cite: 36]
+            border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; [cite: 37]
+        }
+        .search-container input:focus { border-color: var(--accent); [cite: 38]
+        }
 
-        .search-results-dropdown { position: absolute; top: calc(100% + 5px); left: 0; width: 100%;
-            background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; z-index: 200; max-height: 250px; overflow-y: auto; display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .search-result-item { padding: 10px; display: flex;
-            align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
-        .search-result-item:hover { background: var(--bg-header); }
-        .search-result-item:last-child { border-bottom: none; }
-        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
-            color: var(--accent); background: rgba(128,128,128,0.1); }
+        .search-results-dropdown { position: absolute; top: calc(100% + 5px); left: 0; width: 100%; [cite: 39]
+            background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; z-index: 200; max-height: 250px; overflow-y: auto; display: none; [cite: 40]
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); } [cite: 41]
+        .search-result-item { padding: 10px; display: flex; [cite: 41]
+            align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s; [cite: 42]
+        }
+        .search-result-item:hover { background: var(--bg-header); [cite: 43]
+        }
+        .search-result-item:last-child { border-bottom: none; [cite: 44]
+        }
+        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; [cite: 45]
+            color: var(--accent); background: rgba(128,128,128,0.1); } [cite: 46]
 
         /* === ПАПКИ === */
-        .chat-folders-bar { display: flex;
-            overflow-x: auto; background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 10px; gap: 8px; }
-        .folder-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 14px;
-            cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; }
-        .folder-tab:hover { background: rgba(128,128,128,0.2); color: var(--text-main); }
-        .folder-tab.active { background: var(--accent); color: white; }
+        .chat-folders-bar { display: flex; [cite: 46]
+            overflow-x: auto; background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 10px; gap: 8px; [cite: 47]
+        }
+        .folder-tab { padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 14px; [cite: 48]
+            cursor: pointer; background: rgba(128,128,128,0.1); color: var(--text-muted); white-space: nowrap; transition: all 0.2s; user-select: none; [cite: 49]
+        }
+        .folder-tab:hover { background: rgba(128,128,128,0.2); color: var(--text-main); [cite: 50]
+        }
+        .folder-tab.active { background: var(--accent); color: white; [cite: 51]
+        }
 
-        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 1.5px; font-weight: 700; }
-        #chats-list { flex-grow: 1; overflow-y: auto; }
+        /* === НОВІ СТИЛІ: Редагування чатів === */
+        #chats-multi-select-bar { display: none; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--bg-input); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--accent); }
+        .chat-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+        body.chats-edit-mode .chat-checkbox { display: inline-block; }
+        .chats-edit-btn { background: none; border: none; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; transition: color 0.2s; }
+        .chats-edit-btn:hover { color: var(--accent); }
+
+        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; [cite: 52]
+            letter-spacing: 1.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; } 
+        #chats-list { flex-grow: 1; overflow-y: auto; [cite: 53]
+        }
         .chat-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color);
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative; }
-        .chat-item:hover { background: var(--bg-header); }
-        .chat-item.active { background: var(--bg-input); border-left: 4px solid var(--accent); }
-        .chat-item.blocked { opacity: 0.5; filter: grayscale(100%); }
-        .chat-flags { display: flex; gap: 6px; position: absolute; right: 16px; top: 14px; font-size: 12px; }
+            cursor: pointer; [cite: 54]
+            display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative; [cite: 55]
+        }
+        .chat-item:hover { background: var(--bg-header); [cite: 56]
+        }
+        .chat-item.active { background: var(--bg-input); border-left: 4px solid var(--accent); [cite: 57]
+        }
+        .chat-item.blocked { opacity: 0.5; filter: grayscale(100%); [cite: 58]
+        }
+        .chat-flags { display: flex; gap: 6px; position: absolute; right: 16px; top: 14px; [cite: 59]
+            font-size: 12px; } [cite: 60]
 
-        @keyframes glowPulse { 0% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } 50% { background-color: var(--bg-header); box-shadow: inset 0 0 15px rgba(0, 136, 255, 0.4); } 100% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } }
-        .chat-item.glow-active { animation: glowPulse 2s infinite ease-in-out; border-left: 4px solid #00e5ff; }
+        @keyframes glowPulse { 0% { background-color: var(--bg-panel); [cite: 60]
+            box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } 50% { background-color: var(--bg-header); [cite: 61]
+            box-shadow: inset 0 0 15px rgba(0, 136, 255, 0.4); } 100% { background-color: var(--bg-panel); [cite: 62]
+            box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } } [cite: 63]
+        .chat-item.glow-active { animation: glowPulse 2s infinite ease-in-out; [cite: 63]
+            border-left: 4px solid #00e5ff; } [cite: 64]
         
-        .chat-info-block { display: flex; align-items: center; gap: 12px; max-width: 80%; }
-        .status-dot { font-size: 11px; color: var(--text-muted); margin-top: 18px; }
-        .status-dot.online { color: #4cd964; font-weight: bold; }
+        .chat-info-block { display: flex; [cite: 64]
+            align-items: center; gap: 12px; max-width: 80%; } [cite: 65]
+        .status-dot { font-size: 11px; color: var(--text-muted); [cite: 65]
+            margin-top: 18px; } [cite: 66]
+        .status-dot.online { color: #4cd964; font-weight: bold; [cite: 66]
+        }
 
-        .avatar, .avatar-placeholder, .modal-avatar, .modal-avatar-placeholder, .circle-video { border-radius: 50% !important; aspect-ratio: 1 / 1; object-fit: cover; }
-        .avatar { width: 40px; height: 40px; flex-shrink: 0; display: block; border: 1px solid rgba(128,128,128,0.2); }
-        .avatar-placeholder { width: 40px; height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; }
+        .avatar, .avatar-placeholder, .modal-avatar, .modal-avatar-placeholder, .circle-video { border-radius: 50% !important; [cite: 67]
+            aspect-ratio: 1 / 1; object-fit: cover; } [cite: 68]
+        .avatar { width: 40px; height: 40px; [cite: 68]
+            flex-shrink: 0; display: block; border: 1px solid rgba(128,128,128,0.2); } [cite: 69]
+        .avatar-placeholder { width: 40px; [cite: 69]
+            height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; [cite: 70]
+        }
 
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative; height: 100%; min-width: 0; }
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative; [cite: 71]
+            height: 100%; min-width: 0; } [cite: 72]
         
         /* === АРХІВ СТИЛІ === */
-        #archive-reveal-zone { text-align: center; padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
-        #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); }
-        #archive-container { display: none; border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; background: var(--bg-input); }
+        #archive-reveal-zone { text-align: center; [cite: 72]
+            padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s; [cite: 73]
+        }
+        #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); [cite: 74]
+        }
+        #archive-container { display: none; border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; [cite: 75]
+            background: var(--bg-input); } [cite: 76]
 
-        /* === МУЛЬТИ-ВИДІЛЕННЯ (Виправлено сторони) === */
-        .multi-select-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
-        body.multi-select-mode .msg-checkbox { display: inline-block; }
-        body.multi-select-mode .msg-container { flex-direction: row; align-items: center; justify-content: flex-start; }
-        body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; } /* ВИПРАВЛЕНО: залишаються справа */
-        body.multi-select-mode .my-wrapper .msg-checkbox { margin-right: 0; margin-left: 12px; }
+        /* === МУЛЬТИ-ВИДІЛЕННЯ ПОВІДОМЛЕНЬ === */
+        .multi-select-bar { display: flex; [cite: 76]
+            justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0; [cite: 77]
+            left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); [cite: 78]
+        }
+        .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; [cite: 79]
+            accent-color: var(--accent); } [cite: 80]
+        body.multi-select-mode .msg-checkbox { display: inline-block; [cite: 80]
+        }
+        body.multi-select-mode .msg-container { flex-direction: row; align-items: center; justify-content: flex-start; [cite: 81]
+        }
+        body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; [cite: 82]
+        } 
+        body.multi-select-mode .my-wrapper .msg-checkbox { margin-right: 0; [cite: 83]
+            margin-left: 12px; } [cite: 84]
 
-        #chat-header { padding: 14px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; }
-        .header-meta { display: flex; align-items: center; gap: 12px; overflow: hidden; }
-        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #chat-title-text:hover { color: var(--accent); }
-        .typing-indicator { font-size: 13px; color: #4cd964; font-style: italic; display: none; }
+        #chat-header { padding: 14px 20px; background: var(--bg-panel); [cite: 84]
+            border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; [cite: 85]
+        }
+        .header-meta { display: flex; align-items: center; gap: 12px; overflow: hidden; [cite: 86]
+        }
+        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; [cite: 87]
+            overflow: hidden; text-overflow: ellipsis; } [cite: 88]
+        #chat-title-text:hover { color: var(--accent); [cite: 88]
+        }
+        .typing-indicator { font-size: 13px; color: #4cd964; font-style: italic; display: none; [cite: 89]
+        }
         
-        .header-actions { display: flex; gap: 10px; align-items: center; position: relative; }
-        .call-btn { background: rgba(128, 128, 128, 0.1); color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .call-btn:hover { background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
+        .header-actions { display: flex; [cite: 90]
+            gap: 10px; align-items: center; position: relative; } [cite: 91]
+        .call-btn { background: rgba(128, 128, 128, 0.1); [cite: 91]
+            color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; [cite: 92]
+            transition: all 0.2s; } [cite: 93]
+        .call-btn:hover { background: rgba(128, 128, 128, 0.25); transform: scale(1.05); [cite: 93]
+        }
 
-        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 190px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
-        #chat-options-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer; }
-        #chat-options-menu button:hover { background: var(--bg-header); }
-        #chat-options-menu button.danger { color: var(--danger); }
+        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); [cite: 94]
+            border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 190px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; [cite: 95]
+            margin-top: 10px; } [cite: 96]
+        #chat-options-menu button { display: block; width: 100%; text-align: left; [cite: 96]
+            background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer; [cite: 97]
+        }
+        #chat-options-menu button:hover { background: var(--bg-header); [cite: 98]
+        }
+        #chat-options-menu button.danger { color: var(--danger); [cite: 99]
+        }
 
-        .back-btn { display: none; background: rgba(128,128,128,0.2); border: none; color: var(--text-main); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
-        .back-btn:hover { background: rgba(128,128,128,0.3); }
+        .back-btn { display: none; background: rgba(128,128,128,0.2); border: none; color: var(--text-main); [cite: 100]
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; [cite: 101]
+        }
+        .back-btn:hover { background: rgba(128,128,128,0.3); [cite: 102]
+        }
 
-        #pinned-message-bar { background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 20px; display: none; align-items: center; justify-content: space-between; font-size: 13px; color: #00e5ff; cursor: pointer; z-index: 12; user-select: none; transition: background 0.2s; }
-        #pinned-message-bar:hover { background: var(--bg-input); }
-        .pinned-bar-content { display: flex; flex-direction: column; overflow: hidden; max-width: 85%; }
-        .pinned-bar-title { font-weight: 700; font-size: 11px; text-transform: uppercase; display: flex; gap: 8px; align-items: center; color: var(--accent); }
-        .pin-counter { background: var(--accent); color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
-        .pinned-bar-text { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
-        .unpin-btn-x { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; }
-        .unpin-btn-x:hover { color: var(--danger); }
+        #pinned-message-bar { background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 20px; [cite: 103]
+            display: none; align-items: center; justify-content: space-between; font-size: 13px; color: #00e5ff; cursor: pointer; z-index: 12; user-select: none; transition: background 0.2s; [cite: 104]
+        }
+        #pinned-message-bar:hover { background: var(--bg-input); [cite: 105]
+        }
+        .pinned-bar-content { display: flex; flex-direction: column; overflow: hidden; max-width: 85%; [cite: 106]
+        }
+        .pinned-bar-title { font-weight: 700; font-size: 11px; text-transform: uppercase; display: flex; gap: 8px; [cite: 107]
+            align-items: center; color: var(--accent); } [cite: 108]
+        .pin-counter { background: var(--accent); color: #fff; [cite: 108]
+            padding: 2px 6px; border-radius: 10px; font-size: 9px; } [cite: 109]
+        .pinned-bar-text { color: var(--text-muted); [cite: 109]
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; } [cite: 110]
+        .unpin-btn-x { background: none; [cite: 110]
+            border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; [cite: 111]
+        }
+        .unpin-btn-x:hover { color: var(--danger); [cite: 112]
+        }
         
-        #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
-        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 85%; width: fit-content; z-index: 1; transition: background-color 0.5s ease; border-radius: var(--radius-bubble); }
-        .msg-container:hover { z-index: 100; }
-        .msg-container.my-wrapper { align-self: flex-end; }
+        #messages { list-style-type: none; [cite: 113]
+            padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; [cite: 114]
+        }
+        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 85%; [cite: 115]
+            width: fit-content; z-index: 1; transition: background-color 0.5s ease; border-radius: var(--radius-bubble); [cite: 116]
+        }
+        .msg-container:hover { z-index: 100; [cite: 117]
+        }
+        .msg-container.my-wrapper { align-self: flex-end; [cite: 118]
+        }
 
-        #messages li { padding: 10px 14px; background: var(--msg-their-bg); border-radius: var(--radius-bubble); word-break: break-word; user-select: none; color: var(--msg-their-text); position: relative; cursor: pointer; transition: background 0.15s; width: 100%; box-shadow: var(--bubble-shadow); display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(128,128,128,0.05); }
-        #messages li.my-msg { background: var(--msg-my-bg); color: var(--msg-my-text); border-bottom-right-radius: 4px; }
+        #messages li { padding: 10px 14px; background: var(--msg-their-bg); border-radius: var(--radius-bubble); word-break: break-word; [cite: 119]
+            user-select: none; color: var(--msg-their-text); position: relative; cursor: pointer; transition: background 0.15s; width: 100%; box-shadow: var(--bubble-shadow); display: flex; flex-direction: column; [cite: 120]
+            gap: 4px; border: 1px solid rgba(128,128,128,0.05); } [cite: 121]
+        #messages li.my-msg { background: var(--msg-my-bg); [cite: 121]
+            color: var(--msg-my-text); border-bottom-right-radius: 4px; } [cite: 122]
         
-        #messages li.msg-transparent { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; color: var(--text-main); }
-        #messages li.msg-transparent .msg-meta-line { position: absolute; bottom: 5px; right: 8px; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 12px; color: white; width: auto; z-index: 2; font-size: 11px; }
-        #messages li.msg-transparent .chat-media-wrapper { background: transparent; border: none; margin: 0; }
-        #messages li.msg-transparent .audio-msg { background: var(--bg-panel); border-radius: 20px; border: 1px solid var(--border-color); }
+        #messages li.msg-transparent { background: transparent !important; [cite: 122]
+            box-shadow: none !important; padding: 0 !important; border: none !important; color: var(--text-main); [cite: 123]
+        }
+        #messages li.msg-transparent .msg-meta-line { position: absolute; bottom: 5px; right: 8px; background: rgba(0,0,0,0.5); [cite: 124]
+            padding: 3px 8px; border-radius: 12px; color: white; width: auto; z-index: 2; font-size: 11px; [cite: 125]
+        }
+        #messages li.msg-transparent .chat-media-wrapper { background: transparent; border: none; margin: 0; [cite: 126]
+        }
+        #messages li.msg-transparent .audio-msg { background: var(--bg-panel); border-radius: 20px; border: 1px solid var(--border-color); [cite: 127]
+        }
         
-        .sticker-img { width: 140px; height: 140px; object-fit: contain; display: block; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); }
-        .audio-msg { border-radius: 20px; outline: none; height: 40px; }
+        .sticker-img { width: 140px; [cite: 128]
+            height: 140px; object-fit: contain; display: block; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4)); [cite: 129]
+        }
+        .audio-msg { border-radius: 20px; outline: none; height: 40px; [cite: 130]
+        }
 
-        /* === КРУЖЕЧКИ ТА ШВИДКІСТЬ (Виправлено перегляд) === */
-        .circle-video-wrapper { position: relative; display: inline-block; }
-        .circle-video { width: 180px; height: 180px; display: block; border: 3px solid var(--accent); background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease; }
+        .circle-video-wrapper { position: relative; [cite: 131]
+            display: inline-block; } [cite: 132]
+        .circle-video { width: 180px; height: 180px; display: block; [cite: 132]
+            border: 3px solid var(--accent); background: #000; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease; [cite: 133]
+        }
         
-        /* Логіка повноекранного кружка через обгортку */
-        .circle-video-wrapper.expanded { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10001; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 0; }
-        .circle-video.expanded { position: relative; top: auto; left: auto; transform: none; width: 80vw; max-width: 400px; height: 80vw; max-height: 400px; box-shadow: 0 10px 50px rgba(0,0,0,0.6); }
+        .circle-video-wrapper.expanded { position: fixed; [cite: 134]
+            top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10001; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; flex-direction: column; [cite: 135]
+            border-radius: 0; } [cite: 136]
+        .circle-video.expanded { position: relative; top: auto; left: auto; transform: none; [cite: 136]
+            width: 80vw; max-width: 400px; height: 80vw; max-height: 400px; box-shadow: 0 10px 50px rgba(0,0,0,0.6); [cite: 137]
+        }
         
-        .media-speed-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 12px; padding: 4px 8px; font-size: 11px; cursor: pointer; z-index: 10005; font-weight: bold; backdrop-filter: blur(4px); display: none; }
-        .media-speed-btn:hover { background: rgba(0,0,0,0.8); }
+        .media-speed-btn { position: absolute; [cite: 138]
+            bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 12px; padding: 4px 8px; font-size: 11px; cursor: pointer; [cite: 139]
+            z-index: 10005; font-weight: bold; backdrop-filter: blur(4px); display: none; } [cite: 140]
+        .media-speed-btn:hover { background: rgba(0,0,0,0.8); [cite: 140]
+        }
         
-        /* Зміна позиції швидкості при розгорнутому відео */
-        .circle-video-wrapper.expanded .media-speed-btn { position: relative; bottom: auto; left: auto; margin-top: 20px; font-size: 14px; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.2); }
+        .circle-video-wrapper.expanded .media-speed-btn { position: relative; [cite: 141]
+            bottom: auto; left: auto; margin-top: 20px; font-size: 14px; padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.2); [cite: 142]
+        }
         
-        .audio-wrapper { display: flex; align-items: center; gap: 8px; }
-        .audio-speed-btn { background: var(--bg-input); color: var(--accent); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        .audio-speed-btn:hover { background: var(--bg-header); }
+        .audio-wrapper { display: flex; [cite: 143]
+            align-items: center; gap: 8px; } [cite: 144]
+        .audio-speed-btn { background: var(--bg-input); color: var(--accent); [cite: 144]
+            border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 10px; font-size: 12px; cursor: pointer; font-weight: bold; transition: background 0.2s; [cite: 145]
+        }
+        .audio-speed-btn:hover { background: var(--bg-header); [cite: 146]
+        }
 
-        .msg-meta-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; align-self: flex-end; margin-top: 2px; font-size: 10px; width: 100%; opacity: 0.8; }
-        .msg-time { color: inherit; opacity: 0.6; }
-        .msg-status { color: inherit; opacity: 0.6; font-weight: bold; font-size: 11px; transition: color 0.3s; }
-        .msg-status.read { color: #4cd964; opacity: 1; }
+        .msg-meta-line { display: flex; align-items: center; justify-content: flex-end; gap: 6px; align-self: flex-end; [cite: 147]
+            margin-top: 2px; font-size: 10px; width: 100%; opacity: 0.8; } [cite: 148]
+        .msg-time { color: inherit; [cite: 148]
+            opacity: 0.6; } [cite: 149]
+        .msg-status { color: inherit; opacity: 0.6; font-weight: bold; font-size: 11px; [cite: 149]
+            transition: color 0.3s; } [cite: 150]
+        .msg-status.read { color: #4cd964; opacity: 1; [cite: 150]
+        }
 
-        .reply-quote { background: rgba(128, 128, 128, 0.15); border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 4px; font-size: 12px; margin-bottom: 4px; color: inherit; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .my-msg .reply-quote { border-left-color: #ffffff; background: rgba(255, 255, 255, 0.15); }
-        .forward-header { font-size: 11px; opacity: 0.7; margin-bottom: 4px; border-left: 2px solid var(--accent); padding-left: 5px; color: var(--accent); font-weight: bold; }
+        .reply-quote { background: rgba(128, 128, 128, 0.15); border-left: 3px solid var(--accent); [cite: 151]
+            padding: 6px 10px; border-radius: 4px; font-size: 12px; margin-bottom: 4px; color: inherit; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; [cite: 152]
+        }
+        .my-msg .reply-quote { border-left-color: #ffffff; background: rgba(255, 255, 255, 0.15); [cite: 153]
+        }
+        .forward-header { font-size: 11px; opacity: 0.7; margin-bottom: 4px; border-left: 2px solid var(--accent); [cite: 154]
+            padding-left: 5px; color: var(--accent); font-weight: bold; } [cite: 155]
 
-        .chat-media-wrapper { margin-top: 4px; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(128, 128, 128, 0.05); max-width: 100%; }
-        .chat-media-img { width: 100%; max-width: 320px; max-height: 280px; object-fit: contain; display: block; cursor: pointer; transition: opacity 0.2s; }
+        .chat-media-wrapper { margin-top: 4px; border-radius: 10px; [cite: 155]
+            overflow: hidden; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(128, 128, 128, 0.05); max-width: 100%; [cite: 156]
+        }
+        .chat-media-img { width: 100%; max-width: 320px; max-height: 280px; object-fit: contain; display: block; [cite: 157]
+            cursor: pointer; transition: opacity 0.2s; } [cite: 158]
 
-        .reaction-picker { position: absolute; top: -48px; left: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 30px; padding: 4px 10px; display: none; gap: 8px; z-index: 99; box-shadow: 0 4px 15px rgba(0,0,0,0.5); user-select: none; align-items: center; max-width: 250px; flex-wrap: wrap; }
-        .msg-container.my-wrapper .reaction-picker { left: auto; right: 8px; }
-        .reaction-picker span { font-size: 18px; cursor: pointer; transition: transform 0.1s; }
-        .reaction-picker span:hover { transform: scale(1.35); }
+        .reaction-picker { position: absolute; top: -48px; [cite: 158]
+            left: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 30px; padding: 4px 10px; display: none; gap: 8px; z-index: 99; [cite: 159]
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); user-select: none; align-items: center; max-width: 250px; flex-wrap: wrap; [cite: 160]
+        }
+        .msg-container.my-wrapper .reaction-picker { left: auto; right: 8px; [cite: 161]
+        }
+        .reaction-picker span { font-size: 18px; cursor: pointer; transition: transform 0.1s; [cite: 162]
+        }
+        .reaction-picker span:hover { transform: scale(1.35); [cite: 163]
+        }
 
-        .reactions-holder { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-        .reaction-chip { background: rgba(128,128,128,0.1); border: 1px solid var(--border-color); border-radius: 10px; padding: 2px 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; user-select: none; }
-        .reaction-chip:hover { background: rgba(128,128,128,0.25); }
-        .reaction-chip.active-my { background: rgba(0, 136, 255, 0.15); border-color: var(--accent); }
+        .reactions-holder { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; [cite: 164]
+        }
+        .reaction-chip { background: rgba(128,128,128,0.1); border: 1px solid var(--border-color); border-radius: 10px; [cite: 165]
+            padding: 2px 6px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.15s; user-select: none; [cite: 166]
+        }
+        .reaction-chip:hover { background: rgba(128,128,128,0.25); [cite: 167]
+        }
+        .reaction-chip.active-my { background: rgba(0, 136, 255, 0.15); border-color: var(--accent); [cite: 168]
+        }
 
-        #input-panel-container { background: var(--bg-panel); border-top: 1px solid var(--border-color); width: 100%; display: flex; flex-direction: column; position: relative; z-index: 110; }
-        #reply-preview-bar { background: var(--bg-header); padding: 8px 20px; border-left: 4px solid var(--accent); display: none; justify-content: space-between; align-items: center; font-size: 13px; }
-        #reply-preview-text { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85%; }
-        #reply-close-btn { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
-        #reply-close-btn:hover { color: var(--danger); }
+        #input-panel-container { background: var(--bg-panel); border-top: 1px solid var(--border-color); width: 100%; display: flex; [cite: 169]
+            flex-direction: column; position: relative; z-index: 110; } [cite: 170]
+        #reply-preview-bar { background: var(--bg-header); [cite: 170]
+            padding: 8px 20px; border-left: 4px solid var(--accent); display: none; justify-content: space-between; align-items: center; font-size: 13px; [cite: 171]
+        }
+        #reply-preview-text { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85%; [cite: 172]
+        }
+        #reply-close-btn { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; [cite: 173]
+        }
+        #reply-close-btn:hover { color: var(--danger); [cite: 174]
+        }
 
-        #form { padding: 12px 10px; display: flex; align-items: center; width: 100%; gap: 8px; flex-wrap: wrap; position: relative; }
-        #input { flex-grow: 1; padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 20px; outline: none; font-size: 15px; transition: border-color 0.2s; min-width: 100px; }
-        #input:focus { border-color: var(--accent); }
+        #form { padding: 12px 10px; display: flex; align-items: center; width: 100%; [cite: 175]
+            gap: 8px; flex-wrap: wrap; position: relative; } [cite: 176]
+        #input { flex-grow: 1; [cite: 176]
+            padding: 12px 16px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 20px; outline: none; font-size: 15px; transition: border-color 0.2s; [cite: 177]
+            min-width: 100px; } [cite: 178]
+        #input:focus { border-color: var(--accent); [cite: 178]
+        }
         
-        .media-btn-label, .tool-btn { background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-        .media-btn-label:hover, .tool-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.2); transform: scale(1.05); }
+        .media-btn-label, .tool-btn { background: var(--bg-input); [cite: 179]
+            border: 1px solid var(--border-color); color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; [cite: 180]
+            cursor: pointer; transition: all 0.2s; flex-shrink: 0; } [cite: 181]
+        .media-btn-label:hover, .tool-btn:hover { color: var(--text-main); [cite: 181]
+            background: rgba(128, 128, 128, 0.2); transform: scale(1.05); } [cite: 182]
         
-        /* === БУЛЬБАШКА ВКЛАДЕНЬ (Замість 100 кнопок) === */
-        .attachment-bubble { position: absolute; bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; flex-direction: column; gap: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; width: 220px; }
-        .attachment-bubble.active { display: flex; }
-        .attachment-item-btn { display: flex; align-items: center; gap: 12px; background: none; border: none; color: var(--text-main); font-size: 14px; cursor: pointer; padding: 10px; border-radius: 8px; text-align: left; transition: background 0.2s; width: 100%; outline: none; }
-        .attachment-item-btn:hover { background: rgba(128,128,128,0.2); color: var(--accent); }
-        .attachment-item-btn i { font-style: normal; font-size: 18px; width: 24px; text-align: center; }
+        /* === БУЛЬБАШКА ВКЛАДЕНЬ === */
+        .attachment-bubble { position: absolute; [cite: 182]
+            bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; flex-direction: column; gap: 8px; [cite: 183]
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; width: 220px; } [cite: 184]
+        .attachment-bubble.active { display: flex; [cite: 184]
+        }
+        .attachment-item-btn { display: flex; align-items: center; gap: 12px; background: none; border: none; [cite: 185]
+            color: var(--text-main); font-size: 14px; cursor: pointer; padding: 10px; border-radius: 8px; text-align: left; transition: background 0.2s; width: 100%; outline: none; [cite: 186]
+        }
+        .attachment-item-btn:hover { background: rgba(128,128,128,0.2); color: var(--accent); [cite: 187]
+        }
+        .attachment-item-btn i { font-style: normal; font-size: 18px; width: 24px; text-align: center; [cite: 188]
+        }
 
         /* ПОВНОЕКРАННИЙ ЗАПИС МЕДІА (ПО ЦЕНТРУ) */
-        .record-overlay-fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; box-sizing: border-box; }
-        .record-preview { width: 280px; height: 280px; border-radius: 50%; object-fit: cover; border: 4px solid var(--danger); background: #000; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: border-color 0.3s; }
-        .record-preview.audio-mode { border-radius: 20px; height: 100px; border-color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 40px; background: rgba(0,136,204, 0.2); }
-        .record-preview.recording { animation: pulseRecord 1s infinite; }
+        .record-overlay-fullscreen { position: fixed; [cite: 189]
+            top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.85); z-index: 6000; display: flex; flex-direction: column; [cite: 190]
+            align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; box-sizing: border-box; [cite: 191]
+        }
+        .record-preview { width: 280px; height: 280px; border-radius: 50%; object-fit: cover; [cite: 192]
+            border: 4px solid var(--danger); background: #000; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: border-color 0.3s; [cite: 193]
+        }
+        .record-preview.audio-mode { border-radius: 20px; height: 100px; border-color: var(--accent); display: flex; align-items: center; [cite: 194]
+            justify-content: center; font-size: 40px; background: rgba(0,136,204, 0.2); } [cite: 195]
+        .record-preview.recording { animation: pulseRecord 1s infinite; [cite: 195]
+        }
         
-        @keyframes pulseRecord { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255,59,48, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); } }
+        @keyframes pulseRecord { 0% { transform: scale(1); [cite: 196]
+            box-shadow: 0 0 0 0 rgba(255,59,48, 0.7); } 50% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(255,59,48, 0); [cite: 197]
+            } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,59,48, 0); [cite: 198]
+            } } [cite: 199]
 
-        .record-timer-text { font-size: 26px; font-weight: 700; color: white; font-variant-numeric: tabular-nums; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 25px; margin-bottom: 30px; }
-        .record-controls-row { display: flex; gap: 25px; align-items: center; }
-        .record-controls-row .tool-btn { width: 55px; height: 55px; font-size: 22px; }
-        .record-controls-row .tool-btn.send { background: var(--accent); color: white; border-color: var(--accent-hover); }
+        .record-timer-text { font-size: 26px; font-weight: 700; color: white; font-variant-numeric: tabular-nums; [cite: 199]
+            background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 25px; margin-bottom: 30px; } [cite: 200]
+        .record-controls-row { display: flex; [cite: 200]
+            gap: 25px; align-items: center; } [cite: 201]
+        .record-controls-row .tool-btn { width: 55px; height: 55px; [cite: 201]
+            font-size: 22px; } [cite: 202]
+        .record-controls-row .tool-btn.send { background: var(--accent); color: white; border-color: var(--accent-hover); [cite: 202]
+        }
 
-        #button { padding: 10px 16px; background: var(--accent); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-weight: 700; font-size: 14px; flex-shrink: 0; transition: all 0.2s; }
-        #button:hover { background: var(--accent-hover); transform: scale(1.02); }
+        #button { padding: 10px 16px; background: var(--accent); color: #fff; border: none; [cite: 203]
+            border-radius: 20px; cursor: pointer; font-weight: 700; font-size: 14px; flex-shrink: 0; transition: all 0.2s; [cite: 204]
+        }
+        #button:hover { background: var(--accent-hover); transform: scale(1.02); [cite: 205]
+        }
         
-        .popup-menu { position: absolute; bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; width: 280px; max-height: 250px; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; }
-        .popup-menu.active { display: flex; flex-wrap: wrap; gap: 8px; }
-        .sticker-item { width: 60px; height: 60px; object-fit: contain; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
-        .sticker-item:hover { background: rgba(128,128,128,0.2); }
+        .popup-menu { position: absolute; [cite: 206]
+            bottom: 70px; left: 10px; background: var(--bg-header); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; display: none; width: 280px; max-height: 250px; [cite: 207]
+            overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 200; } [cite: 208]
+        .popup-menu.active { display: flex; [cite: 208]
+            flex-wrap: wrap; gap: 8px; } [cite: 209]
+        .sticker-item { width: 60px; height: 60px; object-fit: contain; [cite: 209]
+            cursor: pointer; border-radius: 8px; transition: background 0.2s; } [cite: 210]
+        .sticker-item:hover { background: rgba(128,128,128,0.2); [cite: 210]
+        }
 
-        .no-chat-selected { margin: auto; text-align: center; color: var(--text-muted); font-size: 18px; line-height: 1.6; user-select: none; }
+        .no-chat-selected { margin: auto; text-align: center; color: var(--text-muted); font-size: 18px; line-height: 1.6; [cite: 211]
+            user-select: none; } [cite: 212]
 
-        .context-menu { position: fixed; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; display: none; z-index: 5500; box-shadow: 0 5px 20px rgba(0,0,0,0.6); min-width: 190px; overflow: hidden; }
-        .context-menu button { background: none; border: none; color: var(--text-main); width: 100%; text-align: left; padding: 11px 16px; font-size: 13px; cursor: pointer; outline: none; display: block; transition: background 0.15s; }
-        .context-menu button:hover { background: var(--bg-header); }
-        .context-menu button.delete-btn { color: var(--danger); font-weight: 600; border-top: 1px solid var(--border-color); }
-        .context-menu button.delete-btn:hover { background: rgba(255, 59, 48, 0.15); }
+        .context-menu { position: fixed; background: var(--bg-input); border: 1px solid var(--border-color); [cite: 212]
+            border-radius: 10px; display: none; z-index: 5500; box-shadow: 0 5px 20px rgba(0,0,0,0.6); min-width: 190px; overflow: hidden; [cite: 213]
+        }
+        .context-menu button { background: none; border: none; color: var(--text-main); width: 100%; [cite: 214]
+            text-align: left; padding: 11px 16px; font-size: 13px; cursor: pointer; outline: none; display: block; transition: background 0.15s; [cite: 215]
+        }
+        .context-menu button:hover { background: var(--bg-header); [cite: 216]
+        }
+        .context-menu button.delete-btn { color: var(--danger); font-weight: 600; border-top: 1px solid var(--border-color); [cite: 217]
+        }
+        .context-menu button.delete-btn:hover { background: rgba(255, 59, 48, 0.15); [cite: 218]
+        }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); overflow-y: auto; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; width: 100%; max-width: 360px; border: 1px solid var(--border-color); box-shadow: 0 8px 30px rgba(0,0,0,0.5); margin: auto; color: var(--text-main); position: relative;}
-        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
-        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; outline: none; }
-        .modal-close:hover { color: var(--text-main); }
+        /* === ОНОВЛЕНИЙ ПРОФІЛЬ (БАНЕР ТА АВАТАР) === */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; [cite: 219]
+            background: rgba(0, 0, 0, 0.75); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); overflow-y: auto; [cite: 220]
+        }
+        .modal-overlay.active { display: flex; [cite: 221]
+        }
+        .modal-content { background: var(--bg-panel); padding: 24px; border-radius: 12px; width: 100%; max-width: 360px; [cite: 222]
+            border: 1px solid var(--border-color); box-shadow: 0 8px 30px rgba(0,0,0,0.5); margin: auto; color: var(--text-main); [cite: 223]
+            position: relative; overflow: hidden; } 
+        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-bottom: 12px; [cite: 224]
+            border-bottom: 1px solid var(--border-color); color: var(--accent); display: flex; justify-content: space-between; align-items: center; z-index: 2; position: relative; [cite: 225]
+        }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; [cite: 226]
+            outline: none; } [cite: 227]
+        .modal-close:hover { color: var(--text-main); [cite: 227]
+        }
+
+        .profile-banner { width: 100%; height: 120px; border-radius: 12px 12px 0 0; background-size: cover; background-position: center; position: absolute; top: 0; left: 0; z-index: 0; border-bottom: 3px solid var(--accent); background-color: var(--bg-header); }
+        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; padding-top: 60px; position: relative; z-index: 1; }
         
-        .account-property { margin-bottom: 14px; font-size: 14px; color: var(--text-muted); }
-        .account-property label { display: block; color: var(--text-muted); margin-bottom: 5px; font-size: 12px; font-weight: 600; }
-        .profile-name-input, .profile-desc-input { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; outline: none; font-size: 14px; margin-top: 4px; }
-        .profile-desc-input { resize: none; height: 65px; }
-        .profile-name-input:disabled, .profile-desc-input:disabled { background: rgba(128,128,128,0.1); color: var(--text-muted); cursor: not-allowed; }
-
-        .profile-avatar-container { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .modal-avatar { width: 85px; height: 85px; border: 2px solid var(--accent); }
-        .modal-avatar-placeholder { width: 85px; height: 85px; color: white; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold; text-transform: uppercase; }
-        .upload-btn { background: rgba(128,128,128,0.2); border: none; color: var(--text-main); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; }
-        .upload-btn:hover { background: rgba(128,128,128,0.3); }
-
-        .sticker-pack-creator { margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; }
-        .pack-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; }
-        .pack-item-preview { width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); object-fit: cover; cursor: pointer; }
-
-        .lang-select { width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; outline: none; font-size: 14px; cursor: pointer; }
-        .settings-logout-btn { width: 100%; padding: 12px; background: var(--danger); color: white; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 16px; font-size: 14px; transition: background 0.2s; }
-        .settings-logout-btn:hover { opacity: 0.8; }
+        .modal-avatar { width: 85px; height: 85px; border: 3px solid var(--bg-panel); background: var(--bg-panel); box-shadow: 0 4px 10px rgba(0,0,0,0.4); [cite: 235]
+        }
+        .modal-avatar-placeholder { width: 85px; height: 85px; color: white; display: flex; align-items: center; [cite: 236]
+            justify-content: center; font-size: 34px; font-weight: bold; text-transform: uppercase; border: 3px solid var(--bg-panel); box-shadow: 0 4px 10px rgba(0,0,0,0.4); } [cite: 237]
         
-        .video-chat-container { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; align-items: center; position: relative; }
-        #remote-video { width: 100%; max-width: 300px; border-radius: 12px; background: #000; border: 2px solid #333; }
-        #local-video { width: 100px; border-radius: 8px; background: #222; border: 1px solid #4cd964; margin-top: -60px; margin-right: -180px; z-index: 10; position: relative; }
+        .upload-btn { background: rgba(128,128,128,0.2); [cite: 237]
+            border: none; color: var(--text-main); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: background 0.2s; [cite: 238]
+        }
+        .upload-btn:hover { background: rgba(128,128,128,0.3); [cite: 239]
+        }
+
+        .account-property { margin-bottom: 14px; [cite: 228]
+            font-size: 14px; color: var(--text-muted); position: relative; z-index: 1;} [cite: 229]
+        .account-property label { display: block; color: var(--text-muted); [cite: 229]
+            margin-bottom: 5px; font-size: 12px; font-weight: 600; } [cite: 230]
+        .profile-name-input, .profile-desc-input { width: 100%; [cite: 230]
+            padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; outline: none; font-size: 14px; margin-top: 4px; [cite: 231]
+        }
+        .profile-desc-input { resize: none; height: 65px; [cite: 232]
+        }
+        .profile-name-input:disabled, .profile-desc-input:disabled { background: rgba(128,128,128,0.1); color: var(--text-muted); cursor: not-allowed; [cite: 233]
+        }
+
+        .sticker-pack-creator { margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px; [cite: 240]
+        }
+        .pack-list { display: flex; gap: 10px; overflow-x: auto; padding: 5px 0; [cite: 241]
+        }
+        .pack-item-preview { width: 40px; height: 40px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.3); [cite: 242]
+            object-fit: cover; cursor: pointer; } [cite: 243]
+
+        .lang-select { width: 100%; padding: 10px; background: var(--bg-input); [cite: 243]
+            border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; outline: none; font-size: 14px; cursor: pointer; [cite: 244]
+        }
+        .settings-logout-btn { width: 100%; padding: 12px; background: var(--danger); color: white; border: none; [cite: 245]
+            border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: 16px; font-size: 14px; transition: background 0.2s; [cite: 246]
+        }
+        .settings-logout-btn:hover { opacity: 0.8; [cite: 247]
+        }
         
-        .call-btn-control { background: #3a3a3c; padding: 10px 18px; color: white; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 13px; transition: background 0.2s; }
-        .call-btn-control:hover { background: #4a4a4c; }
-        .active-control { background: #ff9500 !important; color: #fff !important; }
-
-        .scroll-to-bottom { position: absolute; bottom: 80px; right: 20px; width: 45px; height: 45px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 50%; color: var(--accent); font-size: 20px; display: none; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); cursor: pointer; z-index: 100; transition: transform 0.2s; }
-        .scroll-to-bottom:hover { transform: scale(1.1); }
+        .video-chat-container { display: flex; [cite: 248]
+            flex-direction: column; gap: 10px; margin-top: 15px; align-items: center; position: relative; [cite: 249]
+        }
+        #remote-video { width: 100%; max-width: 300px; border-radius: 12px; background: #000; [cite: 250]
+            border: 2px solid #333; } [cite: 251]
+        #local-video { width: 100px; border-radius: 8px; background: #222; [cite: 251]
+            border: 1px solid #4cd964; margin-top: -60px; margin-right: -180px; z-index: 10; position: relative; [cite: 252]
+        }
         
-        .date-divider { text-align: center; margin: 15px 0; font-size: 12px; color: var(--text-muted); background: rgba(128,128,128,0.1); padding: 4px 12px; border-radius: 12px; align-self: center; user-select: none; }
+        .call-btn-control { background: #3a3a3c; [cite: 253]
+            padding: 10px 18px; color: white; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 13px; transition: background 0.2s; [cite: 254]
+        }
+        .call-btn-control:hover { background: #4a4a4c; [cite: 255]
+        }
+        .active-control { background: #ff9500 !important; color: #fff !important; [cite: 256]
+        }
 
-        #image-viewer-modal { z-index: 10000; padding: 0; background: rgba(0,0,0,0.9); }
-        #image-viewer-img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; }
-        .close-viewer-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none; }
-        .close-viewer-btn:hover { color: var(--danger); }
+        .scroll-to-bottom { position: absolute; bottom: 80px; right: 20px; width: 45px; height: 45px; [cite: 257]
+            background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 50%; color: var(--accent); font-size: 20px; display: none; align-items: center; justify-content: center; [cite: 258]
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); cursor: pointer; z-index: 100; transition: transform 0.2s; [cite: 259]
+        }
+        .scroll-to-bottom:hover { transform: scale(1.1); [cite: 260]
+        }
+        
+        .date-divider { text-align: center; [cite: 261]
+            margin: 15px 0; font-size: 12px; color: var(--text-muted); background: rgba(128,128,128,0.1); padding: 4px 12px; border-radius: 12px; align-self: center; user-select: none; [cite: 262]
+        }
 
-        #forward-modal { z-index: 10005; }
-        .forward-user-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); margin-bottom: 6px; border-radius: 8px; cursor: pointer; text-align: left; font-weight: bold; font-size: 14px; }
-        .forward-user-item:hover { background: var(--bg-header); }
+        #image-viewer-modal { z-index: 10000; padding: 0; background: rgba(0,0,0,0.9); [cite: 263]
+        }
+        #image-viewer-img { max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; [cite: 264]
+        }
+        .close-viewer-btn { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; [cite: 265]
+            font-weight: bold; cursor: pointer; background: none; border: none; } [cite: 266]
+        .close-viewer-btn:hover { color: var(--danger); [cite: 266]
+        }
+
+        #forward-modal { z-index: 10005; [cite: 267]
+        }
+        .forward-user-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; [cite: 268]
+            background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); margin-bottom: 6px; border-radius: 8px; cursor: pointer; text-align: left; font-weight: bold; font-size: 14px; [cite: 269]
+        }
+        .forward-user-item:hover { background: var(--bg-header); [cite: 270]
+        }
+
+        /* Додаткові стилі для списку блокувань та налаштувань */
+        .blocked-user-item, .folder-setting-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(128,128,128,0.1); border-radius: 8px; margin-bottom: 6px; font-size: 13px; color: var(--text-main); }
+        .color-picker-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
 
         @media (max-width: 768px) {
-            #sidebar { width: 100%; display: flex; }
-            #chat-main { display: none; width: 100%; }
-            body.chat-opened #sidebar { display: none; }
-            body.chat-opened #chat-main { display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20; }
-            body.chat-opened .back-btn { display: block; }
-            .msg-container { max-width: 90%; }
-            .no-chat-selected { display: none; }
-            #form { padding: 8px 10px; gap: 5px; flex-wrap: nowrap; }
-            .tool-btn, .media-btn-label { width: 34px; height: 34px; font-size: 16px; }
-            #input { padding: 10px; font-size: 14px; min-width: 50px; }
-            #button { padding: 8px 12px; font-size: 12px; }
-            .record-preview { width: 220px; height: 220px; }
+            #sidebar { width: 100%; [cite: 271]
+            display: flex; } [cite: 272]
+            #chat-main { display: none; width: 100%; [cite: 272]
+            }
+            body.chat-opened #sidebar { display: none; [cite: 273]
+            }
+            body.chat-opened #chat-main { display: flex; position: fixed; [cite: 274]
+            top: 0; left: 0; right: 0; bottom: 0; z-index: 20; [cite: 275]
+            }
+            body.chat-opened .back-btn { display: block; [cite: 276]
+            }
+            .msg-container { max-width: 90%; [cite: 277]
+            }
+            .no-chat-selected { display: none; [cite: 278]
+            }
+            #form { padding: 8px 10px; gap: 5px; [cite: 279]
+            flex-wrap: nowrap; } [cite: 280]
+            .tool-btn, .media-btn-label { width: 34px; [cite: 280]
+            height: 34px; font-size: 16px; } [cite: 281]
+            #input { padding: 10px; [cite: 281]
+            font-size: 14px; min-width: 50px; } [cite: 282]
+            #button { padding: 8px 12px; [cite: 282]
+            font-size: 12px; } [cite: 283]
+            .record-preview { width: 220px; height: 220px; [cite: 283]
+            }
         }
     </style>
 </head>
@@ -342,7 +605,7 @@
     </div>
     
     <div class="search-container" id="search-frame">
-        <div style="position: relative;">
+        <div style="position: relative;"> [cite: 284]
             <input type="text" id="search-input" autocomplete="off" placeholder="Введіть ім'я або повідомлення...">
             <div id="search-results-dropdown" class="search-results-dropdown"></div>
         </div>
@@ -353,7 +616,16 @@
         <div class="folder-tab" data-folder="personal">Особисте</div>
         <div class="folder-tab" data-folder="work">Робота</div>
         <div class="folder-tab" data-folder="games">Ігри</div>
-        <button id="btn-add-folder" style="background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer;" onclick="openCreateFolderModal()">+</button>
+        <button id="btn-add-folder" style="background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer;" onclick="openCreateFolderModal()">+</button> [cite: 286]
+    </div>
+
+    <div id="chats-multi-select-bar">
+        <div>Обрано чатів: <span id="chat-multi-select-count">0</span></div>
+        <div style="display:flex; gap:10px;">
+            <button class="tool-btn" onclick="executeMultiChatFolder()" title="Перемістити">📂</button>
+            <button class="tool-btn" onclick="executeMultiChatDelete()" style="color:var(--danger);" title="Видалити">🗑</button>
+            <button class="tool-btn" onclick="toggleChatsEditMode()" title="Скасувати">❌</button>
+        </div>
     </div>
 
     <div id="archive-reveal-zone" onclick="toggleArchive()">
@@ -365,14 +637,14 @@
         <div id="archive-list"></div>
     </div>
 
-    <div class="section-title" id="lbl-dialogs">Диалоги</div>
+    <div class="section-title" id="lbl-dialogs">Диалоги <button class="chats-edit-btn" onclick="toggleChatsEditMode()">✏️</button></div>
     <div id="chats-list"></div>
 </div>
 
 <div id="chat-main">
     <div id="multi-select-bar" class="multi-select-bar" style="display: none;">
-        <div>Обрано: <span id="multi-select-count">0</span></div>
-        <div style="display:flex; gap:10px;">
+        <div>Обрано: <span id="multi-select-count">0</span></div> [cite: 286]
+        <div style="display:flex; gap:10px;"> [cite: 287]
             <button class="tool-btn" onclick="executeMultiForward()" title="Переслати">↪️</button>
             <button class="tool-btn" onclick="executeMultiDelete()" style="color:var(--danger);" title="Видалити">🗑</button>
             <button class="tool-btn" onclick="toggleMultiSelectMode()" title="Скасувати">❌</button>
@@ -380,26 +652,26 @@
     </div>
 
     <div id="no-chat-placeholder" class="no-chat-selected">
-        <p id="placeholder-text">BurmaldaGram Premium<br><span style="font-size: 13px; color: var(--text-muted);">Оберіть чат або скористайтеся пошуком друзів 🔍</span></p>
+        <p id="placeholder-text">BurmaldaGram Premium<br><span style="font-size: 13px; color: var(--text-muted);">Оберіть чат або скористайтеся пошуком друзів 🔍</span></p> [cite: 288]
     </div>
     
-    <div id="chat-area" style="display: none; flex-direction: column; height: 100%; position: relative;">
+    <div id="chat-area" style="display: none; flex-direction: column; height: 100%; position: relative;"> [cite: 289]
         <div id="chat-header">
             <div class="header-meta">
                 <button class="back-btn" id="btn-back">⬅ Назад</button>
                 <span id="chat-title-text" onclick="openPartnerProfile()">Чат</span>
             </div>
             <div class="header-actions">
-                <div id="chat-typing-status" class="typing-indicator"></div>
+                <div id="chat-typing-status" class="typing-indicator"></div> [cite: 290]
                 <button class="call-btn" id="btn-call-video" onclick="startCall(true)" title="Відеодзвінок">🎥</button>
                 <button class="call-btn" id="btn-call-audio" onclick="startCall(false)" title="Аудіодзвінок">📞</button>
                 <button class="search-trigger-btn" onclick="toggleChatMenu(event)" style="margin-left: 5px;" title="Опції чату">⋮</button>
                 <div id="chat-options-menu">
-                    <button onclick="toggleMultiSelectMode()">☑️ Вибрати повідомлення</button>
+                    <button onclick="toggleMultiSelectMode()">☑️ Вибрати повідомлення</button> [cite: 291]
                     <button onclick="openFolderAssignModal()">📂 Перемістити в папку/архів</button>
                     <button id="btn-mute-user" onclick="toggleChatPref(currentActiveChatPartner, 'muted')">🔕 Вимкнути звук</button>
                     <button id="btn-block-user" onclick="toggleChatPref(currentActiveChatPartner, 'blocked')" class="danger">🚫 Заблокувати</button>
-                    <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button>
+                    <button id="btn-clear-hist" onclick="clearChatHistory()" class="danger">🗑 Очистити історію</button> [cite: 292]
                 </div>
             </div>
         </div>
@@ -407,7 +679,7 @@
         <div id="pinned-message-bar" onclick="cyclePinnedMessages()">
             <div class="pinned-bar-content">
                 <span class="pinned-bar-title" id="lbl-pinned-title">
-                    Закріплене повідомлення <span class="pin-counter" id="pin-counter-badge">1/1</span>
+                    Закріплене повідомлення <span class="pin-counter" id="pin-counter-badge">1/1</span> [cite: 293]
                 </span>
                 <span class="pinned-bar-text" id="pinned-bar-text-content">...</span>
             </div>
@@ -415,7 +687,7 @@
         </div>
       
         <ul id="messages"></ul>
-        <button id="scroll-to-bottom-btn" class="scroll-to-bottom" onclick="document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight">⬇</button>
+        <button id="scroll-to-bottom-btn" class="scroll-to-bottom" onclick="document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight">⬇</button> [cite: 294]
 
         <div id="input-panel-container">
             <div id="reply-preview-bar">
@@ -423,26 +695,26 @@
                 <button id="reply-close-btn" onclick="cancelAction()">×</button>
             </div>
             
-            <form id="form">
+            <form id="form"> [cite: 295]
                 <button type="button" class="tool-btn" id="btn-attach" title="Прикріпити" onclick="toggleAttachmentMenu()">📎</button>
                 
                 <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." />
                 <button id="button" type="submit">Надіслати</button>
 
                 <div id="attachment-bubble" class="attachment-bubble">
-                    <label class="attachment-item-btn">
+                    <label class="attachment-item-btn"> [cite: 296]
                         <i>🖼️</i> Фото або Відео
                         <input type="file" id="media-file-input" accept="image/*,video/*" style="display: none;" onchange="uploadMediaFile(this)">
                     </label>
-                    <label class="attachment-item-btn">
+                    <label class="attachment-item-btn"> [cite: 297]
                         <i>📄</i> Документ / Файл
                         <input type="file" id="doc-file-input" style="display: none;" onchange="uploadDocumentFile(this)">
                     </label>
-                    <button type="button" class="attachment-item-btn" onclick="openPollModal()"><i>📊</i> Опитування</button>
+                    <button type="button" class="attachment-item-btn" onclick="openPollModal()"><i>📊</i> Опитування</button> [cite: 298]
                     <button type="button" class="attachment-item-btn" onclick="openTimerModal()"><i>⏱️</i> Зникаюче/Відкладене</button>
                     <button type="button" class="attachment-item-btn" onclick="toggleStickerMenu()"><i>🦄</i> Стікери</button>
-                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('audio'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🎤</i> Аудіо повідомлення</button>
-                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('video_circle'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🔵</i> Відеокружок</button>
+                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('audio'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🎤</i> Аудіо повідомлення</button> [cite: 299]
+                    <button type="button" class="attachment-item-btn" onclick="startMediaRecording('video_circle'); document.getElementById('attachment-bubble').classList.remove('active');"><i>🔵</i> Відеокружок</button> [cite: 300]
                 </div>
             </form>
             
@@ -457,7 +729,7 @@
     
     <span id="record-timer" class="record-timer-text">00:00</span>
     
-    <div class="record-controls-row">
+    <div class="record-controls-row"> [cite: 301]
         <button class="tool-btn" onclick="deleteRecord()" style="color: var(--danger);" title="Видалити">🗑</button>
         <button class="tool-btn" id="btn-pause-record" onclick="pauseResumeRecord()" title="Пауза">⏸</button>
         <button type="button" class="tool-btn" id="btn-switch-record-cam" onclick="switchRecordCamera()" title="Поміняти камеру">🔄</button>
@@ -473,13 +745,13 @@
 <div class="modal-overlay" id="poll-modal">
     <div class="modal-content">
         <div class="modal-title"><span>📊 Створити опитування</span><button class="modal-close" onclick="closePollModal()">&times;</button></div>
-        <input type="text" id="poll-question-input" class="profile-name-input" placeholder="Введіть питання..." style="margin-bottom:15px; font-weight: bold;">
+        <input type="text" id="poll-question-input" class="profile-name-input" placeholder="Введіть питання..." style="margin-bottom:15px; font-weight: bold;"> [cite: 302]
         <div id="poll-options-container">
             <input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 1">
             <input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 2">
         </div>
-        <button class="upload-btn" style="width:100%; margin-top:10px;" onclick="addPollOptionUI()">+ Додати варіант</button>
-        <button class="settings-logout-btn" style="background:var(--accent); margin-top:15px;" onclick="sendPoll()">Надіслати опитування</button>
+        <button class="upload-btn" style="width:100%; margin-top:10px;" onclick="addPollOptionUI()">+ Додати варіант</button> [cite: 304]
+        <button class="settings-logout-btn" style="background:var(--accent); margin-top:15px;" onclick="sendPoll()">Надіслати опитування</button> [cite: 305]
     </div>
 </div>
 
@@ -487,29 +759,29 @@
     <div class="modal-content">
         <div class="modal-title"><span>⏱️ Налаштування таймера</span><button class="modal-close" onclick="closeTimerModal()">&times;</button></div>
         
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"> [cite: 306]
             <input type="radio" name="timer_mode" value="scheduled" checked> Відправити пізніше
         </label>
         <input type="datetime-local" id="scheduled-time-input" class="profile-name-input" style="margin-bottom:20px;">
 
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;"> [cite: 307]
             <input type="radio" name="timer_mode" value="disappearing"> Зникаюче (Secret Chat)
         </label>
         <select id="disappear-time-select" class="lang-select">
             <option value="10">Зникне через 10 секунд</option>
             <option value="60">Зникне через 1 хвилину</option>
             <option value="3600">Зникне через 1 годину</option>
-            <option value="86400">Зникне через 1 день</option>
+            <option value="86400">Зникне через 1 день</option> [cite: 308]
         </select>
         
-        <button class="settings-logout-btn" style="background:var(--accent); margin-top:20px;" onclick="applyTimerSettings()">Застосувати та Надіслати</button>
+        <button class="settings-logout-btn" style="background:var(--accent); margin-top:20px;" onclick="applyTimerSettings()">Застосувати та Надіслати</button> [cite: 309]
     </div>
 </div>
 
 <div class="modal-overlay" id="folder-assign-modal">
     <div class="modal-content">
         <div class="modal-title"><span>📂 Перемістити чат</span><button class="modal-close" onclick="document.getElementById('folder-assign-modal').classList.remove('active');">&times;</button></div>
-        <div id="folder-assign-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 15px;">
+        <div id="folder-assign-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom: 15px;"> [cite: 310]
             </div>
         <button class="upload-btn" style="width:100%;" onclick="openCreateFolderModal()">+ Створити нову папку</button>
     </div>
@@ -518,8 +790,21 @@
 <div class="modal-overlay" id="create-folder-modal">
     <div class="modal-content">
         <div class="modal-title"><span>➕ Створити папку</span><button class="modal-close" onclick="document.getElementById('create-folder-modal').classList.remove('active');">&times;</button></div>
-        <input type="text" id="new-folder-name" class="profile-name-input" placeholder="Назва папки..." style="margin-bottom:15px; font-weight: bold;">
+        <input type="text" id="new-folder-name" class="profile-name-input" placeholder="Назва папки..." style="margin-bottom:15px; font-weight: bold;"> [cite: 311]
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:15px; font-size: 13px; color: var(--text-main);">
+            <input type="checkbox" id="new-folder-pin-check" onchange="document.getElementById('new-folder-pin-input').style.display = this.checked ? 'block' : 'none'">
+            Захистити папку паролем (PIN)
+        </label>
+        <input type="password" id="new-folder-pin-input" class="profile-name-input" placeholder="4 цифри" maxlength="4" style="display:none; margin-bottom:15px; text-align:center; letter-spacing:5px;">
         <button class="settings-logout-btn" style="background:var(--accent);" onclick="createNewFolder()">Створити</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="pin-modal">
+    <div class="modal-content" style="max-width: 300px;">
+        <div class="modal-title"><span>🔒 Введіть PIN</span><button class="modal-close" onclick="closePinModal()">&times;</button></div>
+        <input type="password" id="folder-pin-input" class="profile-name-input" maxlength="4" style="text-align:center; font-size: 24px; letter-spacing: 10px; margin-bottom: 15px;">
+        <button class="settings-logout-btn" style="background:var(--accent);" onclick="verifyFolderPin()">Підтвердити</button>
     </div>
 </div>
 
@@ -529,28 +814,43 @@
             <span id="modal-title-text">⚙️ Налаштування</span>
             <button class="modal-close" id="settings-close-btn">&times;</button>
         </div>
+        
+        <div id="modal-banner-view" class="profile-banner"></div>
         <div class="profile-avatar-container">
             <div id="modal-avatar-view"></div>
-            <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
-            <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Завантажити фото</button>
+            <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)"> [cite: 312]
+            <button class="upload-btn" id="lbl-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📁 Змінити Аватар</button>
+            <div class="color-picker-wrapper" id="banner-controls-block">
+                <input type="file" id="banner-file-input" accept="image/*" style="display: none;" onchange="handleBannerUpload(this)">
+                <button class="upload-btn" style="background: rgba(128,128,128,0.3);" onclick="document.getElementById('banner-file-input').click()">🖼️ Задній фон</button>
+                <label>Колір:</label>
+                <input type="color" id="banner-color-picker" value="#0088cc" onchange="saveBannerColor(this.value)" style="border:none; width:24px; height:24px; border-radius:50%; cursor:pointer;">
+            </div>
         </div>
-        <div id="account-info">
+        
+        <div id="account-info" style="position: relative; z-index: 1;">
             <div class="account-property"><label id="lbl-profile-name">Ім'я в чаті (Нік):</label><input type="text" id="profile-display-name" class="profile-name-input" oninput="saveMyDisplayName(this.value)"></div>
             <div class="account-property"><span id="lbl-profile">Юзернейм (ID):</span> <strong id="info-nick" style="color: var(--text-muted);">...</strong></div>
             <div class="account-property"><span id="lbl-status">Статус:</span> <strong id="lbl-online-status">В мережі</strong></div>
-            <div class="account-property"><label id="lbl-bio-title">Про себе / Опис:</label><textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea></div>
-            <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: var(--accent);"></span></div>
+            <div class="account-property"><label id="lbl-bio-title">Про себе / Опис:</label><textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea></div> [cite: 313]
+            <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: var(--accent);"></span></div> [cite: 314]
+        </div>
+
+        <div id="blocked-users-block" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <label style="display:block; font-size:12px; color:var(--text-muted); font-weight:600; margin-bottom: 5px;">🚫 Заблоковані користувачі:</label>
+            <div id="blocked-users-list" style="max-height: 120px; overflow-y: auto;">
+                </div>
         </div>
         
         <div class="sticker-pack-creator" id="sticker-creator-block">
-            <label style="display:block; font-size:12px; color:var(--text-muted); font-weight:600;">Ваші стікери (додати):</label>
+            <label style="display:block; font-size:12px; color:var(--text-muted); font-weight:600;">Ваші стікери (додати):</label> [cite: 315]
             <input type="file" id="sticker-upload-input" accept="image/*" multiple style="display: none;" onchange="uploadCustomStickers(this)">
-            <button class="upload-btn" style="margin-top: 5px; width: 100%;" onclick="document.getElementById('sticker-upload-input').click()">+ Додати зображення як стікер</button>
+            <button class="upload-btn" style="margin-top: 5px; width: 100%;" onclick="document.getElementById('sticker-upload-input').click()">+ Додати зображення як стікер</button> [cite: 316]
             <div class="pack-list" id="my-stickers-preview"></div>
         </div>
 
         <div class="lang-select-container" id="theme-select-block" style="margin-top: 15px;">
-            <label id="lbl-theme-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Тема оформлення / Тема:</label>
+            <label id="lbl-theme-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Тема оформлення / Тема:</label> [cite: 317]
             <select id="theme-select" class="lang-select" onchange="changeTheme(this.value)">
                 <option value="theme-dark">Стандартна (Темна)</option>
                 <option value="theme-black">AMOLED (Чорна)</option>
@@ -558,8 +858,8 @@
             </select>
         </div>
 
-        <div class="lang-select-container" id="lang-select-block" style="margin-top: 15px;">
-            <label id="lbl-lang-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Мова додатка / Язык:</label>
+        <div class="lang-select-container" id="lang-select-block" style="margin-top: 15px;"> [cite: 318]
+            <label id="lbl-lang-title" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px;">Мова додатка / Язык:</label> [cite: 319]
             <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)"><option value="uk">Українська</option><option value="ru">Русский</option><option value="en">English</option></select>
         </div>
         <button class="settings-logout-btn" id="btn-logout" onclick="logout()">Вийти з профілю 🚪</button>
@@ -567,21 +867,21 @@
 </div>
 
 <div class="modal-overlay" id="call-modal">
-    <div class="modal-content" style="text-align: center; max-width: 400px;">
-        <div class="modal-avatar-placeholder" id="call-avatar" style="margin: 0 auto 15px auto; width: 80px; height: 80px; font-size: 30px; background: var(--accent);">?</div>
-        <h3 id="call-status-text" style="color: var(--text-main); margin-bottom: 20px;">Вхідний дзвінок...</h3>
+    <div class="modal-content" style="text-align: center; max-width: 400px;"> [cite: 320]
+        <div class="modal-avatar-placeholder" id="call-avatar" style="margin: 0 auto 15px auto; width: 80px; height: 80px; font-size: 30px; background: var(--accent);">?</div> [cite: 321]
+        <h3 id="call-status-text" style="color: var(--text-main); margin-bottom: 20px;">Вхідний дзвінок...</h3> [cite: 322]
         
         <div class="video-chat-container" id="call-video-container" style="display: none;">
-            <button class="tool-btn" onclick="switchCallCamera()" style="position:absolute; top:10px; right:10px; z-index:15; background:rgba(0,0,0,0.5); color:white; border:none;">🔄</button>
+            <button class="tool-btn" onclick="switchCallCamera()" style="position:absolute; top:10px; right:10px; z-index:15; background:rgba(0,0,0,0.5); color:white; border:none;">🔄</button> [cite: 323]
             <video id="remote-video" autoplay playsinline></video>
             <video id="local-video" autoplay playsinline muted></video>
         </div>
 
-        <div id="call-controls-wrapper" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-            <button id="btn-accept-call" style="background: #4cd964; padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer; display:none;">📞 Прийняти</button>
+        <div id="call-controls-wrapper" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;"> [cite: 324]
+            <button id="btn-accept-call" style="background: #4cd964; padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer; display:none;">📞 Прийняти</button> [cite: 325]
             <button id="toggle-mic-btn" onclick="toggleCallMic()" class="call-btn-control" style="display: none;">🎤 Мікр: Увімк</button>
             <button id="toggle-cam-btn" onclick="toggleCallCam()" class="call-btn-control" style="display: none;">📷 Камера: Увімк</button>
-            <button id="btn-end-call" onclick="endCall()" style="background: var(--danger); padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer;">Відхилити / Завершити</button>
+            <button id="btn-end-call" onclick="endCall()" style="background: var(--danger); padding: 12px 24px; color: white; border:none; border-radius: 30px; font-weight:bold; cursor:pointer;">Відхилити / Завершити</button> [cite: 327]
         </div>
     </div>
 </div>
@@ -592,14 +892,14 @@
             <span>↪️ Переслати повідомлення</span>
             <button class="modal-close" onclick="closeForwardModal()">&times;</button>
         </div>
-        <div style="margin-bottom: 12px; font-size: 14px; color: var(--text-muted);">
+        <div style="margin-bottom: 12px; font-size: 14px; color: var(--text-muted);"> [cite: 328]
             Оберіть чат для пересилання:
         </div>
-        <label style="display:flex; align-items:center; gap: 8px; cursor: pointer; margin-bottom: 15px; font-size: 13px; color: var(--text-main);">
+        <label style="display:flex; align-items:center; gap: 8px; cursor: pointer; margin-bottom: 15px; font-size: 13px; color: var(--text-main);"> [cite: 329]
             <input type="checkbox" id="forward-anonymous-check">
             Анонімно (приховати справжнього автора)
         </label>
-        <div id="forward-chat-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);">
+        <div id="forward-chat-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);"> [cite: 330]
         </div>
     </div>
 </div>
