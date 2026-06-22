@@ -6,6 +6,13 @@ let localStream = null;
 let currentCall = null;
 
 // --- Стан додатка ---
+
+// Якщо був явний вихід, не генеруємо новий ID автоматично, поки користувач не оновить сторінку
+if (sessionStorage.getItem('explicit_logout') === 'true') {
+    alert("Ви вийшли з акаунту. Для створення нового профілю або входу натисніть ОК.");
+    sessionStorage.removeItem('explicit_logout');
+}
+
 let myUserId = localStorage.getItem('burmalda_uid') || 'user_' + Math.random().toString(36).substr(2, 9);
 localStorage.setItem('burmalda_uid', myUserId);
 
@@ -1318,32 +1325,15 @@ function handleGlobalSearch() {
     const dropdown = document.getElementById('search-results-dropdown');
     dropdown.innerHTML = '';
     
-    if (!query) { dropdown.style.display = 'none'; return; }
-    dropdown.style.display = 'block';
-    
-    // Фільтр глобальних користувачів (імітація бази через активні чати або сокети)
-    dropdown.innerHTML += `<div class="search-section-title">Користувачі</div>`;
-    let foundUsers = false;
-    
-    Object.keys(state.chats).forEach(uid => {
-        if (uid.toLowerCase().includes(query) || (state.chats[uid].username && state.chats[uid].username.toLowerCase().includes(query))) {
-            foundUsers = true;
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.innerText = state.chats[uid].username || uid;
-            item.onclick = () => { openChatWithUser(uid); dropdown.style.display = 'none'; };
-            dropdown.appendChild(item);
-        }
-    });
-    
-    if (!foundUsers) {
-        const mockItem = document.createElement('div');
-        mockItem.className = 'search-result-item';
-        mockItem.style.color = 'var(--text-muted)';
-        mockItem.innerText = `Створити діалог з @${query}`;
-        mockItem.onclick = () => { openChatWithUser(query); dropdown.style.display = 'none'; };
-        dropdown.appendChild(mockItem);
+    if (!query) { 
+        dropdown.style.display = 'none'; 
+        return; 
     }
+    dropdown.style.display = 'block';
+    dropdown.innerHTML = `<div class="search-section-title">Пошук...</div>`;
+    
+    // Емітимо запит на сервер для пошуку реальних юзерів
+    socket.emit('search_users_on_server', { query: query });
 }
 
 document.getElementById('search-toggle-btn').onclick = () => {
@@ -1352,6 +1342,33 @@ document.getElementById('search-toggle-btn').onclick = () => {
 };
 
 // === ПРИЙОМ СИНХРОНІЗАЦІЙ ІЗ СЕРВЕРА (SOCKET LISTENERS) ===
+socket.on('search_users_results', (users) => {
+    const dropdown = document.getElementById('search-results-dropdown');
+    dropdown.innerHTML = `<div class="search-section-title">Знайдені користувачі</div>`;
+    
+    if (!users || users.length === 0) {
+        dropdown.innerHTML += `<div class="search-result-item empty" style="color:var(--text-muted); padding:8px;">Нікого не знайдено</div>`;
+        return;
+    }
+    
+    users.forEach(user => {
+        // Не показуємо в пошуку самого себе
+        if (user.uid === myUserId) return; 
+        
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.style = "padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);";
+        item.innerHTML = `<strong>${user.username || 'Без імені'}</strong> <span style="font-size:11px; color:var(--text-muted);">@${user.uid}</span>`;
+        
+        item.onclick = () => {
+            openChatWithUser(user.uid);
+            dropdown.style.display = 'none';
+            document.getElementById('search-input').value = '';
+        };
+        dropdown.appendChild(item);
+    });
+});
+
 socket.on('chats_list_update', (serverChats) => {
     // Мержимо дані
     Object.keys(serverChats).forEach(id => {
@@ -1442,9 +1459,19 @@ function clearChatHistory() {
     }
 }
 
+// Повністю виправлений вихід з профілю
 function logout() {
-    if (confirm("Вийти з профілю? Всі локальні налаштування буде скинуто.")) {
+    if (confirm("Вийти з профілю? Всі локальні дані буде видалено.")) {
+        // Відключаємо сокет, щоб сервер прибрав нас з online
+        socket.disconnect(); 
+        
+        // Чистимо сесію (всі старі дані зникають)
         localStorage.clear();
+        
+        // Робимо позначку, щоб сторінка не створила користувача при оновленні автоматично
+        sessionStorage.setItem('explicit_logout', 'true');
+        
+        // Перезавантажуємо сторінку
         window.location.reload();
     }
 }
