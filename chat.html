@@ -131,13 +131,12 @@
         #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative;
             height: 100%; min-width: 0; }
         
-        /* === АРХІВ СТИЛІ === */
         #archive-reveal-zone { text-align: center;
             padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s;
         }
         #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); }
         #archive-container { border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto;
-            background: var(--bg-input); }
+            background: var(--bg-input); display: none; }
 
         /* === МУЛЬТИ-ВИДІЛЕННЯ === */
         .multi-select-bar { display: flex;
@@ -378,9 +377,6 @@
         📦 Архівні чати 
         <button class="settings-btn" style="width: 24px; height: 24px; font-size: 12px;" onclick="openArchiveSettingsModal()">⚙️</button>
     </div>
-    <div id="archive-container">
-        <div id="archive-list"></div>
-    </div>
 
     <div class="section-title" id="lbl-dialogs">Диалоги</div>
     <div id="chats-list"></div>
@@ -488,11 +484,12 @@
     <div class="modal-content">
         <div class="modal-title"><span>📊 Створити опитування</span><button class="modal-close" onclick="closePollModal()">&times;</button></div>
         <input type="text" id="poll-question-input" class="profile-name-input" placeholder="Введіть питання..." style="margin-bottom:15px; font-weight: bold;">
+       
         <div id="poll-options-container">
             <input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 1">
             <input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 2">
         </div>
-        <button class="upload-btn" style="width:100%; margin-top:10px;" onclick="addPollOptionUI()">+ Додати варіант</button>
+        <button class="upload-btn" style="width:100%; margin-top:10px;" onclick="addPollOptionUI()">+ Додати варіант (Макс. 10)</button>
         
         <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-main); cursor:pointer;">
@@ -504,9 +501,10 @@
             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-main); cursor:pointer;">
                 <input type="checkbox" id="poll-quiz-check" onchange="document.getElementById('quiz-correct-box').style.display = this.checked ? 'block' : 'none'"> Режим вікторини (Тільки 1 спроба)
             </label>
+            
             <div id="quiz-correct-box" style="display:none; margin-left: 20px;">
-                <input type="number" id="poll-quiz-correct" class="profile-name-input" placeholder="Номер правильного варіанту (від 0)" style="width: 100%;">
-                <small style="color: var(--text-muted);">Відлік починається з 0 (0 - перший варіант, 1 - другий і т.д.)</small>
+                <select id="poll-quiz-correct" class="lang-select" style="width: 100%; margin-bottom: 5px;"></select>
+                <small style="color: var(--text-muted);">Оберіть правильний варіант зі списку вище</small>
             </div>
         </div>
 
@@ -537,10 +535,6 @@
 <div class="modal-overlay" id="archive-settings-modal">
     <div class="modal-content">
         <div class="modal-title"><span>📦 Налаштування архіву</span><button class="modal-close" onclick="document.getElementById('archive-settings-modal').classList.remove('active');">&times;</button></div>
-        <div style="margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">Встановіть пароль для доступу:</div>
-        <input type="password" id="archive-password-input" class="profile-name-input" placeholder="Введіть пароль...">
-        <button class="upload-btn" style="width: 100%; margin-top: 10px;" onclick="setArchivePassword()">Зберегти пароль</button>
-        <hr style="border:0; border-top:1px solid var(--border-color); margin: 15px 0;">
         <div style="margin-bottom: 10px; font-size: 13px; color: var(--text-muted);">Чати в архіві:</div>
         <div id="settings-archive-list" style="max-height: 200px; overflow-y: auto;"></div>
     </div>
