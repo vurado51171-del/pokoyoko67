@@ -36,12 +36,7 @@ const translations = {
 };
 
 const GLOW_COLORS = {
-    'green': '#4cd964',
-    'red': '#ff3b30',
-    'blue': '#0088cc',
-    'dark': '#333333',
-    'white': '#ffffff',
-    'yellow': '#ffcc00'
+    'green': '#4cd964', 'red': '#ff3b30', 'blue': '#0088cc', 'dark': '#333333', 'white': '#ffffff', 'yellow': '#ffcc00'
 };
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -60,17 +55,22 @@ if (authToken) {
         if (Date.now() - loginTime < 86400000 && myNick) authorized = true;
     } catch (e) { console.error("Помилка авторизації:", e); }
 } else {
+    // Увага: цей prompt блокує відмальовку екрану. Бажано замінити на HTML форму логіну.
     myNick = prompt("Введіть ваш нікнейм для входу (залиште порожнім для 'Анонім'):") || "Анонім";
     authorized = true;
     sessionTimeString = new Date().toLocaleTimeString();
 }
 
-if (!authorized) { 
-    alert('Доступ заблоковано!'); 
-    window.location.href = '/'; 
-} else { 
-    document.getElementById('main-body').style.display = 'flex'; 
-}
+// Фікс білого екрану: чекаємо завантаження DOM перед маніпуляціями
+document.addEventListener("DOMContentLoaded", () => {
+    if (!authorized) { 
+        alert('Доступ заблоковано!'); 
+        window.location.href = '/'; 
+    } else { 
+        const mainBody = document.getElementById('main-body');
+        if (mainBody) mainBody.style.display = 'flex'; 
+    }
+});
 
 function getStorageKey(key) { return `${key}_${myNick}`; }
 
@@ -90,13 +90,13 @@ const ALL_EMOJIS = ['👍','❤️','😂','😮','😢','🙏','😎','🔥','�
 let isMultiSelectMode = false;
 let selectedMessages = new Set();
 let currentPaginationLimit = 30; 
-let myMessageTimestamps = []; // Антиспам клієнтський масив
+let myMessageTimestamps = []; // Антиспам
 
 let chatBackgroundImage = localStorage.getItem(getStorageKey('burmalda_bg_image')) || '';
 let chatBackgroundBlur = localStorage.getItem(getStorageKey('burmalda_bg_blur')) || '0';
 
 document.body.className = currentTheme;
-document.getElementById('theme-select').value = currentTheme;
+document.getElementById('theme-select')?.addEventListener('change', (e) => changeTheme(e.target.value));
 
 let socket;
 if (typeof io !== 'undefined') {
@@ -144,26 +144,32 @@ const pinnedBarTextContent = document.getElementById('pinned-bar-text-content');
 const pinCounterBadge = document.getElementById('pin-counter-badge');
 const stickerMenu = document.getElementById('sticker-menu');
 
-// Додаємо обробку Shift+Enter
-input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        document.getElementById('form').dispatchEvent(new Event('submit', { cancelable: true }));
-    }
-});
+// Shift+Enter
+if(input) {
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('form').dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+    });
+}
 
-settingsToggleBtn.onclick = () => { openMyProfile(); };
-settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
+if(settingsToggleBtn) settingsToggleBtn.onclick = () => { openMyProfile(); };
+if(settingsCloseBtn) settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
 
-document.getElementById('btn-back').onclick = () => { 
-    if (document.body.classList.contains('chat-opened')) window.history.back();
-};
+const btnBack = document.getElementById('btn-back');
+if(btnBack) {
+    btnBack.onclick = () => { 
+        if (document.body.classList.contains('chat-opened')) window.history.back();
+    };
+}
 
 window.onpopstate = function(event) { 
     if (document.body.classList.contains('chat-opened')) { 
         document.body.classList.remove('chat-opened');
         currentActiveChatPartner = null; currentRoom = null;
-        chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; 
+        if(chatArea) chatArea.style.display = 'none'; 
+        if(chatPlaceholder) chatPlaceholder.style.display = 'block'; 
         const cleanUrl = window.location.pathname + '?auth=' + (urlParams.get('auth') || '');
         window.history.replaceState({}, "", cleanUrl); 
         renderChatsList(); 
@@ -259,23 +265,50 @@ function applyCustomBackground() {
 
 function applyLanguage() { 
     const t = translations[currentLang];
-    document.getElementById('lang-select').value = currentLang;
-    document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
-    searchInput.placeholder = t.searchPlaceholder; document.getElementById('lbl-dialogs').textContent = t.dialogsTitle; 
-    document.getElementById('placeholder-text').innerHTML = t.placeholderText; document.getElementById('btn-back').textContent = t.backBtn;
-    input.placeholder = t.inputPlaceholder; button.textContent = t.btnSend;
-    document.getElementById('lbl-profile-name').textContent = t.profileName; document.getElementById('lbl-profile').textContent = t.profile; 
-    document.getElementById('lbl-status').textContent = t.status; document.getElementById('lbl-bio-title').textContent = t.bioPlaceholder;
-    document.getElementById('lbl-time').textContent = t.loginTime; document.getElementById('btn-logout').textContent = t.logoutBtn;
-    document.getElementById('lbl-upload-btn').textContent = t.uploadBtn; document.getElementById('lbl-theme-title').textContent = t.themeTitle;
+    const langSelect = document.getElementById('lang-select');
+    if(langSelect) langSelect.value = currentLang;
     
-    if (settingsModal.classList.contains('active')) { 
+    const myProfileName = document.getElementById('my-profile-name');
+    if(myProfileName) myProfileName.innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
+    
+    if(searchInput) searchInput.placeholder = t.searchPlaceholder; 
+    const lblDialogs = document.getElementById('lbl-dialogs');
+    if(lblDialogs) lblDialogs.textContent = t.dialogsTitle; 
+    
+    const placeholderText = document.getElementById('placeholder-text');
+    if(placeholderText) placeholderText.innerHTML = t.placeholderText; 
+    if(btnBack) btnBack.textContent = t.backBtn;
+    
+    if(input) input.placeholder = t.inputPlaceholder; 
+    if(button) button.textContent = t.btnSend;
+    
+    const elementsToTranslate = {
+        'lbl-profile-name': t.profileName,
+        'lbl-profile': t.profile,
+        'lbl-status': t.status,
+        'lbl-bio-title': t.bioPlaceholder,
+        'lbl-time': t.loginTime,
+        'btn-logout': t.logoutBtn,
+        'lbl-upload-btn': t.uploadBtn,
+        'lbl-theme-title': t.themeTitle
+    };
+    
+    for (const [id, text] of Object.entries(elementsToTranslate)) {
+        const el = document.getElementById(id);
+        if(el) el.textContent = text;
+    }
+    
+    if (settingsModal && settingsModal.classList.contains('active')) { 
         const openedNick = document.getElementById('info-nick').textContent;
         const isMe = (openedNick === myNick);
-        document.getElementById('modal-title-text').textContent = isMe ? t.settingsTitle : t.profileTitle; 
+        const modalTitleText = document.getElementById('modal-title-text');
+        if(modalTitleText) modalTitleText.textContent = isMe ? t.settingsTitle : t.profileTitle; 
         const isOnline = onlineUsers.includes(openedNick);
         const statusLabel = document.getElementById('lbl-online-status'); 
-        statusLabel.textContent = isOnline ? t.online : t.offline; statusLabel.style.color = isOnline ? '#4cd964' : '#ff3b30';
+        if(statusLabel) {
+            statusLabel.textContent = isOnline ? t.online : t.offline; 
+            statusLabel.style.color = isOnline ? '#4cd964' : '#ff3b30';
+        }
     } 
     renderChatsList(); loadMessagesHistory(); renderStickersList();
     applyCustomBackground();
@@ -348,7 +381,8 @@ function saveMyDisplayName(val) {
     if (!localProfiles[myNick]) localProfiles[myNick] = {}; localProfiles[myNick].displayName = val; 
     localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
     socket.emit('update_profile', { username: myNick, data: localProfiles[myNick] }); 
-    document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
+    const myProfileName = document.getElementById('my-profile-name');
+    if(myProfileName) myProfileName.innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
 }
 
 function saveMyBio(val) { 
@@ -363,7 +397,8 @@ window.changeGlowColor = function(colorStr) {
     localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
     socket.emit('update_profile', { username: myNick, data: localProfiles[myNick] });
     document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar');
-    document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
+    const myProfileName = document.getElementById('my-profile-name');
+    if(myProfileName) myProfileName.innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
     renderChatsList();
 };
 
@@ -409,7 +444,8 @@ function handleAvatarUpload(inputEl) {
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles)); 
         socket.emit('update_profile', { username: myNick, data: localProfiles[myNick] }); 
         document.getElementById('modal-avatar-view').innerHTML = getAvatarHTML(myNick, 'modal-avatar'); 
-        document.getElementById('my-profile-name').innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
+        const myProfileName = document.getElementById('my-profile-name');
+        if(myProfileName) myProfileName.innerHTML = `${getAvatarHTML(myNick)} <span>${getVisibleName(myNick)}</span>`;
     });
 }
 
@@ -434,6 +470,7 @@ function renderStickersList() {
         if (preview) preview.appendChild(img);
     });
     
+    if(!stickerMenu) return;
     stickerMenu.innerHTML = '';
     if (myCustomStickers.length === 0) { 
         stickerMenu.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">У вас немає стікерів. Додайте їх в налаштуваннях.</span>';
@@ -449,23 +486,29 @@ function renderStickersList() {
 }
 
 function toggleStickerMenu() { 
+    if(!stickerMenu) return;
     stickerMenu.classList.toggle('active'); 
     if (stickerMenu.classList.contains('active')) emitActivity('searching_sticker'); else emitActivity('none');
 }
 
-searchToggleBtn.onclick = () => { searchFrame.classList.toggle('active');
-    if (searchFrame.classList.contains('active')) searchInput.focus(); 
-};
+if(searchToggleBtn && searchFrame && searchInput) {
+    searchToggleBtn.onclick = () => { searchFrame.classList.toggle('active');
+        if (searchFrame.classList.contains('active')) searchInput.focus(); 
+    };
 
-let searchTimeout; let latestSearchUsers = []; let latestSearchMessages = [];
-searchInput.oninput = (e) => {
-    clearTimeout(searchTimeout); const val = e.target.value.trim();
-    if (val.length > 0) {
-        searchTimeout = setTimeout(() => { socket.emit('global_search', { query: val }); socket.emit('search_users', { query: val }); }, 300);
-    } else { searchDropdown.style.display = 'none'; latestSearchUsers = []; latestSearchMessages = []; }
-};
+    let searchTimeout; 
+    searchInput.oninput = (e) => {
+        clearTimeout(searchTimeout); const val = e.target.value.trim();
+        if (val.length > 0) {
+            searchTimeout = setTimeout(() => { socket.emit('global_search', { query: val }); socket.emit('search_users', { query: val }); }, 300);
+        } else { searchDropdown.style.display = 'none'; latestSearchUsers = []; latestSearchMessages = []; }
+    };
+}
+
+let latestSearchUsers = []; let latestSearchMessages = [];
 
 function renderCombinedSearchResults() {
+    if(!searchDropdown) return;
     searchDropdown.innerHTML = '';
     if (latestSearchUsers.length === 0 && latestSearchMessages.length === 0) {
         searchDropdown.innerHTML = `<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:12px;">Нікого не знайдено</div>`;
@@ -514,6 +557,7 @@ socket.on('global_search_results', (data) => { latestSearchMessages = data.messa
 socket.on('search_results', (data) => { latestSearchUsers = data.results || []; renderCombinedSearchResults(); });
 
 function renderChatsList() { 
+    if(!chatsList) return;
     chatsList.innerHTML = '';
     const archiveZone = document.getElementById('archive-reveal-zone');
     if (archiveZone) archiveZone.style.display = 'none'; 
@@ -569,7 +613,7 @@ function renderChatDOM(user, targetContainer) {
                 chatSettings[user].folder = 'archive';
                 localStorage.setItem(getStorageKey('burmalda_chat_settings'), JSON.stringify(chatSettings));
                 if(currentActiveChatPartner === user) {
-                    currentActiveChatPartner = null; currentRoom = null; chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block';
+                    currentActiveChatPartner = null; currentRoom = null; if(chatArea) chatArea.style.display = 'none'; if(chatPlaceholder) chatPlaceholder.style.display = 'block';
                 }
                 renderChatsList(); 
             } },
@@ -580,23 +624,23 @@ function renderChatDOM(user, targetContainer) {
     targetContainer.appendChild(item);
 }
 
-function toggleChatMenu(e) { e.stopPropagation(); const menu = document.getElementById('chat-options-menu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
+function toggleChatMenu(e) { e.stopPropagation(); const menu = document.getElementById('chat-options-menu'); if(menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
 
 function toggleChatPref(user, prefKey) {
     if (!chatSettings[user]) chatSettings[user] = { pinned: false, muted: false, blocked: false, folder: 'all' };
     chatSettings[user][prefKey] = !chatSettings[user][prefKey]; localStorage.setItem(getStorageKey('burmalda_chat_settings'), JSON.stringify(chatSettings));
     
-    if (prefKey === 'blocked' && chatSettings[user].blocked && currentActiveChatPartner === user) { input.disabled = true;
-    input.placeholder = "Користувач заблокований"; button.disabled = true; } 
-    else if (prefKey === 'blocked' && !chatSettings[user].blocked && currentActiveChatPartner === user) { input.disabled = false;
-    input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false; }
-    updateChatHeaderUI(); renderChatsList(); document.getElementById('chat-options-menu').style.display = 'none';
+    if (prefKey === 'blocked' && chatSettings[user].blocked && currentActiveChatPartner === user) { if(input) {input.disabled = true;
+    input.placeholder = "Користувач заблокований";} if(button) button.disabled = true; } 
+    else if (prefKey === 'blocked' && !chatSettings[user].blocked && currentActiveChatPartner === user) { if(input) {input.disabled = false;
+    input.placeholder = translations[currentLang].inputPlaceholder;} if(button) button.disabled = false; }
+    updateChatHeaderUI(); renderChatsList(); const menu = document.getElementById('chat-options-menu'); if(menu) menu.style.display = 'none';
 }
 
 function clearChatHistory() {
     if(!confirm("Очистити історію цього чату для обох користувачів?")) return;
     socket.emit('clear_chat_history', { room: currentRoom });
-    document.getElementById('chat-options-menu').style.display = 'none';
+    const menu = document.getElementById('chat-options-menu'); if(menu) menu.style.display = 'none';
 }
 
 socket.on('chat_history_cleared', (data) => {
@@ -612,18 +656,20 @@ socket.on('chat_history_cleared', (data) => {
 function deleteChatLocally(username) { 
     activeChats = activeChats.filter(c => c !== username);
     saveActiveChats();
-    if (currentActiveChatPartner === username) { currentActiveChatPartner = null; currentRoom = null; chatArea.style.display = 'none'; chatPlaceholder.style.display = 'block'; } renderChatsList();
+    if (currentActiveChatPartner === username) { currentActiveChatPartner = null; currentRoom = null; if(chatArea) chatArea.style.display = 'none'; if(chatPlaceholder) chatPlaceholder.style.display = 'block'; } renderChatsList();
 }
 
 function updateChatHeaderUI() {
     if (!currentActiveChatPartner) return;
     const prefs = chatSettings[currentActiveChatPartner] || {};
-    document.getElementById('btn-mute-user').textContent = prefs.muted ? "🔔 Увімкнути звук" : "🔕 Вимкнути звук";
-    document.getElementById('btn-block-user').textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
+    const btnMute = document.getElementById('btn-mute-user');
+    if(btnMute) btnMute.textContent = prefs.muted ? "🔔 Увімкнути звук" : "🔕 Вимкнути звук";
+    const btnBlock = document.getElementById('btn-block-user');
+    if(btnBlock) btnBlock.textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
 }
 
 function updateChatTitle() {
-    if (!currentActiveChatPartner) return;
+    if (!currentActiveChatPartner || !chatTitleText) return;
     const isOnline = onlineUsers.includes(currentActiveChatPartner);
     let statusHtml = '';
     if (isOnline) {
@@ -648,7 +694,8 @@ function updateChatTitle() {
 function openChatWith(username) { 
     currentActiveChatPartner = username; const roomSorted = [myNick, username].sort(); currentRoom = `room_${roomSorted[0]}_${roomSorted[1]}`; 
     document.body.classList.add('chat-opened');
-    chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex'; 
+    if(chatPlaceholder) chatPlaceholder.style.display = 'none'; 
+    if(chatArea) chatArea.style.display = 'flex'; 
     updateChatTitle();
     const cleanUrl = window.location.pathname + '?auth=' + (urlParams.get('auth') || '') + '&chat=' + username; window.history.pushState({}, "", cleanUrl);
     socket.emit('request_history', { room: currentRoom });
@@ -657,8 +704,10 @@ function openChatWith(username) {
     socket.emit('mark_read', { room: currentRoom, reader: myNick });
     
     const prefs = chatSettings[username] || {};
-    if (prefs.blocked) { input.disabled = true; input.placeholder = "Користувач заблокований"; button.disabled = true; } 
-    else { input.disabled = false; input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false; }
+    if(input && button) {
+        if (prefs.blocked) { input.disabled = true; input.placeholder = "Користувач заблокований"; button.disabled = true; } 
+        else { input.disabled = false; input.placeholder = translations[currentLang].inputPlaceholder; button.disabled = false; }
+    }
 
     updateChatHeaderUI(); cancelAction(); currentPinIndex = 0; renderPinnedBar(); loadMessagesHistory(); renderChatsList();
 }
@@ -671,13 +720,15 @@ socket.on('room_history', (historyData) => {
 });
 
 function renderPinnedBar() {
-    if (!currentRoom) return;
+    if (!currentRoom || !pinnedMessageBar) return;
     if (!Array.isArray(pinnedMessages[currentRoom])) { pinnedMessages[currentRoom] = pinnedMessages[currentRoom] ? [pinnedMessages[currentRoom]] : []; }
     const pins = pinnedMessages[currentRoom];
     if (pins && pins.length > 0) {
         if (currentPinIndex >= pins.length) currentPinIndex = 0;
-        const currentPin = pins[currentPinIndex]; pinCounterBadge.textContent = `${currentPinIndex + 1}/${pins.length}`;
-        pinnedBarTextContent.innerHTML = escapeHTML(currentPin.text); pinnedMessageBar.style.display = 'flex';
+        const currentPin = pins[currentPinIndex]; 
+        if(pinCounterBadge) pinCounterBadge.textContent = `${currentPinIndex + 1}/${pins.length}`;
+        if(pinnedBarTextContent) pinnedBarTextContent.innerHTML = escapeHTML(currentPin.text); 
+        pinnedMessageBar.style.display = 'flex';
     } else { pinnedMessageBar.style.display = 'none'; }
 }
 
@@ -715,23 +766,36 @@ function scrollToPinnedMessage() {
 function setReplyTarget(msgId, summaryText) {
     replyTargetMsgId = msgId;
     editTargetMsgId = null;
-    document.getElementById('reply-preview-text').innerHTML = `${translations[currentLang].replyPrefix} "${escapeHTML(summaryText)}"`;
-    document.getElementById('reply-preview-bar').style.display = 'flex'; input.focus();
+    const previewText = document.getElementById('reply-preview-text');
+    if(previewText) previewText.innerHTML = `${translations[currentLang].replyPrefix} "${escapeHTML(summaryText)}"`;
+    const previewBar = document.getElementById('reply-preview-bar');
+    if(previewBar) previewBar.style.display = 'flex'; 
+    if(input) input.focus();
 }
 
 function setEditTarget(msgId, text) {
     editTargetMsgId = msgId; replyTargetMsgId = null;
-    document.getElementById('reply-preview-text').innerHTML = `Редагування: "${escapeHTML(text)}"`;
-    document.getElementById('reply-preview-bar').style.display = 'flex';
-    input.value = text; input.focus();
+    const previewText = document.getElementById('reply-preview-text');
+    if(previewText) previewText.innerHTML = `Редагування: "${escapeHTML(text)}"`;
+    const previewBar = document.getElementById('reply-preview-bar');
+    if(previewBar) previewBar.style.display = 'flex';
+    if(input) { input.value = text; input.focus(); }
 }
 
-function cancelAction() { replyTargetMsgId = null; editTargetMsgId = null; document.getElementById('reply-preview-bar').style.display = 'none'; input.value = ''; emitActivity('none'); }
+function cancelAction() { 
+    replyTargetMsgId = null; editTargetMsgId = null; 
+    const previewBar = document.getElementById('reply-preview-bar');
+    if(previewBar) previewBar.style.display = 'none'; 
+    if(input) input.value = ''; 
+    emitActivity('none'); 
+}
 
 function uploadMediaFile(inputEl) {
     const file = inputEl.files[0]; if (!file || !currentRoom) return;
     compressImage(file, (compressedBase64) => {
-        sendSpecialMessage(compressedBase64, 'image'); cancelAction(); inputEl.value = ''; document.getElementById('attachment-bubble').classList.remove('active');
+        sendSpecialMessage(compressedBase64, 'image'); cancelAction(); inputEl.value = ''; 
+        const bubble = document.getElementById('attachment-bubble');
+        if(bubble) bubble.classList.remove('active');
     });
 }
 
@@ -742,23 +806,26 @@ function uploadDocumentFile(inputEl) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const payload = JSON.stringify({ name: file.name, data: e.target.result });
-        sendSpecialMessage(payload, 'document'); cancelAction(); inputEl.value = ''; document.getElementById('attachment-bubble').classList.remove('active');
+        sendSpecialMessage(payload, 'document'); cancelAction(); inputEl.value = ''; 
+        const bubble = document.getElementById('attachment-bubble');
+        if(bubble) bubble.classList.remove('active');
     };
     reader.readAsDataURL(file);
 }
 
-function sendSpecialMessage(dataStr, type, options = null, extraSettings = null) {
+function sendSpecialMessage(dataStr, type, options = null) {
     if (!currentRoom) return;
     const msgId = type + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const msgPayload = { id: msgId, room: currentRoom, from: myNick, to: currentActiveChatPartner, text: dataStr, type: type, replyTo: replyTargetMsgId, timestamp: Date.now(), reactions: {}, status: 'sent' };
     if(options) msgPayload.options = options;
-    if(extraSettings) msgPayload.pollSettings = extraSettings;
-    if(type === 'poll') msgPayload.votes = {};
 
     if (!activeChats.includes(currentActiveChatPartner)) { activeChats.push(currentActiveChatPartner); saveActiveChats(); }
     if (!savedMessages[currentRoom]) savedMessages[currentRoom] = []; savedMessages[currentRoom].push(msgPayload); safeSaveHistory();
     socket.emit('chat_message', msgPayload); appendSingleMessage(msgPayload); audioSend.play().catch(e=>console.log(e));
-    cancelAction(); stickerMenu.classList.remove('active'); messagesContainer.scrollTop = messagesContainer.scrollHeight; emitActivity('none');
+    cancelAction(); 
+    if(stickerMenu) stickerMenu.classList.remove('active'); 
+    if(messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+    emitActivity('none');
 }
 
 let mediaRecorder = null;
@@ -769,10 +836,8 @@ let recordSeconds = 0;
 let currentFacingMode = 'user';
 let currentLocalMediaStream = null;
 
-// Функція-помічник для стабільного доступу до медіа (особливо на ПК)
 async function getRobustMediaStream(isVideo) {
     try {
-        // Спочатку пробуємо ідеальні налаштування
         return await navigator.mediaDevices.getUserMedia({
             audio: true,
             video: isVideo ? { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } } : false
@@ -780,7 +845,6 @@ async function getRobustMediaStream(isVideo) {
     } catch (e1) {
         console.warn("Основні параметри камери не спрацювали, пробуємо базові:", e1);
         try {
-            // Фолбек для ПК: без жорстких параметрів
             return await navigator.mediaDevices.getUserMedia({
                 audio: true,
                 video: isVideo
@@ -799,28 +863,31 @@ async function startMediaRecording(type) {
         
         currentLocalMediaStream = await getRobustMediaStream(type === 'video_circle');
         const overlay = document.getElementById('record-overlay'); 
-        overlay.style.display = 'flex';
+        if(overlay) overlay.style.display = 'flex';
         
         const previewVideo = document.getElementById('record-preview');
         const previewAudioIcon = document.getElementById('record-audio-icon');
         const btnSwitchCam = document.getElementById('btn-switch-record-cam');
         
         if (type === 'video_circle') { 
-            previewVideo.style.display = 'block';
-            previewAudioIcon.style.display = 'none'; btnSwitchCam.style.display = 'inline-block'; previewVideo.srcObject = currentLocalMediaStream; previewVideo.classList.add('recording');
+            if(previewVideo) { previewVideo.style.display = 'block'; previewVideo.srcObject = currentLocalMediaStream; previewVideo.classList.add('recording'); }
+            if(previewAudioIcon) previewAudioIcon.style.display = 'none'; 
+            if(btnSwitchCam) btnSwitchCam.style.display = 'inline-block'; 
         } else { 
-            previewVideo.style.display = 'none';
-            btnSwitchCam.style.display = 'none'; previewAudioIcon.style.display = 'flex'; previewAudioIcon.classList.add('recording');
+            if(previewVideo) previewVideo.style.display = 'none';
+            if(btnSwitchCam) btnSwitchCam.style.display = 'none'; 
+            if(previewAudioIcon) { previewAudioIcon.style.display = 'flex'; previewAudioIcon.classList.add('recording'); }
         }
 
         mediaRecorder = new MediaRecorder(currentLocalMediaStream);
         recordedChunks = []; currentRecordType = type; recordSeconds = 0;
-        document.getElementById('record-timer').textContent = '00:00';
+        const timerEl = document.getElementById('record-timer');
+        if(timerEl) timerEl.textContent = '00:00';
         recordTimerInterval = setInterval(() => {
             recordSeconds++;
             const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
             const s = String(recordSeconds % 60).padStart(2, '0');
-            document.getElementById('record-timer').textContent = `${m}:${s}`;
+            if(timerEl) timerEl.textContent = `${m}:${s}`;
             if (recordSeconds >= 60) finishAndSendRecord();
         }, 1000);
         mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
@@ -828,7 +895,8 @@ async function startMediaRecording(type) {
             if (window.isSwitchingCamera) return;
             clearInterval(recordTimerInterval);
             if(currentLocalMediaStream) currentLocalMediaStream.getTracks().forEach(t => t.stop());
-            previewVideo.srcObject = null; previewVideo.classList.remove('recording'); previewAudioIcon.classList.remove('recording');
+            if(previewVideo) { previewVideo.srcObject = null; previewVideo.classList.remove('recording'); }
+            if(previewAudioIcon) previewAudioIcon.classList.remove('recording');
             
             if (!window.cancelCurrentRecord && recordedChunks.length > 0) {
                 const mimeType = type === 'video_circle' ? 'video/webm' : 'audio/webm';
@@ -859,7 +927,8 @@ async function switchRecordCamera() {
         
         currentLocalMediaStream.removeTrack(oldVideoTrack);
         currentLocalMediaStream.addTrack(newVideoTrack);
-        document.getElementById('record-preview').srcObject = currentLocalMediaStream; 
+        const previewVideo = document.getElementById('record-preview');
+        if(previewVideo) previewVideo.srcObject = currentLocalMediaStream; 
 
         if (mediaRecorder.state === 'paused') mediaRecorder.resume();
         setTimeout(() => { window.isSwitchingCamera = false; }, 500); 
@@ -876,30 +945,40 @@ function pauseResumeRecord() {
     
     if (mediaRecorder.state === 'recording') {
         mediaRecorder.pause(); clearInterval(recordTimerInterval);
-        btn.textContent = '▶'; 
-        previewV.classList.remove('recording'); previewA.classList.remove('recording');
+        if(btn) btn.textContent = '▶'; 
+        if(previewV) previewV.classList.remove('recording'); 
+        if(previewA) previewA.classList.remove('recording');
         emitActivity('none');
     } else if (mediaRecorder.state === 'paused') {
         mediaRecorder.resume();
         emitActivity(currentRecordType === 'video_circle' ? 'recording_video' : 'recording_audio');
         recordTimerInterval = setInterval(() => {
             recordSeconds++; const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0'); const s = String(recordSeconds % 60).padStart(2, '0');
-            document.getElementById('record-timer').textContent = `${m}:${s}`;
+            const timerEl = document.getElementById('record-timer');
+            if(timerEl) timerEl.textContent = `${m}:${s}`;
             if (recordSeconds >= 60) finishAndSendRecord();
         }, 1000);
-        btn.textContent = '⏸'; 
-        if(currentRecordType === 'video_circle') previewV.classList.add('recording');
-        else previewA.classList.add('recording');
+        if(btn) btn.textContent = '⏸'; 
+        if(currentRecordType === 'video_circle' && previewV) previewV.classList.add('recording');
+        else if(previewA) previewA.classList.add('recording');
     }
 }
 
 function deleteRecord() { if (mediaRecorder && mediaRecorder.state !== 'inactive') { window.cancelCurrentRecord = true; mediaRecorder.stop(); } else { closeRecordUI(); } }
 function finishAndSendRecord() { if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); } }
-function closeRecordUI() { clearInterval(recordTimerInterval); document.getElementById('record-overlay').style.display = 'none'; currentRecordType = null; emitActivity('none'); }
+function closeRecordUI() { 
+    clearInterval(recordTimerInterval); 
+    const overlay = document.getElementById('record-overlay');
+    if(overlay) overlay.style.display = 'none'; 
+    currentRecordType = null; 
+    emitActivity('none'); 
+}
 
 function openForwardModal(msg) {
     messageToForward = msg;
-    const listContainer = document.getElementById('forward-chat-list'); listContainer.innerHTML = '';
+    const listContainer = document.getElementById('forward-chat-list'); 
+    if(!listContainer) return;
+    listContainer.innerHTML = '';
     if (activeChats.length === 0) { listContainer.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center;">Немає чатів для пересилання</div>'; } 
     else {
         activeChats.forEach(user => {
@@ -909,72 +988,40 @@ function openForwardModal(msg) {
             listContainer.appendChild(btn);
         });
     }
-    document.getElementById('forward-modal').classList.add('active');
+    const modal = document.getElementById('forward-modal');
+    if(modal) modal.classList.add('active');
 }
 
-function closeForwardModal() { document.getElementById('forward-modal').classList.remove('active'); messageToForward = null; }
+function closeForwardModal() { 
+    const modal = document.getElementById('forward-modal');
+    if(modal) modal.classList.remove('active'); 
+    messageToForward = null; 
+}
 
 function executeForward(targetUser) {
     if (!messageToForward) return;
-    const isAnon = document.getElementById('forward-anonymous-check').checked;
+    const checkAnon = document.getElementById('forward-anonymous-check');
+    const isAnon = checkAnon ? checkAnon.checked : false;
     const roomSorted = [myNick, targetUser].sort();
     const targetRoom = `room_${roomSorted[0]}_${roomSorted[1]}`;
     const newMsgId = messageToForward.type + '_fwd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const msgPayload = { id: newMsgId, room: targetRoom, from: myNick, to: targetUser, text: messageToForward.text, type: messageToForward.type, replyTo: null, timestamp: Date.now(), reactions: {}, status: 'sent', edited: false };
     if(messageToForward.options) msgPayload.options = messageToForward.options;
-    if(messageToForward.pollSettings) msgPayload.pollSettings = messageToForward.pollSettings;
-    if(messageToForward.votes) msgPayload.votes = messageToForward.votes;
 
     if (!isAnon) { 
         msgPayload.forwardedFrom = getVisibleName(messageToForward.from); 
-        msgPayload.forwardedFromId = messageToForward.from; // Зберігаємо ID оригінального автора
+        msgPayload.forwardedFromId = messageToForward.from;
     }
 
     if (!activeChats.includes(targetUser)) { activeChats.push(targetUser); saveActiveChats(); }
     if (!savedMessages[targetRoom]) savedMessages[targetRoom] = []; savedMessages[targetRoom].push(msgPayload); safeSaveHistory();
     socket.emit('chat_message', msgPayload);
-    if (currentRoom === targetRoom) { appendSingleMessage(msgPayload); messagesContainer.scrollTop = messagesContainer.scrollHeight; }
+    if (currentRoom === targetRoom) { appendSingleMessage(msgPayload); if(messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight; }
     audioSend.play().catch(e=>console.log(e)); closeForwardModal(); renderChatsList();
 }
 
-window.votePoll = function(msgId, optIndex) {
-    if(!currentRoom) return;
-    const chatMsgs = savedMessages[currentRoom] || [];
-    const msg = chatMsgs.find(m => m.id === msgId);
-    if(!msg || msg.type !== 'poll') return;
-    
-    const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false, explanation: '' };
-    if(!msg.votes) msg.votes = {};
-    
-    let hasVoted = false;
-    if (msg.options) {
-        msg.options.forEach((o, i) => { if(msg.votes[i] && msg.votes[i].includes(myNick)) hasVoted = true; });
-    }
-    
-    if (settings.quiz && hasVoted) return;
-    
-    if (!settings.multiple && !settings.quiz) {
-        msg.options.forEach((o, i) => {
-            if (msg.votes[i] && i !== optIndex) {
-                msg.votes[i] = msg.votes[i].filter(u => u !== myNick);
-            }
-        });
-    }
-
-    if (!msg.votes[optIndex]) msg.votes[optIndex] = [];
-    
-    if (msg.votes[optIndex].includes(myNick)) {
-        msg.votes[optIndex] = msg.votes[optIndex].filter(u => u !== myNick);
-    } else {
-        msg.votes[optIndex].push(myNick);
-    }
-
-    safeSaveHistory();
-    socket.emit('poll_vote', { room: currentRoom, msgId: msgId, votes: msg.votes });
-    loadMessagesHistory();
-}
-
 function appendSingleMessage(msg, isHistoryBuild = false) { 
+    if (!messagesContainer) return;
     if (!isHistoryBuild) {
         const msgDate = formatDateDivider(msg.timestamp);
         const dividers = document.querySelectorAll('.date-divider');
@@ -984,7 +1031,6 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
 
     const liWrapper = document.createElement('div'); liWrapper.className = `msg-container ${msg.from === myNick ? 'my-wrapper' : ''}`; liWrapper.id = `msg-item-${msg.id}`;
     
-    // Відображаємо чекбокси тільки для своїх повідомлень
     if (msg.from === myNick) {
         const checkboxHtml = `<input type="checkbox" class="msg-checkbox" value="${msg.id}" onchange="toggleMessageSelection(this)">`;
         liWrapper.innerHTML += checkboxHtml;
@@ -1020,7 +1066,6 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
             if (originalMsg.type === 'sticker') quoteText = '🦄 Стікер';
             if (originalMsg.type === 'audio') quoteText = '🎤 Аудіо';
             if (originalMsg.type === 'video_circle') quoteText = '🔵 Відео';
-            if (originalMsg.type === 'poll') quoteText = '📊 Опитування';
             if (originalMsg.type === 'document') quoteText = '📄 Документ';
         }
         quoteDiv.innerHTML = quoteText;
@@ -1076,79 +1121,6 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
             else { video.muted = true; speedBtn.style.display = 'none'; video.pause(); video.currentTime = 0; }
         };
         wrapper.appendChild(video); wrapper.appendChild(speedBtn); li.appendChild(wrapper);
-    } else if (msg.type === 'poll') {
-        const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false, correctIndex: -1, explanation: '' };
-        const votes = msg.votes || {};
-        let totalVotes = 0;
-        let myVotes = [];
-        
-        if (msg.options) {
-            msg.options.forEach((opt, idx) => {
-                if(votes[idx]) {
-                    totalVotes += votes[idx].length;
-                    if(votes[idx].includes(myNick)) myVotes.push(idx);
-                }
-            });
-        }
-
-        let optionsHtml = '';
-        let explanationHtml = '';
-        if (msg.options) {
-            msg.options.forEach((opt, idx) => {
-                const optVotes = votes[idx] ? votes[idx].length : 0;
-                const percent = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
-                const isMyVote = myVotes.includes(idx);
-                
-                let quizStyles = '';
-                let fillStyle = `width: ${percent}%; background: ${isMyVote ? 'rgba(0, 136, 204, 0.4)' : 'rgba(128,128,128,0.2)'};`;
-                
-                if (settings.quiz && myVotes.length > 0) {
-                    if (settings.correctIndex == idx) {
-                        quizStyles = 'border-color: #4cd964; background: rgba(76, 217, 100, 0.2);';
-                        fillStyle = `width: ${percent}%; background: rgba(76, 217, 100, 0.4);`;
-                    } else if (isMyVote) {
-                        quizStyles = 'border-color: #ff3b30; background: rgba(255, 59, 48, 0.2);';
-                        fillStyle = `width: ${percent}%; background: rgba(255, 59, 48, 0.4);`;
-                        if (settings.explanation) {
-                            explanationHtml = `<div style="margin-top: 8px; font-size: 11px; color: #ff3b30; background: rgba(255,59,48,0.1); padding: 8px; border-radius: 6px; border: 1px dashed #ff3b30;">💡 <b>Пояснення:</b> ${escapeHTML(settings.explanation)}</div>`;
-                        }
-                    }
-                }
-
-                let votersAvatars = '';
-                if (!settings.anonymous && votes[idx] && votes[idx].length > 0) {
-                    votersAvatars = '<div style="display:flex; gap:2px; margin-top:4px;">';
-                    votes[idx].forEach(vUser => {
-                        votersAvatars += getTinyAvatarHTML(vUser);
-                    });
-                    votersAvatars += '</div>';
-                }
-
-                optionsHtml += `
-                    <div style="position: relative; border: 1px solid ${isMyVote ? 'var(--accent)' : 'var(--border-color)'}; border-radius: 6px; margin-top: 6px; cursor: pointer; overflow: hidden; ${quizStyles}" onclick="votePoll('${msg.id}', ${idx})">
-                        <div style="position: absolute; top: 0; left: 0; height: 100%; ${fillStyle} transition: width 0.3s ease; z-index: 1;"></div>
-                        <div style="position: relative; z-index: 2; padding: 8px 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span>${escapeHTML(opt)}</span>
-                                <span style="font-size: 11px; font-weight: bold;">${percent}%</span>
-                            </div>
-                            ${votersAvatars}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        let metaText = [];
-        if(settings.anonymous) metaText.push('Анонімне');
-        if(settings.multiple) metaText.push('Кілька відповідей');
-        if(settings.quiz) metaText.push('Вікторина');
-
-        li.innerHTML = `<strong style="color:var(--accent);">📊 Опитування: ${escapeHTML(msg.text)}</strong>
-                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 5px;">${metaText.join(' • ')}</div>
-                        ${optionsHtml}
-                        ${explanationHtml}
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: right;">Всього голосів: ${totalVotes}</div>`;
     } else if (msg.type === 'document') {
         try {
             const docInfo = JSON.parse(msg.text);
@@ -1182,7 +1154,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         if(isMultiSelectMode) {
             e.stopPropagation();
             const cb = liWrapper.querySelector('.msg-checkbox'); 
-            if(cb) { // Запобігаємо помилкам при кліку на чуже повідомлення
+            if(cb) {
                 cb.checked = !cb.checked; 
                 toggleMessageSelection(cb);
             }
@@ -1198,7 +1170,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         let summary = msg.text;
         if (msg.type === 'image') summary = '📷 Фотографія'; if (msg.type === 'sticker') summary = '🦄 Стікер';
         if (msg.type === 'audio') summary = '🎤 Аудіо'; if (msg.type === 'video_circle') summary = '🔵 Відео';
-        if (msg.type === 'poll') summary = '📊 Опитування'; if (msg.type === 'document') summary = '📄 Документ';
+        if (msg.type === 'document') summary = '📄 Документ';
         const menuOptions = [ 
             { text: translations[currentLang].ctxReply, action: () => { setReplyTarget(msg.id, summary); } },
             { text: "Переслати ↪️", action: () => { openForwardModal(msg); } },
@@ -1222,14 +1194,17 @@ function toggleMultiSelectMode() {
     isMultiSelectMode = !isMultiSelectMode;
     selectedMessages.clear();
     document.body.classList.toggle('multi-select-mode', isMultiSelectMode);
-    document.getElementById('multi-select-bar').style.display = isMultiSelectMode ? 'flex' : 'none';
+    const selectBar = document.getElementById('multi-select-bar');
+    if(selectBar) selectBar.style.display = isMultiSelectMode ? 'flex' : 'none';
     document.querySelectorAll('.msg-checkbox').forEach(cb => cb.checked = false);
-    document.getElementById('multi-select-count').innerText = "0";
+    const selectCount = document.getElementById('multi-select-count');
+    if(selectCount) selectCount.innerText = "0";
 }
 
 window.toggleMessageSelection = function(cb) {
     if(cb.checked) { selectedMessages.add(cb.value); } else { selectedMessages.delete(cb.value); }
-    document.getElementById('multi-select-count').innerText = selectedMessages.size;
+    const selectCount = document.getElementById('multi-select-count');
+    if(selectCount) selectCount.innerText = selectedMessages.size;
 };
 
 window.executeMultiDelete = function() {
@@ -1287,7 +1262,7 @@ function executeLocalEdit(msgId, newText) {
 }
 
 function loadMessagesHistory() { 
-    if (!currentRoom) return;
+    if (!currentRoom || !messagesContainer) return;
     const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50;
     
     messagesContainer.innerHTML = '';
@@ -1303,58 +1278,66 @@ function loadMessagesHistory() {
     if(isAtBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-messagesContainer.onscroll = () => {
-    const btn = document.getElementById('scroll-to-bottom-btn');
-    if (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 300) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; }
-    
-    if (messagesContainer.scrollTop === 0) {
-        const history = savedMessages[currentRoom] || [];
-        if (currentPaginationLimit < history.length) {
-            currentPaginationLimit += 30;
-            const previousHeight = messagesContainer.scrollHeight;
-            loadMessagesHistory();
-            messagesContainer.scrollTop = messagesContainer.scrollHeight - previousHeight;
+if(messagesContainer) {
+    messagesContainer.onscroll = () => {
+        const btn = document.getElementById('scroll-to-bottom-btn');
+        if (btn) {
+            if (messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 300) { btn.style.display = 'flex'; } else { btn.style.display = 'none'; }
         }
-    }
-};
+        if (messagesContainer.scrollTop === 0) {
+            const history = savedMessages[currentRoom] || [];
+            if (currentPaginationLimit < history.length) {
+                currentPaginationLimit += 30;
+                const previousHeight = messagesContainer.scrollHeight;
+                loadMessagesHistory();
+                messagesContainer.scrollTop = messagesContainer.scrollHeight - previousHeight;
+            }
+        }
+    };
+}
 
-document.getElementById('form').onsubmit = (e) => { 
-    e.preventDefault();
-    const val = input.value.trim(); if (!val || !currentRoom) return;
+const formEl = document.getElementById('form');
+if(formEl) {
+    formEl.onsubmit = (e) => { 
+        e.preventDefault();
+        const val = input.value.trim(); if (!val || !currentRoom) return;
 
-    // --- КЛІЄНТСЬКИЙ АНТИСПАМ ---
-    const now = Date.now();
-    myMessageTimestamps = myMessageTimestamps.filter(t => now - t < 3000);
-    if (myMessageTimestamps.length >= 4) {
-        alert("Антиспам: Занадто багато повідомлень! Зачекайте пару секунд.");
-        return;
-    }
-    myMessageTimestamps.push(now);
+        const now = Date.now();
+        myMessageTimestamps = myMessageTimestamps.filter(t => now - t < 3000);
+        if (myMessageTimestamps.length >= 4) {
+            alert("Антиспам: Занадто багато повідомлень! Зачекайте пару секунд.");
+            return;
+        }
+        myMessageTimestamps.push(now);
 
-    if (editTargetMsgId) { socket.emit('edit_message', { room: currentRoom, msgId: editTargetMsgId, newText: val }); executeLocalEdit(editTargetMsgId, val); cancelAction(); return; }
-    
-    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-    const msgPayload = { id: msgId, room: currentRoom, from: myNick, to: currentActiveChatPartner, text: val, type: 'text', replyTo: replyTargetMsgId, timestamp: Date.now(), reactions: {}, status: 'sent', edited: false };
-    if (!activeChats.includes(currentActiveChatPartner)) { activeChats.push(currentActiveChatPartner); saveActiveChats(); } 
-    if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
-    savedMessages[currentRoom].push(msgPayload);
-    safeSaveHistory(); 
+        if (editTargetMsgId) { socket.emit('edit_message', { room: currentRoom, msgId: editTargetMsgId, newText: val }); executeLocalEdit(editTargetMsgId, val); cancelAction(); return; }
+        
+        const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        const msgPayload = { id: msgId, room: currentRoom, from: myNick, to: currentActiveChatPartner, text: val, type: 'text', replyTo: replyTargetMsgId, timestamp: Date.now(), reactions: {}, status: 'sent', edited: false };
+        if (!activeChats.includes(currentActiveChatPartner)) { activeChats.push(currentActiveChatPartner); saveActiveChats(); } 
+        if (!savedMessages[currentRoom]) savedMessages[currentRoom] = [];
+        savedMessages[currentRoom].push(msgPayload);
+        safeSaveHistory(); 
 
-    socket.emit('chat_message', msgPayload); appendSingleMessage(msgPayload);
-    audioSend.play().catch(e=>console.log(e)); 
-    cancelAction(); messagesContainer.scrollTop = messagesContainer.scrollHeight; renderChatsList(); 
-    emitActivity('none'); 
-};
+        socket.emit('chat_message', msgPayload); appendSingleMessage(msgPayload);
+        audioSend.play().catch(e=>console.log(e)); 
+        cancelAction(); messagesContainer.scrollTop = messagesContainer.scrollHeight; renderChatsList(); 
+        emitActivity('none'); 
+    };
+}
 
 let typingTimeout = null; let lastTypingEmit = 0;
-input.oninput = () => { 
-    if (!currentRoom) return; const now = Date.now();
-    if (now - lastTypingEmit > 2000) { emitActivity('typing'); lastTypingEmit = now; }
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => { emitActivity('none'); lastTypingEmit = 0; }, 1500);
-};
+if(input) {
+    input.oninput = () => { 
+        if (!currentRoom) return; const now = Date.now();
+        if (now - lastTypingEmit > 2000) { emitActivity('typing'); lastTypingEmit = now; }
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => { emitActivity('none'); lastTypingEmit = 0; }, 1500);
+    };
+}
 
 function showContextMenu(e, options) { 
+    if(!contextMenu) return;
     contextMenu.innerHTML = '';
     options.forEach(opt => { const b = document.createElement('button'); b.textContent = opt.text; if (opt.class) b.className = opt.class; b.onclick = () => { contextMenu.style.display = 'none'; opt.action(); }; contextMenu.appendChild(b); });
     contextMenu.style.display = 'block';
@@ -1366,19 +1349,19 @@ function showContextMenu(e, options) {
 }
 
 document.onclick = (e) => { 
-    // Виправлення багу зі зникненням стікерів
     if(!e.target.closest('.attachment-item-btn') && !e.target.closest('#sticker-menu') && !e.target.closest('#btn-sticker')) {
-        if(stickerMenu.classList.contains('active')) { stickerMenu.classList.remove('active'); emitActivity('none'); }
+        if(stickerMenu && stickerMenu.classList.contains('active')) { stickerMenu.classList.remove('active'); emitActivity('none'); }
     }
     if(!e.target.closest('.search-trigger-btn') && !e.target.closest('#chat-options-menu') && !e.target.closest('.search-container')) {
-        document.getElementById('chat-options-menu').style.display = 'none';
-        searchDropdown.style.display = 'none';
+        const menu = document.getElementById('chat-options-menu');
+        if(menu) menu.style.display = 'none';
+        if(searchDropdown) searchDropdown.style.display = 'none';
     }
     if (!e.target.closest('#form') && !e.target.closest('#attachment-bubble')) {
         const bubble = document.getElementById('attachment-bubble');
         if (bubble) bubble.classList.remove('active');
     }
-    contextMenu.style.display = 'none'; 
+    if(contextMenu) contextMenu.style.display = 'none'; 
     document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none'); 
 };
 
@@ -1394,14 +1377,22 @@ function initPeerJS(username) {
     if (myPeer) return; 
     try {
         if (typeof Peer === 'undefined') return;
+        
+        // Розширені STUN сервери для кращого зв'язку на відстані. 
+        // Важливо: для повноцінної роботи через мобільний інтернет вам ПОТРІБЕН платний TURN сервер на бекенді.
+        const defaultIceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+        ];
+
         myPeer = new Peer(username, {
-            config: rtcConfig || {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            }
+            config: rtcConfig || { 'iceServers': defaultIceServers }
         });
+
         myPeer.on('open', (id) => { console.log('[PeerJS] Готовий до роботи, ID:', id); });
         myPeer.on('call', async (call) => {
             currentCall = call; isCurrentCallVideo = true;
@@ -1507,10 +1498,12 @@ function endCall(notifyPartner = true) {
     stopRingtone();
     if (currentCall) { currentCall.close(); currentCall = null; }
     if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
-    document.getElementById('local-video').srcObject = null; document.getElementById('remote-video').srcObject = null;
-    document.getElementById('call-modal').classList.remove('active'); document.getElementById('call-video-container').style.display = 'none';
-    document.getElementById('toggle-mic-btn').innerText = "🎤 Мікр: Увімк"; document.getElementById('toggle-mic-btn').classList.remove('active-control');
-    document.getElementById('toggle-cam-btn').innerText = "📷 Камера: Увімк"; document.getElementById('toggle-cam-btn').classList.remove('active-control');
+    const localVid = document.getElementById('local-video'); if(localVid) localVid.srcObject = null; 
+    const remoteVid = document.getElementById('remote-video'); if(remoteVid) remoteVid.srcObject = null;
+    const callModal = document.getElementById('call-modal'); if(callModal) callModal.classList.remove('active'); 
+    const callVidContainer = document.getElementById('call-video-container'); if(callVidContainer) callVidContainer.style.display = 'none';
+    const toggleMic = document.getElementById('toggle-mic-btn'); if(toggleMic) { toggleMic.innerText = "🎤 Мікр: Увімк"; toggleMic.classList.remove('active-control'); }
+    const toggleCam = document.getElementById('toggle-cam-btn'); if(toggleCam) { toggleCam.innerText = "📷 Камера: Увімк"; toggleCam.classList.remove('active-control'); }
 }
 
 socket.on('connect', () => { 
@@ -1524,7 +1517,7 @@ setInterval(() => {
 
 socket.on('online_list', (users) => { onlineUsers = users; applyLanguage(); });
 socket.on('contacts_synced', (serverChats) => { if (Array.isArray(serverChats)) { activeChats = serverChats; localStorage.setItem(getStorageKey('burmalda_chat_list'), JSON.stringify(activeChats)); renderChatsList(); } });
-socket.on('user_blocked_you', (data) => { if (data.room === currentRoom && data.blocked) { input.disabled = true; input.placeholder = translations[currentLang].blockedMeText || "Цей користувач вас заблокував."; button.disabled = true; } });
+socket.on('user_blocked_you', (data) => { if (data.room === currentRoom && data.blocked) { if(input) {input.disabled = true; input.placeholder = translations[currentLang].blockedMeText || "Цей користувач вас заблокував.";} if(button) button.disabled = true; } });
 
 socket.on('chat_message', (msg) => { 
     if (chatSettings[myNick] && chatSettings[myNick].blocked) return; 
@@ -1547,7 +1540,7 @@ socket.on('chat_message', (msg) => {
         if (!savedMessages[currentRoom].some(m => m.id === msg.id)) { 
             savedMessages[currentRoom].push(msg);
             safeSaveHistory();
-            appendSingleMessage(msg); messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+            appendSingleMessage(msg); if(messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight; 
             if (msg.from !== myNick) socket.emit('mark_read', { room: currentRoom, reader: myNick });
             if (!chatSettings[msg.from]?.muted) audioReceiveInChat.play().catch(e=>console.log(e));
         } 
@@ -1587,17 +1580,6 @@ socket.on('message_reaction', (data) => {
     }
 });
 
-socket.on('poll_vote', (data) => {
-    if (savedMessages[data.room]) {
-        const msg = savedMessages[data.room].find(m => m.id === data.msgId);
-        if (msg) {
-            msg.votes = data.votes || {};
-            safeSaveHistory();
-            if (currentRoom === data.room) loadMessagesHistory();
-        }
-    }
-});
-
 socket.on('pin_message', (data) => {
     const room = data.room; if (!Array.isArray(pinnedMessages[room])) pinnedMessages[room] = [];
     if (data.action === 'add') { if (!pinnedMessages[room].some(p => p.id === data.pinData.id)) pinnedMessages[room].push(data.pinData); } 
@@ -1608,7 +1590,7 @@ socket.on('pin_message', (data) => {
 });
 
 socket.on('user_activity', (data) => { 
-    if (currentRoom === data.room && data.user !== myNick) { 
+    if (currentRoom === data.room && data.user !== myNick && typingStatusEl) { 
         if (data.activity === 'none') { typingStatusEl.style.display = 'none'; } 
         else { let label = activityLabels[data.activity] || "щось робить..."; typingStatusEl.textContent = `${getVisibleName(data.user)} ${label}`; typingStatusEl.style.display = 'block'; }
     }
@@ -1636,6 +1618,7 @@ function logout() { localStorage.removeItem('burmalda_auth_token'); window.locat
 if (window.visualViewport) { 
     window.visualViewport.addEventListener('resize', () => { 
         const containerEl = document.getElementById('input-panel-container'); 
+        if(!containerEl || !messagesContainer) return;
         if (window.visualViewport.height < window.innerHeight) { 
             const keyboardHeight = window.innerHeight - window.visualViewport.height; 
             containerEl.style.position = 'fixed'; 
@@ -1644,91 +1627,8 @@ if (window.visualViewport) {
     });
 }
 
-window.updateQuizCorrectOptions = () => {
-    const correctSelect = document.getElementById('poll-quiz-correct');
-    if (!correctSelect) return;
-    const inputs = document.querySelectorAll('.poll-opt-input');
-    correctSelect.innerHTML = '';
-    inputs.forEach((input, index) => {
-        const val = input.value.trim() || `Варіант ${index + 1}`;
-        correctSelect.innerHTML += `<option value="${index}">${escapeHTML(val)}</option>`;
-    });
-};
-
-window.openPollModal = () => {
-    document.getElementById('poll-modal').classList.add('active');
-    
-    const quizCheck = document.getElementById('poll-quiz-check');
-    if(quizCheck) {
-        quizCheck.onchange = () => {
-            let expInput = document.getElementById('poll-quiz-explanation');
-            if (quizCheck.checked && !expInput) {
-                expInput = document.createElement('input');
-                expInput.type = 'text';
-                expInput.id = 'poll-quiz-explanation';
-                expInput.className = 'profile-name-input';
-                expInput.placeholder = 'Пояснення правильної відповіді (необов\'язково)';
-                expInput.style.marginTop = '10px';
-                quizCheck.parentNode.appendChild(expInput);
-            } else if (!quizCheck.checked && expInput) {
-                expInput.remove();
-            }
-        };
-    }
-    
-    document.querySelectorAll('.poll-opt-input').forEach(input => {
-        input.oninput = window.updateQuizCorrectOptions;
-    });
-    window.updateQuizCorrectOptions();
-};
-
-window.closePollModal = () => document.getElementById('poll-modal').classList.remove('active');
-
-window.addPollOptionUI = () => {
-    const container = document.getElementById('poll-options-container');
-    if (container.children.length >= 10) {
-        alert('Максимум 10 варіантів!');
-        return;
-    }
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'profile-name-input poll-opt-input'; 
-    input.placeholder = `Варіант ${container.children.length + 1}`;
-    input.oninput = window.updateQuizCorrectOptions;
-    container.appendChild(input);
-    window.updateQuizCorrectOptions();
-};
-
-window.sendPoll = () => {
-    const question = document.getElementById('poll-question-input').value;
-    const options = Array.from(document.querySelectorAll('.poll-opt-input')).map(i => i.value).filter(v => v.trim() !== '');
-    
-    const isAnon = document.getElementById('poll-anon-check') ? document.getElementById('poll-anon-check').checked : false;
-    const isMulti = document.getElementById('poll-multi-check') ? document.getElementById('poll-multi-check').checked : false;
-    const isQuiz = document.getElementById('poll-quiz-check') ? document.getElementById('poll-quiz-check').checked : false;
-    const correctIdx = document.getElementById('poll-quiz-correct') ? parseInt(document.getElementById('poll-quiz-correct').value) : 0;
-    const explanationInput = document.getElementById('poll-quiz-explanation');
-    const explanation = explanationInput ? explanationInput.value.trim() : '';
-
-    if(question && options.length >= 2 && currentActiveChatPartner) {
-        const pollSettings = {
-            anonymous: isAnon,
-            multiple: isMulti,
-            quiz: isQuiz,
-            correctIndex: isQuiz ? correctIdx : -1,
-            explanation: isQuiz ? explanation : ''
-        };
-        sendSpecialMessage(question, 'poll', options, pollSettings);
-        closePollModal();
-        document.getElementById('poll-question-input').value = '';
-        document.getElementById('poll-options-container').innerHTML = '<input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 1"><input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 2">';
-        document.querySelectorAll('.poll-opt-input').forEach(i => i.oninput = window.updateQuizCorrectOptions);
-        if (explanationInput) explanationInput.value = '';
-    } else { alert('Введіть питання та щонайменше 2 варіанти!'); }
-};
-
-window.openTimerModal = () => document.getElementById('timer-modal').classList.add('active');
-window.closeTimerModal = () => document.getElementById('timer-modal').classList.remove('active');
+window.openTimerModal = () => { const modal = document.getElementById('timer-modal'); if(modal) modal.classList.add('active'); };
+window.closeTimerModal = () => { const modal = document.getElementById('timer-modal'); if(modal) modal.classList.remove('active'); };
 
 window.applyTimerSettings = () => {
     alert('Налаштування збережено! Наступне повідомлення буде відправлено згідно таймера. (UI Демо)');
@@ -1740,7 +1640,8 @@ window.toggleAttachmentMenu = function() {
     if (bubble) {
         bubble.classList.toggle('active');
         if (bubble.classList.contains('active')) {
-            document.getElementById('sticker-menu').classList.remove('active');
+            const stickerMn = document.getElementById('sticker-menu');
+            if(stickerMn) stickerMn.classList.remove('active');
             emitActivity('none');
         }
     }
