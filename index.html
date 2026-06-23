@@ -19,7 +19,7 @@
             --btn-hover: #16a34a;
         }
 
-        [data-theme="dark"] {
+        [data-theme=\"dark\"] {
             --bg-color: #064e3b; /* Глибокий зелений для темної теми */
             --box-bg: #022c22;
             --box-border: #047857;
@@ -62,7 +62,7 @@
             padding: 30px 20px; 
             border-radius: 16px; 
             border: 3px solid var(--box-border); /* Проста жирна рамка */
-            text-align: center; 
+            text-align: center;
             display: flex;
             flex-direction: column; 
             width: 100%;
@@ -200,7 +200,7 @@
             
             <input type="text" id="username" placeholder="Юзернейм..." autocomplete="off" maxlength="12">
             <div class="hint" id="t-hint">Максимум 12 символів (змінити юзернейм неможливо!)</div>
-            
+    
             <input type="password" id="password" placeholder="Пароль...">
             <div id="error" class="error-msg"></div>
             
@@ -234,7 +234,7 @@
                 btnText: "Увійти / Створити",
                 loading: "Завантаження...",
                 checking: "Перевірка...",
-                errEmpty: "Введіть нік та пароль!",
+                errEmpty: "Введіть нік та пароль!", // ВИПРАВЛЕНО: Рядок тепер цілісний
                 errAuth: "Помилка авторизації!",
                 errNet: "Помилка мережі!"
             },
@@ -262,7 +262,7 @@
                 checking: "Checking...",
                 errEmpty: "Enter nickname and password!",
                 errAuth: "Authorization error!",
-                errNet: "Network error!"
+                nodeNet: "Network error!"
             }
         };
 
@@ -332,15 +332,17 @@
         const phraseElement = document.getElementById('dynamic-phrase');
         
         setInterval(() => {
-            phraseElement.style.opacity = '0';
-            setTimeout(() => {
-                const randomIndex = Math.floor(Math.random() * phrases.length);
-                phraseElement.innerText = phrases[randomIndex];
-                phraseElement.style.opacity = '1';
-            }, 300); 
+            if(phraseElement) {
+                phraseElement.style.opacity = '0';
+                setTimeout(() => {
+                    const randomIndex = Math.floor(Math.random() * phrases.length);
+                    phraseElement.innerText = phrases[randomIndex];
+                    phraseElement.style.opacity = '1';
+                }, 300);
+            }
         }, 5000);
 
-        // --- ЛОГІКА АВТОРИЗАЦІЇ (ПОВНІСТЮ ЗБЕРЕЖЕНО) ---
+        // --- ЛОГІКА АВТОРИЗАЦІЇ ---
         function enterChat() {
             const nick = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
@@ -384,6 +386,9 @@
                     const loadedContacts = data.contacts ? data.contacts.split(',') : [];
                     localStorage.setItem(`chat_list_${nick}`, JSON.stringify(loadedContacts));
                     const loginToken = btoa(encodeURIComponent(nick) + "_" + Date.now());
+                    
+                    // ЗВЕРНИ УВАГУ: перенаправлення на '/chat'. Переконайся, що твій сервер обробляє цей маршрут!
+                    // Якщо у тебе це просто файл, заміни на '/index.html?auth=' або '/chat.html?auth='
                     window.location.href = '/chat?auth=' + loginToken;
                 } else {
                     showError(data.message || i18n[currentLang].errAuth);
