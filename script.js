@@ -91,9 +91,6 @@ let isMultiSelectMode = false;
 let selectedMessages = new Set();
 let currentPaginationLimit = 30; 
 
-// --- АРХІВ ТА ФОН ---
-let folderPasswords = JSON.parse(localStorage.getItem(getStorageKey('burmalda_folder_passwords'))) || {};
-let unlockedFolders = new Set();
 let chatBackgroundImage = localStorage.getItem(getStorageKey('burmalda_bg_image')) || '';
 let chatBackgroundBlur = localStorage.getItem(getStorageKey('burmalda_bg_blur')) || '0';
 
@@ -217,6 +214,21 @@ function getAvatarHTML(username, cssClass = 'avatar') {
     for (let i = 0; i < username.length; i++) charCodeSum += username.charCodeAt(i);
     const pickedColor = colors[charCodeSum % colors.length];
     return `<div class="${placeholderClass}" id="av-node-${username}" style="background-color: ${pickedColor}; ${glowStyle}">${firstLetter}</div>`;
+}
+
+function getTinyAvatarHTML(username) {
+    if (!username) return '';
+    const uData = localProfiles[username] || {};
+    if (uData.avatar && uData.avatar.startsWith('data:image')) {
+        return `<img src="${uData.avatar}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,0.2);" title="${escapeHTML(getVisibleName(username))}">`;
+    }
+    const visibleName = getVisibleName(username);
+    const firstLetter = visibleName ? visibleName.charAt(0) : '?';
+    const colors = ['#0088cc', '#4cd964', '#ff3b30', '#ffcc00', '#5856d6', '#ff2d55', '#af52de'];
+    let charCodeSum = 0;
+    for (let i = 0; i < username.length; i++) charCodeSum += username.charCodeAt(i);
+    const pickedColor = colors[charCodeSum % colors.length];
+    return `<div style="width:16px;height:16px;border-radius:50%;background-color:${pickedColor};color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid rgba(255,255,255,0.2);" title="${escapeHTML(getVisibleName(username))}">${firstLetter}</div>`;
 }
 
 function applyCustomBackground() {
@@ -417,7 +429,11 @@ function renderStickersList() {
         stickerMenu.innerHTML = '<span style="color:var(--text-muted); font-size:12px;">У вас немає стікерів. Додайте їх в налаштуваннях.</span>';
     } else { 
         myCustomStickers.forEach(st => { 
-            const img = document.createElement('img'); img.src = st; img.className = 'sticker-item'; img.onclick = () => sendSpecialMessage(st, 'sticker'); stickerMenu.appendChild(img); 
+            const img = document.createElement('img'); 
+            img.src = st; 
+            img.className = 'sticker-item'; 
+            img.onclick = (e) => { e.stopPropagation(); sendSpecialMessage(st, 'sticker'); }; 
+            stickerMenu.appendChild(img); 
         });
     }
 }
@@ -494,7 +510,6 @@ function renderChatsList() {
     const archiveContainer = document.getElementById('archive-container');
     if (archiveContainer) archiveContainer.style.display = 'none';
     
-    // Ховаємо чати, які в архіві
     let filteredChats = activeChats.filter(c => {
         const folder = chatSettings[c]?.folder || 'all';
         return folder !== 'archive';
@@ -863,7 +878,7 @@ window.votePoll = function(msgId, optIndex) {
     const msg = chatMsgs.find(m => m.id === msgId);
     if(!msg || msg.type !== 'poll') return;
     
-    const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false };
+    const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false, explanation: '' };
     if(!msg.votes) msg.votes = {};
     
     let hasVoted = false;
@@ -979,7 +994,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         };
         wrapper.appendChild(video); wrapper.appendChild(speedBtn); li.appendChild(wrapper);
     } else if (msg.type === 'poll') {
-        const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false, correctIndex: -1 };
+        const settings = msg.pollSettings || { anonymous: false, multiple: false, quiz: false, correctIndex: -1, explanation: '' };
         const votes = msg.votes || {};
         let totalVotes = 0;
         let myVotes = [];
@@ -994,6 +1009,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         }
 
         let optionsHtml = '';
+        let explanationHtml = '';
         if (msg.options) {
             msg.options.forEach((opt, idx) => {
                 const optVotes = votes[idx] ? votes[idx].length : 0;
@@ -1010,15 +1026,30 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
                     } else if (isMyVote) {
                         quizStyles = 'border-color: #ff3b30; background: rgba(255, 59, 48, 0.2);';
                         fillStyle = `width: ${percent}%; background: rgba(255, 59, 48, 0.4);`;
+                        if (settings.explanation) {
+                            explanationHtml = `<div style="margin-top: 8px; font-size: 11px; color: #ff3b30; background: rgba(255,59,48,0.1); padding: 8px; border-radius: 6px; border: 1px dashed #ff3b30;">💡 <b>Пояснення:</b> ${escapeHTML(settings.explanation)}</div>`;
+                        }
                     }
+                }
+
+                let votersAvatars = '';
+                if (!settings.anonymous && votes[idx] && votes[idx].length > 0) {
+                    votersAvatars = '<div style="display:flex; gap:2px; margin-top:4px;">';
+                    votes[idx].forEach(vUser => {
+                        votersAvatars += getTinyAvatarHTML(vUser);
+                    });
+                    votersAvatars += '</div>';
                 }
 
                 optionsHtml += `
                     <div style="position: relative; border: 1px solid ${isMyVote ? 'var(--accent)' : 'var(--border-color)'}; border-radius: 6px; margin-top: 6px; cursor: pointer; overflow: hidden; ${quizStyles}" onclick="votePoll('${msg.id}', ${idx})">
                         <div style="position: absolute; top: 0; left: 0; height: 100%; ${fillStyle} transition: width 0.3s ease; z-index: 1;"></div>
-                        <div style="position: relative; z-index: 2; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
-                            <span>${escapeHTML(opt)}</span>
-                            <span style="font-size: 11px; font-weight: bold;">${percent}%</span>
+                        <div style="position: relative; z-index: 2; padding: 8px 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>${escapeHTML(opt)}</span>
+                                <span style="font-size: 11px; font-weight: bold;">${percent}%</span>
+                            </div>
+                            ${votersAvatars}
                         </div>
                     </div>
                 `;
@@ -1033,6 +1064,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         li.innerHTML = `<strong style="color:var(--accent);">📊 Опитування: ${escapeHTML(msg.text)}</strong>
                         <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 5px;">${metaText.join(' • ')}</div>
                         ${optionsHtml}
+                        ${explanationHtml}
                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-align: right;">Всього голосів: ${totalVotes}</div>`;
     } else if (msg.type === 'document') {
         try {
@@ -1255,7 +1287,14 @@ function initPeerJS(username) {
     if (myPeer) return; 
     try {
         if (typeof Peer === 'undefined') return;
-        myPeer = new Peer(username);
+        myPeer = new Peer(username, {
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
+        });
         myPeer.on('open', (id) => { console.log('[PeerJS] Готовий до роботи, ID:', id); });
         myPeer.on('call', async (call) => {
             currentCall = call; isCurrentCallVideo = true;
@@ -1496,38 +1535,86 @@ if (window.visualViewport) {
     });
 }
 
-window.openPollModal = () => document.getElementById('poll-modal').classList.add('active');
+window.updateQuizCorrectOptions = () => {
+    const correctSelect = document.getElementById('poll-quiz-correct');
+    if (!correctSelect) return;
+    const inputs = document.querySelectorAll('.poll-opt-input');
+    correctSelect.innerHTML = '';
+    inputs.forEach((input, index) => {
+        const val = input.value.trim() || `Варіант ${index + 1}`;
+        correctSelect.innerHTML += `<option value="${index}">${escapeHTML(val)}</option>`;
+    });
+};
+
+window.openPollModal = () => {
+    document.getElementById('poll-modal').classList.add('active');
+    
+    const quizCheck = document.getElementById('poll-quiz-check');
+    if(quizCheck) {
+        quizCheck.onchange = () => {
+            let expInput = document.getElementById('poll-quiz-explanation');
+            if (quizCheck.checked && !expInput) {
+                expInput = document.createElement('input');
+                expInput.type = 'text';
+                expInput.id = 'poll-quiz-explanation';
+                expInput.className = 'profile-name-input';
+                expInput.placeholder = 'Пояснення правильної відповіді (необов\'язково)';
+                expInput.style.marginTop = '10px';
+                quizCheck.parentNode.appendChild(expInput);
+            } else if (!quizCheck.checked && expInput) {
+                expInput.remove();
+            }
+        };
+    }
+    
+    document.querySelectorAll('.poll-opt-input').forEach(input => {
+        input.oninput = window.updateQuizCorrectOptions;
+    });
+    window.updateQuizCorrectOptions();
+};
+
 window.closePollModal = () => document.getElementById('poll-modal').classList.remove('active');
 
 window.addPollOptionUI = () => {
     const container = document.getElementById('poll-options-container');
+    if (container.children.length >= 10) {
+        alert('Максимум 10 варіантів!');
+        return;
+    }
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'profile-name-input poll-opt-input'; input.placeholder = `Варіант ${container.children.length + 1}`;
+    input.className = 'profile-name-input poll-opt-input'; 
+    input.placeholder = `Варіант ${container.children.length + 1}`;
+    input.oninput = window.updateQuizCorrectOptions;
     container.appendChild(input);
+    window.updateQuizCorrectOptions();
 };
 
 window.sendPoll = () => {
     const question = document.getElementById('poll-question-input').value;
     const options = Array.from(document.querySelectorAll('.poll-opt-input')).map(i => i.value).filter(v => v.trim() !== '');
     
-    // Перевіряємо чи є чекбокси у HTML, якщо немає - беремо false
     const isAnon = document.getElementById('poll-anon-check') ? document.getElementById('poll-anon-check').checked : false;
     const isMulti = document.getElementById('poll-multi-check') ? document.getElementById('poll-multi-check').checked : false;
     const isQuiz = document.getElementById('poll-quiz-check') ? document.getElementById('poll-quiz-check').checked : false;
     const correctIdx = document.getElementById('poll-quiz-correct') ? parseInt(document.getElementById('poll-quiz-correct').value) : 0;
+    const explanationInput = document.getElementById('poll-quiz-explanation');
+    const explanation = explanationInput ? explanationInput.value.trim() : '';
 
     if(question && options.length >= 2 && currentActiveChatPartner) {
         const pollSettings = {
             anonymous: isAnon,
             multiple: isMulti,
             quiz: isQuiz,
-            correctIndex: isQuiz ? correctIdx : -1
+            correctIndex: isQuiz ? correctIdx : -1,
+            explanation: isQuiz ? explanation : ''
         };
         sendSpecialMessage(question, 'poll', options, pollSettings);
         closePollModal();
         document.getElementById('poll-question-input').value = '';
         document.getElementById('poll-options-container').innerHTML = '<input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 1"><input type="text" class="profile-name-input poll-opt-input" placeholder="Варіант 2">';
+        document.querySelectorAll('.poll-opt-input').forEach(i => i.oninput = window.updateQuizCorrectOptions);
+        if (explanationInput) explanationInput.value = '';
     } else { alert('Введіть питання та щонайменше 2 варіанти!'); }
 };
 
@@ -1551,15 +1638,6 @@ window.toggleAttachmentMenu = function() {
 };
 
 window.openArchiveSettingsModal = function() {
-    if (folderPasswords['archive'] && !unlockedFolders.has('archive')) {
-        const pwd = prompt("Введіть пароль для доступу до архіву:");
-        if (pwd !== folderPasswords['archive']) {
-            alert("Невірний пароль!");
-            return;
-        }
-        unlockedFolders.add('archive');
-    }
-    
     const list = document.getElementById('settings-archive-list');
     if (list) {
         list.innerHTML = '';
@@ -1590,20 +1668,8 @@ window.openArchiveSettingsModal = function() {
     if (modal) {
         modal.classList.add('active');
     } else {
-        alert("Модальне вікно архіву не знайдене в HTML. Додайте id='archive-settings-modal'.");
+        alert("Модальне вікно архіву не знайдене в HTML. Додайте id='archive-settings-modal' у файлі index.html (якщо його там немає).");
     }
-};
-
-window.setArchivePassword = function() {
-    const input = document.getElementById('archive-password-input');
-    const pwd = input ? input.value.trim() : '';
-    if (pwd) {
-        folderPasswords['archive'] = pwd;
-    } else {
-        delete folderPasswords['archive'];
-    }
-    localStorage.setItem(getStorageKey('burmalda_folder_passwords'), JSON.stringify(folderPasswords));
-    alert('Налаштування архіву збережено!');
 };
 
 window.setBackgroundImage = function(inputEl) {
