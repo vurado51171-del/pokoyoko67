@@ -12,8 +12,10 @@ const io = new Server(server, { maxHttpBufferSize: 1e8 });
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// --- ГЛОБАЛЬНІ НАЛАШТУВАННЯ СЕРВЕРА ---
-const ALLOW_VOICE_EFFECTS = true; // Якщо false — сервер повністю блокуватиме зміну голосу в аудіо повідомленнях
+// ==========================================
+// НАЛАШТУВАННЯ СЕРВЕРНОГО КОНТРОЛЮ ГОЛОСУ
+// ==========================================
+const ALLOW_VOICE_EFFECTS = false; // Якщо FALSE — сервер повністю блокує та вирізає зміну голосу!
 
 // Посилання на твій розгорнутий Google Apps Script
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDPbd2dYEJmsECYI5Uc-lbwB9wL5ffM6zSkWcTOnPAhLaZUEP5C3Gbv_ui8MtaeLFcXQ/exec";
@@ -38,8 +40,9 @@ const METERED_RTC_CONFIG = {
 let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {};
+const userRateLimits = {}; // Для серверного антиспаму
 
-// --- НАДІЙНЕ ЗАВАНТАЖЕННЯ БАЗИ ---
+// --- ЗАВАНТАЖЕННЯ БАЗИ ДАНИХ ---
 function loadDatabase() {
     try {
         if (fs.existsSync(DB_FILE)) {
@@ -49,10 +52,8 @@ function loadDatabase() {
                 messagesDatabase = parsed.messagesDatabase || {};
                 userProfiles = parsed.userProfiles || {};
                 
-                // Перевірка наявності черги відкладених повідомлень
                 if (!messagesDatabase.scheduled) messagesDatabase.scheduled = [];
-                
-                console.log(`[БД] Базу успішно завантажено. Користувачів у системі: ${Object.keys(userProfiles).length}`);
+                console.log(`[БД] Успішно завантажено. Користувачів: ${Object.keys(userProfiles).length}`);
             }
         } else {
             messagesDatabase = { scheduled: [] };
@@ -66,12 +67,14 @@ function loadDatabase() {
     }
 }
 
-// --- ФОНОВЕ ЗБЕРЕЖЕННЯ ДАНИХ ---
+// --- СИНХРОННЕ ЗБЕРЕЖЕННЯ ДАНИХ ДЛЯ УНИКНЕННЯ КОНФЛІКТІВ ЗАПИСУ ---
 function saveDatabase() {
-    const dataToSave = { messagesDatabase, userProfiles };
-    fs.writeFile(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8', (err) => {
-        if (err) console.error('[БД] Помилка запису на диск:', err.message);
-    });
+    try {
+        const dataToSave = { messagesDatabase, userProfiles };
+        fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
+    } catch (err) {
+        console.error('[БД] Помилка запису на диск:', err.message);
+    }
 }
 
 loadDatabase();
@@ -80,16 +83,16 @@ loadDatabase();
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Обробка головної сторінки (підтримка як index.html, так і chat.html)
-const getChatPage = (req, res) => {
-    if (fs.existsSync(path.join(__dirname, 'index.html'))) {
-        res.sendFile(path.join(__dirname, 'index.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'chat.html'));
-    }
-};
-app.get('/', getChatPage);
-app.get('/chat', getChatPage);
+// ==========================================
+// ВИПРАВЛЕНИЙ РОУТИНГ СТОРІНОК (Більше не зациклює!)
+// ==========================================
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html')); // Головна сторінка входу (Логін)
+});
+
+app.get('/chat', (req, res) => {
+    res.sendFile(path.join(__dirname, 'chat.html')); // Сторінка самого чату
+});
 
 // --- ПЕРЕВІРКА ТА ВІДПРАВКА ВІДКЛАДЕНИХ ПОВІДОМЛЕНЬ ЗА ТАЙМЕРОМ ---
 setInterval(() => {
@@ -98,17 +101,14 @@ setInterval(() => {
         const dueMessages = messagesDatabase.scheduled.filter(m => new Date(m.scheduledTime).getTime() <= now);
         
         if (dueMessages.length > 0) {
-            // Залишаємо в черзі тільки майбутні повідомлення
             messagesDatabase.scheduled = messagesDatabase.scheduled.filter(m => new Date(m.scheduledTime).getTime() > now);
             
             dueMessages.forEach(msg => {
-                // Видаляємо маркер планування перед збереженням в основну історію
                 delete msg.scheduledTime;
                 
                 if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
                 messagesDatabase[msg.room].push(msg);
 
-                // Оновлюємо списки чатів для обох сторін
                 [msg.from, msg.to].forEach(user => {
                     if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
                     if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
@@ -118,10 +118,8 @@ setInterval(() => {
                     }
                 });
 
-                // Надсилаємо повідомлення в кімнату
                 io.to(msg.room).emit('chat_message', msg);
                 
-                // Оновлюємо інтерфейси користувачів, якщо вони в мережі
                 if (activeConnections[msg.to]) {
                     io.to(activeConnections[msg.to]).emit('restore_chats', userProfiles[msg.to].chatList);
                 }
@@ -145,29 +143,24 @@ io.on('connection', (socket) => {
         activeConnections[sessionUser] = socket.id;
 
         if (!userProfiles[sessionUser]) {
-            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '', banner: '', glowColor: 'blue' };
+            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '', banner: '', glowColor: 'blue', lastSeen: Date.now() };
         }
-    
+        userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус
+
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
         saveDatabase();
 
-        // Оповіщення всіх про оновлений список онлайн користувачів
         io.emit('online_list', Object.keys(activeConnections));
-        
-        // Повертаємо користувачу його список активних чатів
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
-        
-        // Передаємо конфігурацію для WebRTC дзвінків
         socket.emit('rtc_config', METERED_RTC_CONFIG);
 
-        // Передаємо профілі користувачів для рендерингу аватарок та ніків
         Object.keys(userProfiles).forEach(username => {
             socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // Маршрутизація WebRTC сигналів для аудіо/відеодзвінків
+    // Маршрутизація WebRTC сигналів для дзвінків
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target || !sessionUser) return;
         const targetSocketId = activeConnections[data.target];
@@ -194,9 +187,8 @@ io.on('connection', (socket) => {
         if (!exists && GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=check&username=${encodeURIComponent(data.username)}`);
-                const responseText = await res.text();
-
                 if (res.ok) {
+                    const responseText = await res.text();
                     try {
                         const gasData = JSON.parse(responseText);
                         if (gasData.exists) {
@@ -206,7 +198,7 @@ io.on('connection', (socket) => {
                             saveDatabase();
                         }
                     } catch (parseErr) {
-                        console.error(`[GAS JSON Помилка] Надійшов невалидний текст:`, responseText.substring(0, 200));
+                        console.error(`[GAS JSON Помилка] Надійшов невалідний текст`);
                     }
                 }
             } catch (err) {
@@ -222,12 +214,13 @@ io.on('connection', (socket) => {
                 avatar: profile.avatar || '',
                 bio: profile.bio || '',
                 banner: profile.banner || '',
-                glowColor: profile.glowColor || 'blue'
+                glowColor: profile.glowColor || 'blue',
+                lastSeen: profile.lastSeen || null
             } : null
         });
     });
 
-    // Залізобетонний пошук користувачів (Локальний + Хмара Google)
+    // Локальний + Хмарний пошук користувачів
     socket.on('search_users', async (data) => {
         if (!data || typeof data.query !== 'string') return;
         const query = data.query.toLowerCase().trim();
@@ -255,9 +248,8 @@ io.on('connection', (socket) => {
         if (GOOGLE_SCRIPT_URL.startsWith('http')) {
             try {
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&query=${encodeURIComponent(query)}`);
-                const responseText = await response.text();
-                
                 if (response.ok) {
+                    const responseText = await response.text();
                     try {
                         const googleResults = JSON.parse(responseText);
                         if (Array.isArray(googleResults)) {
@@ -287,7 +279,7 @@ io.on('connection', (socket) => {
         socket.emit('search_results', { query: data.query, results });
     });
 
-    // Глобальний всеохоплюючий пошук повідомлень та людей всередині клієнта
+    // Глобальний пошук повідомлень та людей всередині клієнта
     socket.on('global_search', (data) => {
         if (!data || typeof data.query !== 'string' || !sessionUser) return;
         const query = data.query.toLowerCase().trim();
@@ -354,17 +346,30 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // Опрацювання та надсилання повідомлень (з підтримкою перевірки зміни голосу)
+    // Опрацювання повідомлень + ЗАЛІЗОБЕТОННИЙ КОНТРОЛЬ ЗМІНИ ГОЛОСУ + АНТИСПАМ
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
-        // === СЕРВЕРНИЙ КОНТРОЛЬ ЗМІНИ ГОЛОСУ ===
-        if (!ALLOW_VOICE_EFFECTS || msg.disableVoiceEffectsOnServer === true) {
+        // --- СЕРВЕРНИЙ АНТИСПАМ ---
+        const now = Date.now();
+        if (!userRateLimits[msg.from]) userRateLimits[msg.from] = [];
+        userRateLimits[msg.from] = userRateLimits[msg.from].filter(t => now - t < 3000);
+        if (userRateLimits[msg.from].length >= 5) {
+            console.log(`[Антиспам] Блокування повідомлень від користувача: ${msg.from}`);
+            return; // Ігноруємо спам
+        }
+        userRateLimits[msg.from].push(now);
+
+        // === СЕРВЕРНА ПЕРЕВІРКА: Якщо ефекти вимкнені, видаляємо модифікацію голосу ===
+        if (!ALLOW_VOICE_EFFECTS) {
             if (msg.voiceEffect || msg.audioEffect) {
-                console.log(`[Сервер] Заблоковано спробу зміни голосу для користувача ${msg.from}`);
+                console.log(`[Сервер] Заблоковано несанкціоновану зміну голосу від: ${msg.from}`);
                 delete msg.voiceEffect;
                 delete msg.audioEffect;
-                if (msg.meta) { delete msg.meta.voiceEffect; delete msg.meta.audioEffect; }
+            }
+            if (msg.meta) {
+                delete msg.meta.voiceEffect;
+                delete msg.meta.audioEffect;
             }
         }
 
@@ -376,11 +381,10 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Стандартне збереження в базу даних
         if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
         messagesDatabase[msg.room].push(msg);
 
-        // Автоматичне очищення зникне через X секунд (якщо увімкнено Secret Таймер)
+        // Таймер автовидалення секретних повідомлень
         if (msg.disappearTime && parseInt(msg.disappearTime) > 0) {
             setTimeout(() => {
                 if (messagesDatabase[msg.room]) {
@@ -403,11 +407,9 @@ io.on('connection', (socket) => {
 
         saveDatabase();
 
-        // Розсилка оновлень структури профілів
         io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
         io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
         
-        // Доставка повідомлення отримувачу та відправнику
         const targetSocketId = activeConnections[msg.to];
         if (targetSocketId) {
             io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
@@ -416,19 +418,17 @@ io.on('connection', (socket) => {
         socket.to(msg.room).emit('chat_message', msg);
     });
 
-    // Сумісність зі старою подією друку
     socket.on('typing', (data) => {
         if (data && data.room) socket.to(data.room).emit('typing', data);
     });
 
-    // ПОДІЯ АКТИВНОСТІ: Стягує статуси "записує кружок", "записує аудіо", "обирає стікер"
+    // Передача статусів активності ("записує аудіо", "обирає стікер" і т.д.)
     socket.on('user_activity', (data) => {
         if (data && data.room) {
             socket.to(data.room).emit('user_activity', data);
         }
     });
 
-    // Ручна синхронізація списку чатів
     socket.on('sync_chat_list', (data) => {
         if (sessionUser && data && data.chatList) {
             if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -437,7 +437,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Позначення повідомлень як прочитаних
     socket.on('mark_read', (data) => {
         if (!data || !data.room || !data.reader) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -447,7 +446,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('messages_read', data);
     });
 
-    // Редагування повідомлення
     socket.on('edit_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -457,7 +455,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('edit_message', data);
     });
 
-    // Видалення повідомлення (зокрема підтримка масового виділення)
     socket.on('delete_message', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -467,7 +464,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('delete_message', data);
     });
 
-    // Додавання емодзі-реакцій на блоки повідомлень
     socket.on('message_reaction', (data) => {
         if (!data || !data.room || !data.msgId) return;
         if (Array.isArray(messagesDatabase[data.room])) {
@@ -477,7 +473,6 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit('message_reaction', data);
     });
 
-    // Закріплення та відкріплення повідомлень (Мульти-пін менеджер)
     socket.on('pin_message', (data) => {
         if (!data || !data.room) return;
         const pinnedKey = data.room + '_pinned';
@@ -501,24 +496,28 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
-    // Повне очищення історії діалогу
-    socket.on('clear_history', (data) => {
+    // Очищення історії чату для обох співрозмовників
+    socket.on('clear_chat_history', (data) => {
         if (!data || !data.room) return;
         if (messagesDatabase[data.room]) {
             messagesDatabase[data.room] = [];
             saveDatabase();
         }
-        socket.to(data.room).emit('clear_history', data);
+        // Розсилаємо подію всім в кімнаті, щоб інтерфейс оновився миттєво
+        io.to(data.room).emit('chat_history_cleared', { room: data.room });
     });
 
-    // Обробка відключення клієнта (офлайн статус)
     socket.on('disconnect', () => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
+            if (userProfiles[sessionUser]) {
+                userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус при виході
+                saveDatabase();
+                io.emit('profile_broadcast', { username: sessionUser, data: { lastSeen: userProfiles[sessionUser].lastSeen } });
+            }
             io.emit('online_list', Object.keys(activeConnections));
         }
     });
 });
 
-// Запуск сервера
-server.listen(PORT, () => console.log(`=== Повний преміум-сервер BurmaldaGram запущено на порту ${PORT} ===`));
+server.listen(PORT, () => console.log(`=== Сервер BurmaldaGram запущено без помилок на порту ${PORT} ===`));
