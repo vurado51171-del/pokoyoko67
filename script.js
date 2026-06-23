@@ -2634,4 +2634,4 @@ window.setBackgroundBlur = function(val) {
 
 applyLanguage();
 const initialChatPartner = urlParams.get('chat');
-if (initialChatPartner && activeChats.includes(initialChatPartner)) openChatWith(initialChatPartner);
+if (initialChatPartner && activeChats.includes(initialChatPartner)) openChatWith(initialChatPartner); 
