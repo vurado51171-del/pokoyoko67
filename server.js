@@ -40,6 +40,7 @@ const METERED_RTC_CONFIG = {
 let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {};
+const userRateLimits = {}; // Для серверного антиспаму
 
 // --- ЗАВАНТАЖЕННЯ БАЗИ ДАНИХ ---
 function loadDatabase() {
@@ -142,8 +143,10 @@ io.on('connection', (socket) => {
         activeConnections[sessionUser] = socket.id;
 
         if (!userProfiles[sessionUser]) {
-            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '', banner: '', glowColor: 'blue' };
+            userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '', banner: '', glowColor: 'blue', lastSeen: Date.now() };
         }
+        userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус
+
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
         saveDatabase();
@@ -211,7 +214,8 @@ io.on('connection', (socket) => {
                 avatar: profile.avatar || '',
                 bio: profile.bio || '',
                 banner: profile.banner || '',
-                glowColor: profile.glowColor || 'blue'
+                glowColor: profile.glowColor || 'blue',
+                lastSeen: profile.lastSeen || null
             } : null
         });
     });
@@ -342,9 +346,19 @@ io.on('connection', (socket) => {
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
-    // Опрацювання повідомлень + ЗАЛІЗОБЕТОННИЙ КОНТРОЛЬ ЗМІНИ ГОЛОСУ
+    // Опрацювання повідомлень + ЗАЛІЗОБЕТОННИЙ КОНТРОЛЬ ЗМІНИ ГОЛОСУ + АНТИСПАМ
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
+
+        // --- СЕРВЕРНИЙ АНТИСПАМ ---
+        const now = Date.now();
+        if (!userRateLimits[msg.from]) userRateLimits[msg.from] = [];
+        userRateLimits[msg.from] = userRateLimits[msg.from].filter(t => now - t < 3000);
+        if (userRateLimits[msg.from].length >= 5) {
+            console.log(`[Антиспам] Блокування повідомлень від користувача: ${msg.from}`);
+            return; // Ігноруємо спам
+        }
+        userRateLimits[msg.from].push(now);
 
         // === СЕРВЕРНА ПЕРЕВІРКА: Якщо ефекти вимкнені, видаляємо модифікацію голосу ===
         if (!ALLOW_VOICE_EFFECTS) {
@@ -482,18 +496,25 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
-    socket.on('clear_history', (data) => {
+    // Очищення історії чату для обох співрозмовників
+    socket.on('clear_chat_history', (data) => {
         if (!data || !data.room) return;
         if (messagesDatabase[data.room]) {
             messagesDatabase[data.room] = [];
             saveDatabase();
         }
-        socket.to(data.room).emit('clear_history', data);
+        // Розсилаємо подію всім в кімнаті, щоб інтерфейс оновився миттєво
+        io.to(data.room).emit('chat_history_cleared', { room: data.room });
     });
 
     socket.on('disconnect', () => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
+            if (userProfiles[sessionUser]) {
+                userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус при виході
+                saveDatabase();
+                io.emit('profile_broadcast', { username: sessionUser, data: { lastSeen: userProfiles[sessionUser].lastSeen } });
+            }
             io.emit('online_list', Object.keys(activeConnections));
         }
     });
