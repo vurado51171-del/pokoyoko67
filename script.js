@@ -90,6 +90,7 @@ const ALL_EMOJIS = ['👍','❤️','😂','😮','😢','🙏','😎','🔥','�
 let isMultiSelectMode = false;
 let selectedMessages = new Set();
 let currentPaginationLimit = 30; 
+let myMessageTimestamps = []; // Антиспам клієнтський масив
 
 let chatBackgroundImage = localStorage.getItem(getStorageKey('burmalda_bg_image')) || '';
 let chatBackgroundBlur = localStorage.getItem(getStorageKey('burmalda_bg_blur')) || '0';
@@ -142,6 +143,14 @@ const pinnedMessageBar = document.getElementById('pinned-message-bar');
 const pinnedBarTextContent = document.getElementById('pinned-bar-text-content');
 const pinCounterBadge = document.getElementById('pin-counter-badge');
 const stickerMenu = document.getElementById('sticker-menu');
+
+// Додаємо обробку Shift+Enter
+input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('form').dispatchEvent(new Event('submit', { cancelable: true }));
+    }
+});
 
 settingsToggleBtn.onclick = () => { openMyProfile(); };
 settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
@@ -270,6 +279,7 @@ function applyLanguage() {
     } 
     renderChatsList(); loadMessagesHistory(); renderStickersList();
     applyCustomBackground();
+    updateChatTitle();
 }
 
 function changeLanguage(lang) { currentLang = lang; localStorage.setItem('burmalda_lang', lang); applyLanguage(); }
@@ -526,7 +536,15 @@ function renderChatsList() {
 function renderChatDOM(user, targetContainer) {
     if(!targetContainer) return;
     const isOnline = onlineUsers.includes(user);
-    const statusText = isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline; 
+    let statusText = isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline; 
+    
+    if (!isOnline && localProfiles[user] && localProfiles[user].lastSeen) {
+        const diff = Date.now() - localProfiles[user].lastSeen;
+        if (diff < 60000) statusText = "щойно";
+        else if (diff < 3600000) statusText = `${Math.floor(diff/60000)} хв тому`;
+        else if (diff < 86400000) statusText = `${Math.floor(diff/3600000)} год тому`;
+    }
+
     const prefs = chatSettings[user] || {};
     const activeClass = (currentActiveChatPartner === user) ? 'active' : '';
     const glowClass = glowingChats[user] ? 'glow-active' : '';
@@ -604,12 +622,34 @@ function updateChatHeaderUI() {
     document.getElementById('btn-block-user').textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
 }
 
+function updateChatTitle() {
+    if (!currentActiveChatPartner) return;
+    const isOnline = onlineUsers.includes(currentActiveChatPartner);
+    let statusHtml = '';
+    if (isOnline) {
+        statusHtml = '<small style="color:#4cd964; font-size:11px;">● онлайн</small>';
+    } else {
+        const pData = localProfiles[currentActiveChatPartner];
+        if (pData && pData.lastSeen) {
+            const diff = Date.now() - pData.lastSeen;
+            let seenTxt = "нещодавно";
+            if (diff < 60000) seenTxt = "щойно";
+            else if (diff < 3600000) seenTxt = `${Math.floor(diff/60000)} хв тому`;
+            else if (diff < 86400000) seenTxt = `${Math.floor(diff/3600000)} год тому`;
+            else seenTxt = new Date(pData.lastSeen).toLocaleDateString(currentLang);
+            statusHtml = `<small style="color:var(--text-muted); font-size:11px;">був(ла) ${seenTxt}</small>`;
+        } else {
+            statusHtml = '<small style="color:var(--text-muted); font-size:11px;">офлайн</small>';
+        }
+    }
+    chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${escapeHTML(getVisibleName(currentActiveChatPartner))} ${statusHtml}</span>`;
+}
+
 function openChatWith(username) { 
     currentActiveChatPartner = username; const roomSorted = [myNick, username].sort(); currentRoom = `room_${roomSorted[0]}_${roomSorted[1]}`; 
     document.body.classList.add('chat-opened');
     chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex'; 
-    const isOnline = onlineUsers.includes(username);
-    chatTitleText.innerHTML = `${getAvatarHTML(username)} <span>${escapeHTML(getVisibleName(username))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`;
+    updateChatTitle();
     const cleanUrl = window.location.pathname + '?auth=' + (urlParams.get('auth') || '') + '&chat=' + username; window.history.pushState({}, "", cleanUrl);
     socket.emit('request_history', { room: currentRoom });
     socket.emit('request_profile', { username: username });
@@ -728,16 +768,36 @@ let recordTimerInterval;
 let recordSeconds = 0;
 let currentFacingMode = 'user';
 let currentLocalMediaStream = null;
-const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+
+// Функція-помічник для стабільного доступу до медіа (особливо на ПК)
+async function getRobustMediaStream(isVideo) {
+    try {
+        // Спочатку пробуємо ідеальні налаштування
+        return await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: isVideo ? { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } } : false
+        });
+    } catch (e1) {
+        console.warn("Основні параметри камери не спрацювали, пробуємо базові:", e1);
+        try {
+            // Фолбек для ПК: без жорстких параметрів
+            return await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: isVideo
+            });
+        } catch (e2) {
+            console.error("Помилка доступу до медіа:", e2);
+            throw e2;
+        }
+    }
+}
 
 async function startMediaRecording(type) {
     try {
         emitActivity(type === 'video_circle' ? 'recording_video' : 'recording_audio');
         currentFacingMode = 'user'; 
         
-        const constraints = type === 'video_circle' ?
-        { video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } }, audio: audioConstraints } : { audio: audioConstraints };
-        currentLocalMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentLocalMediaStream = await getRobustMediaStream(type === 'video_circle');
         const overlay = document.getElementById('record-overlay'); 
         overlay.style.display = 'flex';
         
@@ -767,7 +827,7 @@ async function startMediaRecording(type) {
         mediaRecorder.onstop = () => {
             if (window.isSwitchingCamera) return;
             clearInterval(recordTimerInterval);
-            currentLocalMediaStream.getTracks().forEach(t => t.stop());
+            if(currentLocalMediaStream) currentLocalMediaStream.getTracks().forEach(t => t.stop());
             previewVideo.srcObject = null; previewVideo.classList.remove('recording'); previewAudioIcon.classList.remove('recording');
             
             if (!window.cancelCurrentRecord && recordedChunks.length > 0) {
@@ -780,7 +840,7 @@ async function startMediaRecording(type) {
             closeRecordUI(); emitActivity('none');
         };
         mediaRecorder.start();
-    } catch(e) { alert('Помилка доступу до камери/мікрофона'); console.error(e); closeRecordUI(); emitActivity('none'); }
+    } catch(e) { alert('Помилка доступу до камери/мікрофона: ' + e.message); console.error(e); closeRecordUI(); emitActivity('none'); }
 }
 
 async function switchRecordCamera() {
@@ -792,7 +852,9 @@ async function switchRecordCamera() {
         const oldVideoTrack = currentLocalMediaStream.getVideoTracks()[0];
         if (oldVideoTrack) oldVideoTrack.stop(); 
 
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } }, audio: false });
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: currentFacingMode } }, audio: false })
+            .catch(e => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+        
         const newVideoTrack = newStream.getVideoTracks()[0];
         
         currentLocalMediaStream.removeTrack(oldVideoTrack);
@@ -863,7 +925,10 @@ function executeForward(targetUser) {
     if(messageToForward.pollSettings) msgPayload.pollSettings = messageToForward.pollSettings;
     if(messageToForward.votes) msgPayload.votes = messageToForward.votes;
 
-    if (!isAnon) { msgPayload.forwardedFrom = getVisibleName(messageToForward.from); }
+    if (!isAnon) { 
+        msgPayload.forwardedFrom = getVisibleName(messageToForward.from); 
+        msgPayload.forwardedFromId = messageToForward.from; // Зберігаємо ID оригінального автора
+    }
 
     if (!activeChats.includes(targetUser)) { activeChats.push(targetUser); saveActiveChats(); }
     if (!savedMessages[targetRoom]) savedMessages[targetRoom] = []; savedMessages[targetRoom].push(msgPayload); safeSaveHistory();
@@ -919,14 +984,32 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
 
     const liWrapper = document.createElement('div'); liWrapper.className = `msg-container ${msg.from === myNick ? 'my-wrapper' : ''}`; liWrapper.id = `msg-item-${msg.id}`;
     
-    const checkboxHtml = `<input type="checkbox" class="msg-checkbox" value="${msg.id}" onchange="toggleMessageSelection(this)">`;
-    liWrapper.innerHTML += checkboxHtml;
+    // Відображаємо чекбокси тільки для своїх повідомлень
+    if (msg.from === myNick) {
+        const checkboxHtml = `<input type="checkbox" class="msg-checkbox" value="${msg.id}" onchange="toggleMessageSelection(this)">`;
+        liWrapper.innerHTML += checkboxHtml;
+    }
+
     const li = document.createElement('li'); if (msg.from === myNick) li.className = 'my-msg';
     if (['image', 'sticker', 'audio', 'video_circle'].includes(msg.type)) { li.classList.add('msg-transparent'); }
 
-    if (msg.forwardedFrom) { const fwdDiv = document.createElement('div');
-        fwdDiv.className = 'forward-header'; fwdDiv.textContent = `↪️ Переслано від: ${msg.forwardedFrom}`;
-        li.appendChild(fwdDiv); }
+    if (msg.forwardedFrom) { 
+        const fwdDiv = document.createElement('div');
+        fwdDiv.className = 'forward-header'; 
+        
+        if (msg.forwardedFromId) {
+            fwdDiv.innerHTML = `↪️ Переслано від: <span class="forward-link" style="cursor:pointer; text-decoration:underline;">${escapeHTML(msg.forwardedFrom)}</span>`;
+            fwdDiv.querySelector('.forward-link').onclick = (e) => {
+                e.stopPropagation();
+                if (msg.forwardedFromId === myNick) { alert(translations[currentLang].selfChatError); return; }
+                if (!activeChats.includes(msg.forwardedFromId)) { activeChats.push(msg.forwardedFromId); saveActiveChats(); }
+                openChatWith(msg.forwardedFromId);
+            };
+        } else {
+            fwdDiv.textContent = `↪️ Переслано від: ${msg.forwardedFrom}`;
+        }
+        li.insertBefore(fwdDiv, li.firstChild); 
+    }
 
     if (msg.replyTo) {
         const originalMsg = savedMessages[currentRoom]?.find(m => m.id === msg.replyTo);
@@ -1073,7 +1156,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         } catch(e) { li.textContent = 'Помилка завантаження документу'; }
     } else {
         const textNode = document.createElement('span');
-        textNode.innerHTML = escapeHTML(msg.text) + (msg.edited ? ' <small style="opacity:0.6; font-size:10px; margin-left:4px;">(змінено)</small>' : ''); li.appendChild(textNode);
+        textNode.innerHTML = escapeHTML(msg.text).replace(/\n/g, '<br>') + (msg.edited ? ' <small style="opacity:0.6; font-size:10px; margin-left:4px;">(змінено)</small>' : ''); li.appendChild(textNode);
     }
 
     const metaLine = document.createElement('div'); metaLine.className = 'msg-meta-line';
@@ -1098,7 +1181,11 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
     li.onclick = (e) => { 
         if(isMultiSelectMode) {
             e.stopPropagation();
-            const cb = liWrapper.querySelector('.msg-checkbox'); cb.checked = !cb.checked; toggleMessageSelection(cb);
+            const cb = liWrapper.querySelector('.msg-checkbox'); 
+            if(cb) { // Запобігаємо помилкам при кліку на чуже повідомлення
+                cb.checked = !cb.checked; 
+                toggleMessageSelection(cb);
+            }
             return;
         }
         e.stopPropagation();
@@ -1125,7 +1212,10 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
     }; 
 
     liWrapper.appendChild(li); messagesContainer.appendChild(liWrapper); renderReactionsUI(msg.id, msg.reactions, reactionsHolder);
-    if(selectedMessages.has(msg.id)) { liWrapper.querySelector('.msg-checkbox').checked = true; }
+    if(selectedMessages.has(msg.id)) { 
+        const cb = liWrapper.querySelector('.msg-checkbox');
+        if(cb) cb.checked = true; 
+    }
 }
 
 function toggleMultiSelectMode() {
@@ -1231,6 +1321,16 @@ messagesContainer.onscroll = () => {
 document.getElementById('form').onsubmit = (e) => { 
     e.preventDefault();
     const val = input.value.trim(); if (!val || !currentRoom) return;
+
+    // --- КЛІЄНТСЬКИЙ АНТИСПАМ ---
+    const now = Date.now();
+    myMessageTimestamps = myMessageTimestamps.filter(t => now - t < 3000);
+    if (myMessageTimestamps.length >= 4) {
+        alert("Антиспам: Занадто багато повідомлень! Зачекайте пару секунд.");
+        return;
+    }
+    myMessageTimestamps.push(now);
+
     if (editTargetMsgId) { socket.emit('edit_message', { room: currentRoom, msgId: editTargetMsgId, newText: val }); executeLocalEdit(editTargetMsgId, val); cancelAction(); return; }
     
     const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -1266,7 +1366,8 @@ function showContextMenu(e, options) {
 }
 
 document.onclick = (e) => { 
-    if(!e.target.closest('#btn-sticker') && !e.target.closest('#sticker-menu')) {
+    // Виправлення багу зі зникненням стікерів
+    if(!e.target.closest('.attachment-item-btn') && !e.target.closest('#sticker-menu') && !e.target.closest('#btn-sticker')) {
         if(stickerMenu.classList.contains('active')) { stickerMenu.classList.remove('active'); emitActivity('none'); }
     }
     if(!e.target.closest('.search-trigger-btn') && !e.target.closest('#chat-options-menu') && !e.target.closest('.search-container')) {
@@ -1282,13 +1383,19 @@ document.onclick = (e) => {
 };
 
 let myPeer = null; let localStream = null; let currentCall = null; let isCurrentCallVideo = false;
+let rtcConfig = null;
+
+socket.on('rtc_config', (config) => { 
+    rtcConfig = config; 
+    if (myNick && myNick !== 'Анонім') { initPeerJS(myNick); }
+});
 
 function initPeerJS(username) {
     if (myPeer) return; 
     try {
         if (typeof Peer === 'undefined') return;
         myPeer = new Peer(username, {
-            config: {
+            config: rtcConfig || {
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' }
@@ -1316,7 +1423,7 @@ function initPeerJS(username) {
 
                 try {
                     currentFacingMode = 'user';
-                    localStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: {facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } } });
+                    localStream = await getRobustMediaStream(isCurrentCallVideo);
                     document.getElementById('local-video').srcObject = localStream;
                     call.answer(localStream);
                     call.on('stream', (remoteStream) => { document.getElementById('call-status-text').textContent = 'Розмова...'; document.getElementById('remote-video').srcObject = remoteStream; });
@@ -1341,7 +1448,7 @@ async function startCall(isVideo) {
     document.getElementById('call-video-container').style.display = isVideo ? 'flex' : 'none';
     try {
         currentFacingMode = 'user';
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: isVideo ? {facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } } : false });
+        localStream = await getRobustMediaStream(isVideo);
         document.getElementById('local-video').srcObject = localStream;
         currentCall = myPeer.call(currentActiveChatPartner, localStream);
         currentCall.on('stream', (remoteStream) => {
@@ -1350,7 +1457,7 @@ async function startCall(isVideo) {
             document.getElementById('remote-video').srcObject = remoteStream;
         });
         currentCall.on('close', () => { endCall(false); });
-    } catch(e) { alert('Помилка доступу до камери або мікрофона'); endCall(true); }
+    } catch(e) { alert('Помилка доступу до камери або мікрофона: ' + e.message); endCall(true); }
 }
 
 async function switchCallCamera() {
@@ -1359,7 +1466,10 @@ async function switchCallCamera() {
     try {
         const oldVideoTrack = localStream.getVideoTracks()[0];
         if (oldVideoTrack) oldVideoTrack.stop();
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } }, audio: false });
+        
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: currentFacingMode } }, audio: false })
+            .catch(e => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+            
         const newVideoTrack = newStream.getVideoTracks()[0];
         
         localStream.removeTrack(oldVideoTrack);
@@ -1412,7 +1522,7 @@ setInterval(() => {
     if (myNick && myNick !== 'Анонім') { socket.emit('online_ping', { username: myNick }); }
 }, 15000);
 
-socket.on('online_list', (users) => { onlineUsers = users; applyLanguage(); if (myNick && myNick !== 'Анонім') { initPeerJS(myNick); } });
+socket.on('online_list', (users) => { onlineUsers = users; applyLanguage(); });
 socket.on('contacts_synced', (serverChats) => { if (Array.isArray(serverChats)) { activeChats = serverChats; localStorage.setItem(getStorageKey('burmalda_chat_list'), JSON.stringify(activeChats)); renderChatsList(); } });
 socket.on('user_blocked_you', (data) => { if (data.room === currentRoom && data.blocked) { input.disabled = true; input.placeholder = translations[currentLang].blockedMeText || "Цей користувач вас заблокував."; button.disabled = true; } });
 
@@ -1517,8 +1627,7 @@ socket.on('profile_broadcast', (profileUpdate) => {
     localProfiles[profileUpdate.username] = { ...localProfiles[profileUpdate.username], ...profileUpdate.data }; 
     localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles)); 
     if (profileUpdate.username === currentActiveChatPartner || profileUpdate.username === myNick) { 
-        const isOnline = onlineUsers.includes(currentActiveChatPartner);
-        if (currentActiveChatPartner) { chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${escapeHTML(getVisibleName(currentActiveChatPartner))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`; }
+        updateChatTitle();
     } renderChatsList(); 
 });
 
