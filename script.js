@@ -90,6 +90,7 @@ const ALL_EMOJIS = ['👍','❤️','😂','😮','😢','🙏','😎','🔥','�
 let isMultiSelectMode = false;
 let selectedMessages = new Set();
 let currentPaginationLimit = 30; 
+let myMessageTimestamps = []; // Антиспам клієнтський масив
 
 let chatBackgroundImage = localStorage.getItem(getStorageKey('burmalda_bg_image')) || '';
 let chatBackgroundBlur = localStorage.getItem(getStorageKey('burmalda_bg_blur')) || '0';
@@ -142,6 +143,14 @@ const pinnedMessageBar = document.getElementById('pinned-message-bar');
 const pinnedBarTextContent = document.getElementById('pinned-bar-text-content');
 const pinCounterBadge = document.getElementById('pin-counter-badge');
 const stickerMenu = document.getElementById('sticker-menu');
+
+// Додаємо обробку Shift+Enter
+input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('form').dispatchEvent(new Event('submit', { cancelable: true }));
+    }
+});
 
 settingsToggleBtn.onclick = () => { openMyProfile(); };
 settingsCloseBtn.onclick = () => { settingsModal.classList.remove('active'); };
@@ -270,6 +279,7 @@ function applyLanguage() {
     } 
     renderChatsList(); loadMessagesHistory(); renderStickersList();
     applyCustomBackground();
+    updateChatTitle();
 }
 
 function changeLanguage(lang) { currentLang = lang; localStorage.setItem('burmalda_lang', lang); applyLanguage(); }
@@ -526,7 +536,15 @@ function renderChatsList() {
 function renderChatDOM(user, targetContainer) {
     if(!targetContainer) return;
     const isOnline = onlineUsers.includes(user);
-    const statusText = isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline; 
+    let statusText = isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline; 
+    
+    if (!isOnline && localProfiles[user] && localProfiles[user].lastSeen) {
+        const diff = Date.now() - localProfiles[user].lastSeen;
+        if (diff < 60000) statusText = "щойно";
+        else if (diff < 3600000) statusText = `${Math.floor(diff/60000)} хв тому`;
+        else if (diff < 86400000) statusText = `${Math.floor(diff/3600000)} год тому`;
+    }
+
     const prefs = chatSettings[user] || {};
     const activeClass = (currentActiveChatPartner === user) ? 'active' : '';
     const glowClass = glowingChats[user] ? 'glow-active' : '';
@@ -604,12 +622,34 @@ function updateChatHeaderUI() {
     document.getElementById('btn-block-user').textContent = prefs.blocked ? "✅ Розблокувати" : "🚫 Заблокувати";
 }
 
+function updateChatTitle() {
+    if (!currentActiveChatPartner) return;
+    const isOnline = onlineUsers.includes(currentActiveChatPartner);
+    let statusHtml = '';
+    if (isOnline) {
+        statusHtml = '<small style="color:#4cd964; font-size:11px;">● онлайн</small>';
+    } else {
+        const pData = localProfiles[currentActiveChatPartner];
+        if (pData && pData.lastSeen) {
+            const diff = Date.now() - pData.lastSeen;
+            let seenTxt = "нещодавно";
+            if (diff < 60000) seenTxt = "щойно";
+            else if (diff < 3600000) seenTxt = `${Math.floor(diff/60000)} хв тому`;
+            else if (diff < 86400000) seenTxt = `${Math.floor(diff/3600000)} год тому`;
+            else seenTxt = new Date(pData.lastSeen).toLocaleDateString(currentLang);
+            statusHtml = `<small style="color:var(--text-muted); font-size:11px;">був(ла) ${seenTxt}</small>`;
+        } else {
+            statusHtml = '<small style="color:var(--text-muted); font-size:11px;">офлайн</small>';
+        }
+    }
+    chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${escapeHTML(getVisibleName(currentActiveChatPartner))} ${statusHtml}</span>`;
+}
+
 function openChatWith(username) { 
     currentActiveChatPartner = username; const roomSorted = [myNick, username].sort(); currentRoom = `room_${roomSorted[0]}_${roomSorted[1]}`; 
     document.body.classList.add('chat-opened');
     chatPlaceholder.style.display = 'none'; chatArea.style.display = 'flex'; 
-    const isOnline = onlineUsers.includes(username);
-    chatTitleText.innerHTML = `${getAvatarHTML(username)} <span>${escapeHTML(getVisibleName(username))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`;
+    updateChatTitle();
     const cleanUrl = window.location.pathname + '?auth=' + (urlParams.get('auth') || '') + '&chat=' + username; window.history.pushState({}, "", cleanUrl);
     socket.emit('request_history', { room: currentRoom });
     socket.emit('request_profile', { username: username });
@@ -924,9 +964,11 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
     const li = document.createElement('li'); if (msg.from === myNick) li.className = 'my-msg';
     if (['image', 'sticker', 'audio', 'video_circle'].includes(msg.type)) { li.classList.add('msg-transparent'); }
 
-    if (msg.forwardedFrom) { const fwdDiv = document.createElement('div');
+    if (msg.forwardedFrom) { 
+        const fwdDiv = document.createElement('div');
         fwdDiv.className = 'forward-header'; fwdDiv.textContent = `↪️ Переслано від: ${msg.forwardedFrom}`;
-        li.appendChild(fwdDiv); }
+        li.insertBefore(fwdDiv, li.firstChild); 
+    }
 
     if (msg.replyTo) {
         const originalMsg = savedMessages[currentRoom]?.find(m => m.id === msg.replyTo);
@@ -1073,7 +1115,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
         } catch(e) { li.textContent = 'Помилка завантаження документу'; }
     } else {
         const textNode = document.createElement('span');
-        textNode.innerHTML = escapeHTML(msg.text) + (msg.edited ? ' <small style="opacity:0.6; font-size:10px; margin-left:4px;">(змінено)</small>' : ''); li.appendChild(textNode);
+        textNode.innerHTML = escapeHTML(msg.text).replace(/\n/g, '<br>') + (msg.edited ? ' <small style="opacity:0.6; font-size:10px; margin-left:4px;">(змінено)</small>' : ''); li.appendChild(textNode);
     }
 
     const metaLine = document.createElement('div'); metaLine.className = 'msg-meta-line';
@@ -1138,6 +1180,12 @@ function toggleMultiSelectMode() {
 }
 
 window.toggleMessageSelection = function(cb) {
+    const msgNode = cb.closest('.msg-container');
+    if (msgNode && !msgNode.classList.contains('my-wrapper')) {
+        alert("Ви можете видаляти лише власні повідомлення!");
+        cb.checked = false;
+        return;
+    }
     if(cb.checked) { selectedMessages.add(cb.value); } else { selectedMessages.delete(cb.value); }
     document.getElementById('multi-select-count').innerText = selectedMessages.size;
 };
@@ -1231,6 +1279,16 @@ messagesContainer.onscroll = () => {
 document.getElementById('form').onsubmit = (e) => { 
     e.preventDefault();
     const val = input.value.trim(); if (!val || !currentRoom) return;
+
+    // --- КЛІЄНТСЬКИЙ АНТИСПАМ ---
+    const now = Date.now();
+    myMessageTimestamps = myMessageTimestamps.filter(t => now - t < 3000);
+    if (myMessageTimestamps.length >= 4) {
+        alert("Антиспам: Занадто багато повідомлень! Зачекайте пару секунд.");
+        return;
+    }
+    myMessageTimestamps.push(now);
+
     if (editTargetMsgId) { socket.emit('edit_message', { room: currentRoom, msgId: editTargetMsgId, newText: val }); executeLocalEdit(editTargetMsgId, val); cancelAction(); return; }
     
     const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -1266,7 +1324,8 @@ function showContextMenu(e, options) {
 }
 
 document.onclick = (e) => { 
-    if(!e.target.closest('#btn-sticker') && !e.target.closest('#sticker-menu')) {
+    // Виправлення багу зі зникненням стікерів
+    if(!e.target.closest('.attachment-item-btn') && !e.target.closest('#sticker-menu') && !e.target.closest('#btn-sticker')) {
         if(stickerMenu.classList.contains('active')) { stickerMenu.classList.remove('active'); emitActivity('none'); }
     }
     if(!e.target.closest('.search-trigger-btn') && !e.target.closest('#chat-options-menu') && !e.target.closest('.search-container')) {
@@ -1282,13 +1341,20 @@ document.onclick = (e) => {
 };
 
 let myPeer = null; let localStream = null; let currentCall = null; let isCurrentCallVideo = false;
+let rtcConfig = null;
+
+socket.on('rtc_config', (config) => { 
+    rtcConfig = config; 
+    if (myNick && myNick !== 'Анонім') { initPeerJS(myNick); }
+});
 
 function initPeerJS(username) {
     if (myPeer) return; 
     try {
         if (typeof Peer === 'undefined') return;
+        // Використовуємо налаштування з сервера для з'єднання через інтернет (TURN-сервери)
         myPeer = new Peer(username, {
-            config: {
+            config: rtcConfig || {
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' }
@@ -1412,7 +1478,7 @@ setInterval(() => {
     if (myNick && myNick !== 'Анонім') { socket.emit('online_ping', { username: myNick }); }
 }, 15000);
 
-socket.on('online_list', (users) => { onlineUsers = users; applyLanguage(); if (myNick && myNick !== 'Анонім') { initPeerJS(myNick); } });
+socket.on('online_list', (users) => { onlineUsers = users; applyLanguage(); });
 socket.on('contacts_synced', (serverChats) => { if (Array.isArray(serverChats)) { activeChats = serverChats; localStorage.setItem(getStorageKey('burmalda_chat_list'), JSON.stringify(activeChats)); renderChatsList(); } });
 socket.on('user_blocked_you', (data) => { if (data.room === currentRoom && data.blocked) { input.disabled = true; input.placeholder = translations[currentLang].blockedMeText || "Цей користувач вас заблокував."; button.disabled = true; } });
 
@@ -1517,8 +1583,7 @@ socket.on('profile_broadcast', (profileUpdate) => {
     localProfiles[profileUpdate.username] = { ...localProfiles[profileUpdate.username], ...profileUpdate.data }; 
     localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles)); 
     if (profileUpdate.username === currentActiveChatPartner || profileUpdate.username === myNick) { 
-        const isOnline = onlineUsers.includes(currentActiveChatPartner);
-        if (currentActiveChatPartner) { chatTitleText.innerHTML = `${getAvatarHTML(currentActiveChatPartner)} <span>${escapeHTML(getVisibleName(currentActiveChatPartner))} ${isOnline ? '<small style="color:#4cd964; font-size:11px;">●</small>' : ''}</span>`; }
+        updateChatTitle();
     } renderChatsList(); 
 });
 
