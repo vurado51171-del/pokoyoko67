@@ -768,16 +768,36 @@ let recordTimerInterval;
 let recordSeconds = 0;
 let currentFacingMode = 'user';
 let currentLocalMediaStream = null;
-const audioConstraints = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+
+// Функція-помічник для стабільного доступу до медіа (особливо на ПК)
+async function getRobustMediaStream(isVideo) {
+    try {
+        // Спочатку пробуємо ідеальні налаштування
+        return await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: isVideo ? { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } } : false
+        });
+    } catch (e1) {
+        console.warn("Основні параметри камери не спрацювали, пробуємо базові:", e1);
+        try {
+            // Фолбек для ПК: без жорстких параметрів
+            return await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: isVideo
+            });
+        } catch (e2) {
+            console.error("Помилка доступу до медіа:", e2);
+            throw e2;
+        }
+    }
+}
 
 async function startMediaRecording(type) {
     try {
         emitActivity(type === 'video_circle' ? 'recording_video' : 'recording_audio');
         currentFacingMode = 'user'; 
         
-        const constraints = type === 'video_circle' ?
-        { video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } }, audio: audioConstraints } : { audio: audioConstraints };
-        currentLocalMediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentLocalMediaStream = await getRobustMediaStream(type === 'video_circle');
         const overlay = document.getElementById('record-overlay'); 
         overlay.style.display = 'flex';
         
@@ -807,7 +827,7 @@ async function startMediaRecording(type) {
         mediaRecorder.onstop = () => {
             if (window.isSwitchingCamera) return;
             clearInterval(recordTimerInterval);
-            currentLocalMediaStream.getTracks().forEach(t => t.stop());
+            if(currentLocalMediaStream) currentLocalMediaStream.getTracks().forEach(t => t.stop());
             previewVideo.srcObject = null; previewVideo.classList.remove('recording'); previewAudioIcon.classList.remove('recording');
             
             if (!window.cancelCurrentRecord && recordedChunks.length > 0) {
@@ -820,7 +840,7 @@ async function startMediaRecording(type) {
             closeRecordUI(); emitActivity('none');
         };
         mediaRecorder.start();
-    } catch(e) { alert('Помилка доступу до камери/мікрофона'); console.error(e); closeRecordUI(); emitActivity('none'); }
+    } catch(e) { alert('Помилка доступу до камери/мікрофона: ' + e.message); console.error(e); closeRecordUI(); emitActivity('none'); }
 }
 
 async function switchRecordCamera() {
@@ -832,7 +852,9 @@ async function switchRecordCamera() {
         const oldVideoTrack = currentLocalMediaStream.getVideoTracks()[0];
         if (oldVideoTrack) oldVideoTrack.stop(); 
 
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 480 }, height: { ideal: 480 } }, audio: false });
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: currentFacingMode } }, audio: false })
+            .catch(e => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+        
         const newVideoTrack = newStream.getVideoTracks()[0];
         
         currentLocalMediaStream.removeTrack(oldVideoTrack);
@@ -903,7 +925,10 @@ function executeForward(targetUser) {
     if(messageToForward.pollSettings) msgPayload.pollSettings = messageToForward.pollSettings;
     if(messageToForward.votes) msgPayload.votes = messageToForward.votes;
 
-    if (!isAnon) { msgPayload.forwardedFrom = getVisibleName(messageToForward.from); }
+    if (!isAnon) { 
+        msgPayload.forwardedFrom = getVisibleName(messageToForward.from); 
+        msgPayload.forwardedFromId = messageToForward.from; // Зберігаємо ID оригінального автора
+    }
 
     if (!activeChats.includes(targetUser)) { activeChats.push(targetUser); saveActiveChats(); }
     if (!savedMessages[targetRoom]) savedMessages[targetRoom] = []; savedMessages[targetRoom].push(msgPayload); safeSaveHistory();
@@ -959,14 +984,30 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
 
     const liWrapper = document.createElement('div'); liWrapper.className = `msg-container ${msg.from === myNick ? 'my-wrapper' : ''}`; liWrapper.id = `msg-item-${msg.id}`;
     
-    const checkboxHtml = `<input type="checkbox" class="msg-checkbox" value="${msg.id}" onchange="toggleMessageSelection(this)">`;
-    liWrapper.innerHTML += checkboxHtml;
+    // Відображаємо чекбокси тільки для своїх повідомлень
+    if (msg.from === myNick) {
+        const checkboxHtml = `<input type="checkbox" class="msg-checkbox" value="${msg.id}" onchange="toggleMessageSelection(this)">`;
+        liWrapper.innerHTML += checkboxHtml;
+    }
+
     const li = document.createElement('li'); if (msg.from === myNick) li.className = 'my-msg';
     if (['image', 'sticker', 'audio', 'video_circle'].includes(msg.type)) { li.classList.add('msg-transparent'); }
 
     if (msg.forwardedFrom) { 
         const fwdDiv = document.createElement('div');
-        fwdDiv.className = 'forward-header'; fwdDiv.textContent = `↪️ Переслано від: ${msg.forwardedFrom}`;
+        fwdDiv.className = 'forward-header'; 
+        
+        if (msg.forwardedFromId) {
+            fwdDiv.innerHTML = `↪️ Переслано від: <span class="forward-link" style="cursor:pointer; text-decoration:underline;">${escapeHTML(msg.forwardedFrom)}</span>`;
+            fwdDiv.querySelector('.forward-link').onclick = (e) => {
+                e.stopPropagation();
+                if (msg.forwardedFromId === myNick) { alert(translations[currentLang].selfChatError); return; }
+                if (!activeChats.includes(msg.forwardedFromId)) { activeChats.push(msg.forwardedFromId); saveActiveChats(); }
+                openChatWith(msg.forwardedFromId);
+            };
+        } else {
+            fwdDiv.textContent = `↪️ Переслано від: ${msg.forwardedFrom}`;
+        }
         li.insertBefore(fwdDiv, li.firstChild); 
     }
 
@@ -1140,7 +1181,11 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
     li.onclick = (e) => { 
         if(isMultiSelectMode) {
             e.stopPropagation();
-            const cb = liWrapper.querySelector('.msg-checkbox'); cb.checked = !cb.checked; toggleMessageSelection(cb);
+            const cb = liWrapper.querySelector('.msg-checkbox'); 
+            if(cb) { // Запобігаємо помилкам при кліку на чуже повідомлення
+                cb.checked = !cb.checked; 
+                toggleMessageSelection(cb);
+            }
             return;
         }
         e.stopPropagation();
@@ -1167,7 +1212,10 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
     }; 
 
     liWrapper.appendChild(li); messagesContainer.appendChild(liWrapper); renderReactionsUI(msg.id, msg.reactions, reactionsHolder);
-    if(selectedMessages.has(msg.id)) { liWrapper.querySelector('.msg-checkbox').checked = true; }
+    if(selectedMessages.has(msg.id)) { 
+        const cb = liWrapper.querySelector('.msg-checkbox');
+        if(cb) cb.checked = true; 
+    }
 }
 
 function toggleMultiSelectMode() {
@@ -1180,12 +1228,6 @@ function toggleMultiSelectMode() {
 }
 
 window.toggleMessageSelection = function(cb) {
-    const msgNode = cb.closest('.msg-container');
-    if (msgNode && !msgNode.classList.contains('my-wrapper')) {
-        alert("Ви можете видаляти лише власні повідомлення!");
-        cb.checked = false;
-        return;
-    }
     if(cb.checked) { selectedMessages.add(cb.value); } else { selectedMessages.delete(cb.value); }
     document.getElementById('multi-select-count').innerText = selectedMessages.size;
 };
@@ -1352,7 +1394,6 @@ function initPeerJS(username) {
     if (myPeer) return; 
     try {
         if (typeof Peer === 'undefined') return;
-        // Використовуємо налаштування з сервера для з'єднання через інтернет (TURN-сервери)
         myPeer = new Peer(username, {
             config: rtcConfig || {
                 'iceServers': [
@@ -1382,7 +1423,7 @@ function initPeerJS(username) {
 
                 try {
                     currentFacingMode = 'user';
-                    localStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: {facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } } });
+                    localStream = await getRobustMediaStream(isCurrentCallVideo);
                     document.getElementById('local-video').srcObject = localStream;
                     call.answer(localStream);
                     call.on('stream', (remoteStream) => { document.getElementById('call-status-text').textContent = 'Розмова...'; document.getElementById('remote-video').srcObject = remoteStream; });
@@ -1407,7 +1448,7 @@ async function startCall(isVideo) {
     document.getElementById('call-video-container').style.display = isVideo ? 'flex' : 'none';
     try {
         currentFacingMode = 'user';
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: isVideo ? {facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } } : false });
+        localStream = await getRobustMediaStream(isVideo);
         document.getElementById('local-video').srcObject = localStream;
         currentCall = myPeer.call(currentActiveChatPartner, localStream);
         currentCall.on('stream', (remoteStream) => {
@@ -1416,7 +1457,7 @@ async function startCall(isVideo) {
             document.getElementById('remote-video').srcObject = remoteStream;
         });
         currentCall.on('close', () => { endCall(false); });
-    } catch(e) { alert('Помилка доступу до камери або мікрофона'); endCall(true); }
+    } catch(e) { alert('Помилка доступу до камери або мікрофона: ' + e.message); endCall(true); }
 }
 
 async function switchCallCamera() {
@@ -1425,7 +1466,10 @@ async function switchCallCamera() {
     try {
         const oldVideoTrack = localStream.getVideoTracks()[0];
         if (oldVideoTrack) oldVideoTrack.stop();
-        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 } }, audio: false });
+        
+        const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: currentFacingMode } }, audio: false })
+            .catch(e => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+            
         const newVideoTrack = newStream.getVideoTracks()[0];
         
         localStream.removeTrack(oldVideoTrack);
