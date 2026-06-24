@@ -126,3 +126,4 @@ window.showGroupMemberContextMenu = function(e, targetUser, groupId) {
         showContextMenu(e, options); // Вызов существующей функции из script.js
     }
 }
+ 
