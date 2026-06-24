@@ -18,7 +18,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 const ALLOW_VOICE_EFFECTS = false; // Якщо FALSE — сервер повністю блокує та вирізає зміну голосу!
 
 // Посилання на твій розгорнутий Google Apps Script
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzG-wSZHXDrwIEuCwwYJLTLwhHSn9P28H6wyLtgDFQxrZ80kDpxGtqXytLle3aXLGzeMQ/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXBhB0gUudmya00QTzlsYPsxTTPlds04wbN7te0555w3RTvseg3YMYlRENJasaXHFNRg/exec";
 
 // Дані для стабільних WebRTC дзвінків від Metered.ca
 const METERED_RTC_CONFIG = {
