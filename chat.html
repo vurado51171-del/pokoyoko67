@@ -753,7 +753,7 @@ margin-top:15px;" onclick="sendPoll()">Надіслати опитування</
         <div class="modal-title"><span>⏱️ Налаштування таймера</span><button class="modal-close" onclick="closeTimerModal()">&times;</button></div>
         <label style="display:flex;
 align-items:center; gap:8px; margin-bottom:10px; cursor:pointer;">
-            <input type="radio" name="timer_mode" value="scheduled" checked> Відправити пізніше
+            <input type="radio" name="timer_mode" value="scheduled" checked> Відтворити пізніше
         </label>
         <input type="datetime-local" id="scheduled-time-input" class="profile-name-input" style="margin-bottom:20px;">
         <label style="display:flex;
@@ -924,6 +924,50 @@ background: var(--bg-input);">
         </div>
     </div>
 </div>
+
+<!-- ========================================================== -->
+<!-- НОВІ МОДАЛКИ ДЛЯ ГРУП ТА КАНАЛІВ (Які додають працездатність group.js) -->
+<!-- ========================================================== -->
+<div class="modal-overlay" id="create-group-modal">
+    <div class="modal-content">
+        <div class="modal-title">
+            <span>👥 Створити групу чи канал</span>
+            <button class="modal-close" onclick="document.getElementById('create-group-modal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="account-property">
+            <label>Назва групи / каналу:</label>
+            <input type="text" id="group-name-input" class="profile-name-input" placeholder="Введіть назву...">
+        </div>
+        <div class="account-property">
+            <label>Оберіть учасників із контактів:</label>
+            <div id="group-select-users-list" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 5px; background: var(--bg-input); display: flex; flex-direction: column; gap: 5px;">
+                <!-- Сюди group.js рендеритиме користувачів для вибору -->
+            </div>
+        </div>
+        <button class="settings-logout-btn" style="background: var(--accent); margin-top: 10px;" id="btn-submit-create-group">Створити</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="group-settings-modal">
+    <div class="modal-content">
+        <div class="modal-title">
+            <span>⚙️ Налаштування групи</span>
+            <button class="modal-close" onclick="document.getElementById('group-settings-modal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="account-property">
+            <span id="group-info-name" style="font-weight: bold; font-size: 16px;">Назва: ...</span>
+        </div>
+        <div class="account-property">
+            <label>Учасники чату:</label>
+            <div id="group-current-members" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+                <!-- Тут відображатимуться поточні учасники -->
+            </div>
+        </div>
+        <button class="upload-btn" style="width: 100%; margin-bottom: 10px;" id="btn-group-add-member">+ Додати учасника</button>
+        <button class="settings-logout-btn" style="background: var(--danger); margin-top: 5px;" id="btn-leave-group">Залишити групу</button>
+    </div>
+</div>
+<!-- ========================================================== -->
 
 <div class="context-menu" id="global-context-menu"></div>
 
