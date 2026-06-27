@@ -18,7 +18,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 const ALLOW_VOICE_EFFECTS = false; // Якщо FALSE — сервер повністю блокує та вирізає зміну голосу!
 
 // Посилання на твій розгорнутий Google Apps Script
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXBhB0gUudmya00QTzlsYPsxTTPlds04wbN7te0555w3RTvseg3YMYlRENJasaXHFNRg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDPbd2dYEJmsECYI5Uc-lbwB9wL5ffM6zSkWcTOnPAhLaZUEP5C3Gbv_ui8MtaeLFcXQ/exec";
 
 // Дані для стабільних WebRTC дзвінків від Metered.ca
 const METERED_RTC_CONFIG = {
@@ -40,7 +40,6 @@ const METERED_RTC_CONFIG = {
 let userProfiles = {};
 let messagesDatabase = {};
 let activeConnections = {};
-let groupsAndChannels = {}; // ДОДАНО: Сховище для груп та каналів
 const userRateLimits = {}; // Для серверного антиспаму
 
 // --- ЗАВАНТАЖЕННЯ БАЗИ ДАНИХ ---
@@ -52,29 +51,26 @@ function loadDatabase() {
                 const parsed = JSON.parse(rawData);
                 messagesDatabase = parsed.messagesDatabase || {};
                 userProfiles = parsed.userProfiles || {};
-                groupsAndChannels = parsed.groupsAndChannels || {}; // ДОДАНО
                 
                 if (!messagesDatabase.scheduled) messagesDatabase.scheduled = [];
-                console.log(`[БД] Успішно завантажено. Користувачів: ${Object.keys(userProfiles).length}, Груп/Каналів: ${Object.keys(groupsAndChannels).length}`);
+                console.log(`[БД] Успішно завантажено. Користувачів: ${Object.keys(userProfiles).length}`);
             }
         } else {
             messagesDatabase = { scheduled: [] };
             userProfiles = {};
-            groupsAndChannels = {};
             saveDatabase();
         }
     } catch (e) {
         console.error('[БД] Помилка завантаження файлу бази:', e.message);
         messagesDatabase = { scheduled: [] };
         userProfiles = {};
-        groupsAndChannels = {};
     }
 }
 
-// --- СИНХРОННЕ ЗБЕРЕЖЕННЯ ДАНИХ ---
+// --- СИНХРОННЕ ЗБЕРЕЖЕННЯ ДАНИХ ДЛЯ УНИКНЕННЯ КОНФЛІКТІВ ЗАПИСУ ---
 function saveDatabase() {
     try {
-        const dataToSave = { messagesDatabase, userProfiles, groupsAndChannels }; // ДОДАНО
+        const dataToSave = { messagesDatabase, userProfiles };
         fs.writeFileSync(DB_FILE, JSON.stringify(dataToSave, null, 2), 'utf8');
     } catch (err) {
         console.error('[БД] Помилка запису на диск:', err.message);
@@ -87,15 +83,18 @@ loadDatabase();
 app.use(express.static(__dirname));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ==========================================
+// ВИПРАВЛЕНИЙ РОУТИНГ СТОРІНОК (Більше не зациклює!)
+// ==========================================
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html')); // Головна сторінка входу (Логін)
 });
 
 app.get('/chat', (req, res) => {
-    res.sendFile(path.join(__dirname, 'chat.html'));
+    res.sendFile(path.join(__dirname, 'chat.html')); // Сторінка самого чату
 });
 
-// --- ПЕРЕВІРКА ТА ВІДПРАВКА ВІДКЛАДЕНИХ ПОВІДОМЛЕНЬ ---
+// --- ПЕРЕВІРКА ТА ВІДПРАВКА ВІДКЛАДЕНИХ ПОВІДОМЛЕНЬ ЗА ТАЙМЕРОМ ---
 setInterval(() => {
     const now = Date.now();
     if (messagesDatabase.scheduled && messagesDatabase.scheduled.length > 0) {
@@ -110,59 +109,34 @@ setInterval(() => {
                 if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
                 messagesDatabase[msg.room].push(msg);
 
-                const isGroupChat = groupsAndChannels[msg.room] !== undefined;
-
-                if (!isGroupChat) {
-                    [msg.from, msg.to].forEach(user => {
-                        if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
-                        if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
-                        const partner = user === msg.from ? msg.to : msg.from;
-                        if (!userProfiles[user].chatList.includes(partner)) {
-                            userProfiles[user].chatList.push(partner);
-                        }
-                    });
-
-                    if (activeConnections[msg.to]) {
-                        io.to(activeConnections[msg.to]).emit('restore_chats', userProfiles[msg.to].chatList);
+                [msg.from, msg.to].forEach(user => {
+                    if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
+                    if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                    const partner = user === msg.from ? msg.to : msg.from;
+                    if (!userProfiles[user].chatList.includes(partner)) {
+                        userProfiles[user].chatList.push(partner);
                     }
-                    if (activeConnections[msg.from]) {
-                        io.to(activeConnections[msg.from]).emit('restore_chats', userProfiles[msg.from].chatList);
-                    }
-                }
+                });
 
                 io.to(msg.room).emit('chat_message', msg);
+                
+                if (activeConnections[msg.to]) {
+                    io.to(activeConnections[msg.to]).emit('restore_chats', userProfiles[msg.to].chatList);
+                }
+                if (activeConnections[msg.from]) {
+                    io.to(activeConnections[msg.from]).emit('restore_chats', userProfiles[msg.from].chatList);
+                }
             });
             saveDatabase();
         }
     }
 }, 1000);
 
-// --- СИНХРОНІЗАЦІЯ ГРУП (ДОПОМІЖНА ФУНКЦІЯ) ---
-function syncUserCGs(username, socketObj = null) {
-    if (!activeConnections[username] && !socketObj) return;
-    const userCGs = {};
-    const targetSocketId = socketObj ? socketObj.id : activeConnections[username];
-    const actualSocket = socketObj || io.sockets.sockets.get(targetSocketId);
-
-    Object.keys(groupsAndChannels).forEach(cgId => {
-        const cg = groupsAndChannels[cgId];
-        if (cg.members.includes(username) || cg.owner === username) {
-            userCGs[cgId] = cg;
-            if (actualSocket) {
-                actualSocket.join(cgId); // Автоматично приєднуємо сокет до кімнати групи
-            }
-        }
-    });
-
-    if (targetSocketId) {
-        io.to(targetSocketId).emit('cg_sync', userCGs);
-    }
-}
-
 // --- РОБОТА З СОКЕТАМИ (SOCKET.IO) ---
 io.on('connection', (socket) => {
     let sessionUser = null;
 
+    // Вхід користувача в мережу (Online Ping)
     socket.on('online_ping', (data) => {
         if (!data || !data.username) return;
         sessionUser = data.username;
@@ -171,7 +145,7 @@ io.on('connection', (socket) => {
         if (!userProfiles[sessionUser]) {
             userProfiles[sessionUser] = { chatList: [], displayName: sessionUser, bio: '', avatar: '', banner: '', glowColor: 'blue', lastSeen: Date.now() };
         }
-        userProfiles[sessionUser].lastSeen = Date.now(); 
+        userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус
 
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
 
@@ -181,76 +155,12 @@ io.on('connection', (socket) => {
         socket.emit('restore_chats', userProfiles[sessionUser].chatList);
         socket.emit('rtc_config', METERED_RTC_CONFIG);
 
-        // ДОДАНО: Синхронізація каналів/груп для користувача
-        syncUserCGs(sessionUser, socket);
-
         Object.keys(userProfiles).forEach(username => {
             socket.emit('profile_broadcast', { username, data: userProfiles[username] });
         });
     });
 
-    // ==========================================
-    // ЛОГІКА КАНАЛІВ ТА ГРУП
-    // ==========================================
-    
-    // Створення нової групи/каналу
-    socket.on('cg_create', (payload) => {
-        if (!payload || !payload.id) return;
-        groupsAndChannels[payload.id] = payload;
-        saveDatabase();
-        
-        // Оновлюємо дані для всіх учасників
-        payload.members.forEach(member => {
-            syncUserCGs(member);
-        });
-    });
-
-    // Модерація в групі/каналі
-    socket.on('cg_moderate', (data) => {
-        const { cgId, actor, target, action, durationMs, newRole } = data;
-        const cg = groupsAndChannels[cgId];
-        if (!cg) return;
-
-        switch (action) {
-            case 'mute':
-                cg.muted[target] = Date.now() + durationMs;
-                break;
-            case 'unmute':
-                delete cg.muted[target];
-                break;
-            case 'kick':
-                cg.members = cg.members.filter(m => m !== target);
-                ['admins', 'seniorMods', 'juniorMods'].forEach(roleArray => {
-                    cg[roleArray] = cg[roleArray].filter(m => m !== target);
-                });
-                break;
-            case 'ban':
-                cg.banned[target] = durationMs ? Date.now() + durationMs : null;
-                cg.members = cg.members.filter(m => m !== target);
-                ['admins', 'seniorMods', 'juniorMods'].forEach(roleArray => {
-                    cg[roleArray] = cg[roleArray].filter(m => m !== target);
-                });
-                break;
-            case 'promote':
-            case 'demote':
-                ['admins', 'seniorMods', 'juniorMods'].forEach(roleArray => {
-                    cg[roleArray] = cg[roleArray].filter(m => m !== target);
-                });
-                if (newRole === 'admin') cg.admins.push(target);
-                else if (newRole === 'seniorMod') cg.seniorMods.push(target);
-                else if (newRole === 'juniorMod') cg.juniorMods.push(target);
-                break;
-        }
-
-        saveDatabase();
-        cg.members.forEach(member => syncUserCGs(member));
-        if (['kick', 'ban'].includes(action)) syncUserCGs(target); // Щоб видалити з UI у жертви
-    });
-
-    // ==========================================
-    // СТАНДАРТНІ ФУНКЦІЇ (Діалоги, Пошук тощо)
-    // ==========================================
-
+    // Маршрутизація WebRTC сигналів для дзвінків
     socket.on('webrtc_signal', (data) => {
         if (!data || !data.target || !sessionUser) return;
         const targetSocketId = activeConnections[data.target];
@@ -259,6 +169,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Запит профілю конкретного користувача
     socket.on('request_profile', (data) => {
         if (!data || !data.username) return;
         const uProfile = userProfiles[data.username];
@@ -267,6 +178,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Перевірка існування користувача через локальну базу та Google Apps Script
     socket.on('check_user_exists', async (data) => {
         if (!data || !data.username) return;
         let exists = !!userProfiles[data.username];
@@ -308,6 +220,7 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Локальний + Хмарний пошук користувачів
     socket.on('search_users', async (data) => {
         if (!data || typeof data.query !== 'string') return;
         const query = data.query.toLowerCase().trim();
@@ -366,6 +279,7 @@ io.on('connection', (socket) => {
         socket.emit('search_results', { query: data.query, results });
     });
 
+    // Глобальний пошук повідомлень та людей всередині клієнта
     socket.on('global_search', (data) => {
         if (!data || typeof data.query !== 'string' || !sessionUser) return;
         const query = data.query.toLowerCase().trim();
@@ -386,7 +300,7 @@ io.on('connection', (socket) => {
         });
 
         Object.keys(messagesDatabase).forEach(room => {
-            if (room.includes(sessionUser) || groupsAndChannels[room]) { // Додано пошук в групах
+            if (room.includes(sessionUser)) {
                 const roomMsgs = messagesDatabase[room] || [];
                 roomMsgs.forEach(msg => {
                     if (msg && msg.text && typeof msg.text === 'string' && msg.text.toLowerCase().includes(query)) {
@@ -400,6 +314,7 @@ io.on('connection', (socket) => {
         socket.emit('global_search_results', { query: data.query, users: foundUsers, messages: foundMessages });
     });
 
+    // Оновлення розширених налаштувань профілю (Кастомізація)
     socket.on('update_profile', (data) => {
         if (!sessionUser || !data) return;
         if (!userProfiles[sessionUser]) userProfiles[sessionUser] = { chatList: [] };
@@ -415,6 +330,7 @@ io.on('connection', (socket) => {
         io.emit('profile_broadcast', { username: sessionUser, data: userProfiles[sessionUser] });
     });
 
+    // Вхід користувача в кімнату чату
     socket.on('join_room', (data) => {
         if (!data || !data.room) return;
         socket.join(data.room);
@@ -424,23 +340,27 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Запит історії листування
     socket.on('request_history', (data) => {
         if (!data || !data.room) return;
         socket.emit('room_history', messagesDatabase[data.room] || []);
     });
 
+    // Опрацювання повідомлень + ЗАЛІЗОБЕТОННИЙ КОНТРОЛЬ ЗМІНИ ГОЛОСУ + АНТИСПАМ
     socket.on('chat_message', (msg) => {
         if (!msg || !msg.room || !msg.from || !msg.to) return;
 
+        // --- СЕРВЕРНИЙ АНТИСПАМ ---
         const now = Date.now();
         if (!userRateLimits[msg.from]) userRateLimits[msg.from] = [];
         userRateLimits[msg.from] = userRateLimits[msg.from].filter(t => now - t < 3000);
         if (userRateLimits[msg.from].length >= 5) {
             console.log(`[Антиспам] Блокування повідомлень від користувача: ${msg.from}`);
-            return; 
+            return; // Ігноруємо спам
         }
         userRateLimits[msg.from].push(now);
 
+        // === СЕРВЕРНА ПЕРЕВІРКА: Якщо ефекти вимкнені, видаляємо модифікацію голосу ===
         if (!ALLOW_VOICE_EFFECTS) {
             if (msg.voiceEffect || msg.audioEffect) {
                 console.log(`[Сервер] Заблоковано несанкціоновану зміну голосу від: ${msg.from}`);
@@ -453,6 +373,7 @@ io.on('connection', (socket) => {
             }
         }
 
+        // Обробка відкладеного повідомлення
         if (msg.scheduledTime && new Date(msg.scheduledTime).getTime() > Date.now()) {
             if (!messagesDatabase.scheduled) messagesDatabase.scheduled = [];
             messagesDatabase.scheduled.push(msg);
@@ -463,6 +384,7 @@ io.on('connection', (socket) => {
         if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
         messagesDatabase[msg.room].push(msg);
 
+        // Таймер автовидалення секретних повідомлень
         if (msg.disappearTime && parseInt(msg.disappearTime) > 0) {
             setTimeout(() => {
                 if (messagesDatabase[msg.room]) {
@@ -473,34 +395,26 @@ io.on('connection', (socket) => {
             }, parseInt(msg.disappearTime) * 1000);
         }
 
-        const isGroupChat = groupsAndChannels[msg.room] !== undefined; // ОНОВЛЕНО: Перевірка на Групу
-
-        if (!isGroupChat) {
-            // Звичайна логіка 1-на-1
-            [msg.from, msg.to].forEach(user => {
-                if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
-                if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
-                const partner = user === msg.from ? msg.to : msg.from;
-                if (!userProfiles[user].chatList.includes(partner)) {
-                    userProfiles[user].chatList.push(partner);
-                }
-            });
-
-            saveDatabase();
-
-            io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
-            io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
-            
-            const targetSocketId = activeConnections[msg.to];
-            if (targetSocketId) {
-                io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
-                io.to(targetSocketId).emit('chat_message', msg);
+        // Синхронізація списків діалогів
+        [msg.from, msg.to].forEach(user => {
+            if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
+            if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+            const partner = user === msg.from ? msg.to : msg.from;
+            if (!userProfiles[user].chatList.includes(partner)) {
+                userProfiles[user].chatList.push(partner);
             }
-        } else {
-            // Якщо це група, зберігаємо і розсилаємо без додавання групи у список друзів
-            saveDatabase();
-        }
+        });
 
+        saveDatabase();
+
+        io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
+        io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
+        
+        const targetSocketId = activeConnections[msg.to];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
+            io.to(targetSocketId).emit('chat_message', msg);
+        }
         socket.to(msg.room).emit('chat_message', msg);
     });
 
@@ -508,8 +422,11 @@ io.on('connection', (socket) => {
         if (data && data.room) socket.to(data.room).emit('typing', data);
     });
 
+    // Передача статусів активності ("записує аудіо", "обирає стікер" і т.д.)
     socket.on('user_activity', (data) => {
-        if (data && data.room) socket.to(data.room).emit('user_activity', data);
+        if (data && data.room) {
+            socket.to(data.room).emit('user_activity', data);
+        }
     });
 
     socket.on('sync_chat_list', (data) => {
@@ -579,12 +496,14 @@ io.on('connection', (socket) => {
         io.to(data.room).emit('pin_message', { room: data.room, pinned: messagesDatabase[pinnedKey] });
     });
 
+    // Очищення історії чату для обох співрозмовників
     socket.on('clear_chat_history', (data) => {
         if (!data || !data.room) return;
         if (messagesDatabase[data.room]) {
             messagesDatabase[data.room] = [];
             saveDatabase();
         }
+        // Розсилаємо подію всім в кімнаті, щоб інтерфейс оновився миттєво
         io.to(data.room).emit('chat_history_cleared', { room: data.room });
     });
 
@@ -592,7 +511,7 @@ io.on('connection', (socket) => {
         if (sessionUser) {
             delete activeConnections[sessionUser];
             if (userProfiles[sessionUser]) {
-                userProfiles[sessionUser].lastSeen = Date.now();
+                userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус при виході
                 saveDatabase();
                 io.emit('profile_broadcast', { username: sessionUser, data: { lastSeen: userProfiles[sessionUser].lastSeen } });
             }
@@ -601,4 +520,4 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => console.log(`=== Сервер BurmaldaGram запущено з підтримкою Груп/Каналів на порту ${PORT} ===`));
+server.listen(PORT, () => console.log(`=== Сервер BurmaldaGram запущено без помилок на порту ${PORT} ===`));
