@@ -288,77 +288,50 @@ function openCGInfo(cgId) {
     modal.classList.add('active');
 }
 // ==========================================================================
-// ФІНАЛЬНА ПОВНА ІНТЕГРАЦІЯ КАНАЛІВ ТА ГРУП ДЛЯ BURMALDAGRAM (БЕЗ ВИДАЛЕННЯ КОДУ)
+// КОРЕКТНА ІНТЕГРАЦІЯ ТА ВІДКРИТТЯ КАНАЛІВ І ГРУП (ПІДЛАШТОВАНО ПІД СТРУКТУРУ)
 // ==========================================================================
 
 if (typeof socket !== 'undefined') {
-    // 1. Слухаємо оновлення груп від сервера та автоматично оновлюємо список чатів зліва
+    // Слухаємо сервер та оновлюємо локальну базу груп
     socket.on('cg_sync', (data) => {
         myGroupsAndChannels = data || {};
+        // Викликаємо перерендер списку чатів
         if (typeof renderChatsList === 'function') {
             renderChatsList();
         }
     });
-
-    // 2. Слухаємо історію повідомлень для груп/каналів
-    socket.on('chat_history', (data) => {
-        // Якщо зараз відкрита саме ця група — відображаємо її історію
-        if (currentCGView && data && data.room === currentCGView) {
-            const msgsContainer = document.getElementById('chat-messages');
-            if (!msgsContainer) return;
-            
-            msgsContainer.innerHTML = ''; // Очищаємо екран від старих повідомлень
-            
-            if (data.history && Array.isArray(data.history)) {
-                data.history.forEach(msg => {
-                    // Використовуємо твою стандартну функцію з script.js для красивого рендеру повідомлень
-                    if (typeof appendMessage === 'function') {
-                        appendMessage(msg);
-                    }
-                });
-                // Прокручуємо чат вниз до останнього повідомлення
-                msgsContainer.scrollTop = msgsContainer.scrollHeight;
-            }
-        }
-    });
-
-    // 3. Слухаємо нові вхідні повідомлення в реальному часі для груп
-    socket.on('new_msg', (msg) => {
-        if (currentCGView && msg && msg.room === currentCGView) {
-            if (typeof appendMessage === 'function') {
-                appendMessage(msg);
-                const msgsContainer = document.getElementById('chat-messages');
-                if (msgsContainer) msgsContainer.scrollTop = msgsContainer.scrollHeight;
-            }
-        }
-    });
 }
 
-// 4. Перехоплюємо і розширюємо функцію відображення списку чатів у бічній панелі
+// Перехоплюємо рендер чатів, щоб додати туди групи
 setTimeout(() => {
     if (typeof renderChatsList === 'function') {
         const originalRenderChatsList = renderChatsList;
 
         renderChatsList = function(...args) {
-            // Спочатку запускаємо твій стандартний рендер приватних чатів
+            // Спочатку виконуємо твій рідний рендер приватних чатів
             originalRenderChatsList(...args);
 
+            // Знаходимо твій список чатів (у тебе в HTML це id="chats-list")
             const sidebar = document.getElementById('chats-list');
             if (!sidebar) return;
 
-            // Додаємо кожну групу чи канал у ліву панель
+            // Рендеримо кожну групу та канал
             Object.entries(myGroupsAndChannels).forEach(([cgId, cgData]) => {
+                // Якщо вже є на екрані — пропускаємо, щоб не дублювати
                 if (document.getElementById(`cg-item-${cgId}`)) return;
 
                 const cgItem = document.createElement('div');
                 cgItem.id = `cg-item-${cgId}`;
-                cgItem.className = 'chat-item';
                 
+                // Використовуємо твої рідні класи для збереження стилів BurmaldaGram
+                cgItem.className = 'chat-item'; 
+                
+                // Перевіряємо, чи ця група зараз виділена як активна
                 if (currentCGView === cgId) {
                     cgItem.classList.add('active');
                 }
 
-                // Аватарка групи або гарний емодзі-значок у твоїх фірмових кольорах
+                // Генерація аватара
                 const icon = cgData.avatar 
                     ? `<img src="${cgData.avatar}" class="chat-avatar">` 
                     : `<div class="chat-avatar" style="background: rgba(0, 136, 204, 0.15); display:flex; align-items:center; justify-content:center; font-size:18px; color: var(--accent);">
@@ -375,90 +348,46 @@ setTimeout(() => {
                     </div>
                 `;
 
-                // КЛІК НА ГРУПУ: Повне відкриття інтерфейсу чату
+                // ОБРОБКА НАТИСКАННЯ: ВІДКРИТТЯ ЧАТУ ГРУПИ
                 cgItem.onclick = () => {
+                    // 1. Встановлюємо активну групу та скидаємо приватного партнера
                     currentCGView = cgId;
                     if (typeof currentChatPartner !== 'undefined') currentChatPartner = null;
 
-                    // Зміна активного класу підсвічування
+                    // 2. Змінюємо візуальне виділення (клас active)
                     document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
                     cgItem.classList.add('active');
 
-                    // Налаштовуємо шапку (Header) верхньої панелі чату під назву групи
+                    // 3. Оновлюємо шапку чату (назву та статус)
                     const titleEl = document.querySelector('.chat-header .chat-name') || document.getElementById('chat-title');
                     const statusEl = document.querySelector('.chat-header .chat-status');
                     
                     if (titleEl) titleEl.innerText = cgData.name;
-                    if (statusEl) statusEl.innerText = cgData.type === 'channel' ? 'публічний канал' : `${cgData.members ? cgData.members.length : 1} учасників`;
+                    if (statusEl) statusEl.innerText = cgData.type === 'channel' ? 'канал' : 'групова розмова';
 
-                    // Очищаємо вікно та відкриваємо головну робочу область чату
+                    // 4. Очищаємо поле повідомлень перед завантаженням історії
                     const msgsContainer = document.getElementById('chat-messages');
                     if (msgsContainer) msgsContainer.innerHTML = '';
 
+                    // 5. Показуємо головну панель чату (забираємо заглушку "Виберіть чат")
                     const mainChat = document.getElementById('main-chat') || document.querySelector('.main-chat');
                     const placeholder = document.getElementById('chat-placeholder') || document.querySelector('.chat-placeholder');
                     if (mainChat) mainChat.style.display = 'flex';
                     if (placeholder) placeholder.style.display = 'none';
 
-                    // Робимо запит до сервера на вхід в кімнату та отримання історії повідомлень спільноти
+                    // 6. Смикаємо сервер, щоб увійти в кімнату та отримати історію повідомлень груп
                     if (typeof socket !== 'undefined') {
                         socket.emit('join_room', { room: cgId });
                         socket.emit('request_history', { room: cgId });
                     }
                 };
 
-                // Ставимо групи на самий верх списку в бічній панелі
+                // Додаємо в самий початок твого списку чатів
                 sidebar.prepend(cgItem);
             });
         };
 
+        // Запускаємо первинний рендер
         originalRenderChatsList();
     }
-
-    // 5. Перехоплюємо функцію відправки повідомлень (sendMessage), щоб вона вміла відправляти в групи
-    if (typeof sendMessage === 'function') {
-        const originalSendMessage = sendMessage;
-        
-        sendMessage = function(...args) {
-            // Якщо зараз відкрита група чи канал — беремо керування на себе
-            if (currentCGView) {
-                const inputEl = document.getElementById('message-input');
-                if (!inputEl) return;
-                
-                const text = inputEl.value.trim();
-                if (!text) return;
-
-                // Перевіряємо права: чи може звичайний юзер писати в канал
-                const cg = myGroupsAndChannels[currentCGView];
-                if (cg && cg.type === 'channel') {
-                    const myRole = typeof getCGRole === 'function' ? getCGRole(currentCGView, myNick) : 'member';
-                    if (myRole !== 'owner' && (!cg.admins || !cg.admins.includes(myNick))) {
-                        alert("У каналах писати повідомлення можуть тільки адміністратори!");
-                        return;
-                    }
-                }
-
-                // Формуємо пакет повідомлення для групи відповідно до твоєї структури на сервері
-                const msgData = {
-                    id: 'msg_' + Date.now(),
-                    room: currentCGView,
-                    sender: myNick,
-                    text: text,
-                    timestamp: Date.now()
-                };
-
-                // Відправляємо через сокет на сервер
-                if (typeof socket !== 'undefined') {
-                    socket.emit('send_msg', msgData);
-                }
-
-                // Очищаємо поле вводу тексту
-                inputEl.value = '';
-                if (typeof autoResizeInput === 'function') autoResizeInput();
-            } else {
-                // Якщо відкритий звичайний приватний чат — працює твій стандартний sendMessage
-                originalSendMessage(...args);
-            }
-        };
-    }
-}, 800);
+}, 600);
