@@ -18,7 +18,7 @@ const DB_FILE = path.join(__dirname, 'database.json');
 const ALLOW_VOICE_EFFECTS = false; // Якщо FALSE — сервер повністю блокує та вирізає зміну голосу!
 
 // Посилання на твій розгорнутий Google Apps Script
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXBhB0gUudmya00QTzlsYPsxTTPlds04wbN7te0555w3RTvseg3YMYlRENJasaXHFNRg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDPbd2dYEJmsECYI5Uc-lbwB9wL5ffM6zSkWcTOnPAhLaZUEP5C3Gbv_ui8MtaeLFcXQ/exec";
 
 // Дані для стабільних WebRTC дзвінків від Metered.ca
 const METERED_RTC_CONFIG = {
@@ -521,4 +521,3 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => console.log(`=== Сервер BurmaldaGram запущено без помилок на порту ${PORT} ===`));
- 
