@@ -109,22 +109,38 @@ setInterval(() => {
                 if (!messagesDatabase[msg.room]) messagesDatabase[msg.room] = [];
                 messagesDatabase[msg.room].push(msg);
 
-                [msg.from, msg.to].forEach(user => {
-                    if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
-                    if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
-                    const partner = user === msg.from ? msg.to : msg.from;
-                    if (!userProfiles[user].chatList.includes(partner)) {
-                        userProfiles[user].chatList.push(partner);
-                    }
-                });
+                // Підтримка груп для відкладених повідомлень
+                if (msg.to && msg.to.startsWith('ht.')) {
+                    const groupMembers = (userProfiles[msg.to] && userProfiles[msg.to].members) || [msg.from];
+                    groupMembers.forEach(user => {
+                        if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
+                        if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                        if (!userProfiles[user].chatList.includes(msg.to)) {
+                            userProfiles[user].chatList.push(msg.to);
+                        }
+                        if (activeConnections[user]) {
+                            io.to(activeConnections[user]).emit('restore_chats', userProfiles[user].chatList);
+                        }
+                    });
+                    io.to(msg.room).emit('chat_message', msg);
+                } else {
+                    [msg.from, msg.to].forEach(user => {
+                        if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '' };
+                        if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                        const partner = user === msg.from ? msg.to : msg.from;
+                        if (!userProfiles[user].chatList.includes(partner)) {
+                            userProfiles[user].chatList.push(partner);
+                        }
+                    });
 
-                io.to(msg.room).emit('chat_message', msg);
-                
-                if (activeConnections[msg.to]) {
-                    io.to(activeConnections[msg.to]).emit('restore_chats', userProfiles[msg.to].chatList);
-                }
-                if (activeConnections[msg.from]) {
-                    io.to(activeConnections[msg.from]).emit('restore_chats', userProfiles[msg.from].chatList);
+                    io.to(msg.room).emit('chat_message', msg);
+                    
+                    if (activeConnections[msg.to]) {
+                        io.to(activeConnections[msg.to]).emit('restore_chats', userProfiles[msg.to].chatList);
+                    }
+                    if (activeConnections[msg.from]) {
+                        io.to(activeConnections[msg.from]).emit('restore_chats', userProfiles[msg.from].chatList);
+                    }
                 }
             });
             saveDatabase();
@@ -148,6 +164,15 @@ io.on('connection', (socket) => {
         userProfiles[sessionUser].lastSeen = Date.now(); // Оновлюємо статус
 
         if (!userProfiles[sessionUser].chatList) userProfiles[sessionUser].chatList = [];
+
+        // === ДОДАТКОВО: Автоматичне сканування та додавання груп, де користувач є учасником ===
+        Object.keys(userProfiles).forEach(id => {
+            if (id.startsWith('ht.') && userProfiles[id].members && userProfiles[id].members.includes(sessionUser)) {
+                if (!userProfiles[sessionUser].chatList.includes(id)) {
+                    userProfiles[sessionUser].chatList.push(id);
+                }
+            }
+        });
 
         saveDatabase();
 
@@ -184,7 +209,7 @@ io.on('connection', (socket) => {
         let exists = !!userProfiles[data.username];
         let profile = exists ? userProfiles[data.username] : null;
 
-        if (!exists && GOOGLE_SCRIPT_URL.startsWith('http')) {
+        if (!exists && GOOGLE_SCRIPT_URL.startsWith('http') && !data.username.startsWith('ht.')) {
             try {
                 const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=check&username=${encodeURIComponent(data.username)}`);
                 if (res.ok) {
@@ -215,7 +240,9 @@ io.on('connection', (socket) => {
                 bio: profile.bio || '',
                 banner: profile.banner || '',
                 glowColor: profile.glowColor || 'blue',
-                lastSeen: profile.lastSeen || null
+                lastSeen: profile.lastSeen || null,
+                members: profile.members || [], // Зберігаємо список учасників для груп
+                isGroup: profile.isGroup || data.username.startsWith('ht.') // Прапорець групи
             } : null
         });
     });
@@ -300,7 +327,7 @@ io.on('connection', (socket) => {
         });
 
         Object.keys(messagesDatabase).forEach(room => {
-            if (room.includes(sessionUser)) {
+            if (room.includes(sessionUser) || (userProfiles[room] && userProfiles[room].members && userProfiles[room].members.includes(sessionUser))) {
                 const roomMsgs = messagesDatabase[room] || [];
                 roomMsgs.forEach(msg => {
                     if (msg && msg.text && typeof msg.text === 'string' && msg.text.toLowerCase().includes(query)) {
@@ -395,27 +422,80 @@ io.on('connection', (socket) => {
             }, parseInt(msg.disappearTime) * 1000);
         }
 
-        // Синхронізація списків діалогів
-        [msg.from, msg.to].forEach(user => {
-            if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
-            if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
-            const partner = user === msg.from ? msg.to : msg.from;
-            if (!userProfiles[user].chatList.includes(partner)) {
-                userProfiles[user].chatList.push(partner);
+        // === РОЗУМНА СИНХРОНІЗАЦІЯ ДЛЯ ГРУП ТА КАНАЛІВ (ht.xxxxx) ===
+        if (msg.to.startsWith('ht.')) {
+            if (!userProfiles[msg.to]) {
+                userProfiles[msg.to] = { 
+                    displayName: msg.groupName || msg.to, 
+                    bio: msg.groupBio || '', 
+                    avatar: msg.groupAvatar || '', 
+                    banner: msg.groupBanner || '', 
+                    glowColor: msg.groupGlow || 'blue', 
+                    members: msg.members || [msg.from],
+                    isGroup: true 
+                };
             }
-        });
+            
+            // Якщо клієнт передав актуальний список учасників, оновлюємо його на сервері
+            if (msg.members && Array.isArray(msg.members)) {
+                userProfiles[msg.to].members = msg.members;
+            }
+            if (msg.groupName) userProfiles[msg.to].displayName = msg.groupName;
+            if (msg.groupBio) userProfiles[msg.to].bio = msg.groupBio;
+            if (msg.groupAvatar) userProfiles[msg.to].avatar = msg.groupAvatar;
+            if (msg.groupGlow) userProfiles[msg.to].glowColor = msg.groupGlow;
 
-        saveDatabase();
+            const groupMembers = userProfiles[msg.to].members || [msg.from];
+            
+            // Додаємо групу в chatList КОЖНОГО учасника, щоб вона миттєво з'являлася в бічній панелі
+            groupMembers.forEach(user => {
+                if (!userProfiles[user]) userProfiles[user] = { chatList: [], displayName: user, bio: '', avatar: '', banner: '', glowColor: 'blue', lastSeen: Date.now() };
+                if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                if (!userProfiles[user].chatList.includes(msg.to)) {
+                    userProfiles[user].chatList.push(msg.to);
+                }
+            });
 
-        io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
-        io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
-        
-        const targetSocketId = activeConnections[msg.to];
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
-            io.to(targetSocketId).emit('chat_message', msg);
+            saveDatabase();
+
+            // Транслюємо оновлені метадані групи (аватар, опис, сяйво)
+            io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
+
+            // Надсилаємо повідомлення та оновлений список чатів усім підключеним учасникам групи
+            groupMembers.forEach(user => {
+                const targetSocketId = activeConnections[user];
+                if (targetSocketId) {
+                    io.to(targetSocketId).emit('restore_chats', userProfiles[user].chatList);
+                    if (user !== msg.from) {
+                        io.to(targetSocketId).emit('chat_message', msg);
+                    }
+                }
+            });
+            
+            socket.to(msg.room).emit('chat_message', msg);
+        } else {
+            // Звичайна логіка синхронізації приватних чатів (1-на-1)
+            [msg.from, msg.to].forEach(user => {
+                if (!userProfiles[user]) userProfiles[user] = { chatList: [] };
+                if (!userProfiles[user].chatList) userProfiles[user].chatList = [];
+                const partner = user === msg.from ? msg.to : msg.from;
+                if (!userProfiles[user].chatList.includes(partner)) {
+                    userProfiles[user].chatList.push(partner);
+                }
+            });
+
+            saveDatabase();
+
+            io.emit('profile_broadcast', { username: msg.from, data: userProfiles[msg.from] });
+            io.emit('profile_broadcast', { username: msg.to, data: userProfiles[msg.to] });
+            
+            const targetSocketId = activeConnections[msg.to];
+            if (targetSocketId) {
+                io.to(targetSocketId).emit('restore_chats', userProfiles[msg.to].chatList);
+                io.to(targetSocketId).emit('chat_message', msg);
+            }
+            socket.to(msg.room).emit('chat_message', msg);
         }
-        socket.to(msg.room).emit('chat_message', msg);
     });
 
     socket.on('typing', (data) => {
@@ -503,8 +583,74 @@ io.on('connection', (socket) => {
             messagesDatabase[data.room] = [];
             saveDatabase();
         }
-        // Розсилаємо подію всім в кімнаті, щоб інтерфейс оновився миттєво
         io.to(data.room).emit('chat_history_cleared', { room: data.room });
+    });
+
+    // === НОВІ ПОДІЇ ДЛЯ КОМПЛЕКСНОГО КЕРУВАННЯ ГРУПАМИ З КЛІЄНТА ===
+    socket.on('create_group', (data) => {
+        if (!data || !data.groupId) return;
+        const gId = data.groupId;
+        userProfiles[gId] = {
+            displayName: data.displayName || data.name || gId,
+            bio: data.bio || data.description || '',
+            avatar: data.avatar || '',
+            banner: data.banner || '',
+            glowColor: data.glowColor || 'blue',
+            members: data.members || [sessionUser],
+            isGroup: true
+        };
+        userProfiles[gId].members.forEach(member => {
+            if (!userProfiles[member]) userProfiles[member] = { chatList: [] };
+            if (!userProfiles[member].chatList) userProfiles[member].chatList = [];
+            if (!userProfiles[member].chatList.includes(gId)) userProfiles[member].chatList.push(gId);
+            
+            const memberSocket = activeConnections[member];
+            if (memberSocket) io.to(memberSocket).emit('restore_chats', userProfiles[member].chatList);
+        });
+        saveDatabase();
+        io.emit('profile_broadcast', { username: gId, data: userProfiles[gId] });
+    });
+
+    socket.on('update_group', (data) => {
+        if (!data || !data.groupId) return;
+        const gId = data.groupId;
+        if (!userProfiles[gId]) userProfiles[gId] = { members: [sessionUser], isGroup: true };
+        
+        userProfiles[gId].displayName = data.displayName || data.name || userProfiles[gId].displayName || gId;
+        userProfiles[gId].bio = data.bio || data.description || userProfiles[gId].bio || '';
+        userProfiles[gId].avatar = data.avatar || userProfiles[gId].avatar || '';
+        userProfiles[gId].banner = data.banner || userProfiles[gId].banner || '';
+        userProfiles[gId].glowColor = data.glowColor || userProfiles[gId].glowColor || 'blue';
+        if (data.members && Array.isArray(data.members)) userProfiles[gId].members = data.members;
+
+        userProfiles[gId].members.forEach(member => {
+            if (!userProfiles[member]) userProfiles[member] = { chatList: [] };
+            if (!userProfiles[member].chatList) userProfiles[member].chatList = [];
+            if (!userProfiles[member].chatList.includes(gId)) userProfiles[member].chatList.push(gId);
+            
+            const memberSocket = activeConnections[member];
+            if (memberSocket) io.to(memberSocket).emit('restore_chats', userProfiles[member].chatList);
+        });
+        saveDatabase();
+        io.emit('profile_broadcast', { username: gId, data: userProfiles[gId] });
+    });
+
+    socket.on('add_group_member', (data) => {
+        if (!data || !data.groupId || !data.username) return;
+        const gId = data.groupId;
+        const newMember = data.username;
+        if (!userProfiles[gId]) return;
+        if (!userProfiles[gId].members) userProfiles[gId].members = [];
+        if (!userProfiles[gId].members.includes(newMember)) userProfiles[gId].members.push(newMember);
+
+        if (!userProfiles[newMember]) userProfiles[newMember] = { chatList: [] };
+        if (!userProfiles[newMember].chatList) userProfiles[newMember].chatList = [];
+        if (!userProfiles[newMember].chatList.includes(gId)) userProfiles[newMember].chatList.push(gId);
+
+        saveDatabase();
+        io.emit('profile_broadcast', { username: gId, data: userProfiles[gId] });
+        const memberSocket = activeConnections[newMember];
+        if (memberSocket) io.to(memberSocket).emit('restore_chats', userProfiles[newMember].chatList);
     });
 
     socket.on('disconnect', () => {
