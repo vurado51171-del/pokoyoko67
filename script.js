@@ -133,7 +133,6 @@ try {
     if (rawHistory) savedMessages = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory;
 } catch (e) { savedMessages = {}; }
 
-
 const searchToggleBtn = document.getElementById('search-toggle-btn');
 const searchFrame = document.getElementById('search-frame');
 const searchInput = document.getElementById('search-input');
@@ -296,7 +295,8 @@ window.createGroup = function() {
     const desc = document.getElementById('group-desc-input').value.trim();
     if (!name) return alert('Будь ласка, введіть назву групи!');
     
-    const groupId = 'group_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    // ГЕНЕРАЦІЯ ПРАВИЛЬНОГО ID ГРУПИ ДЛЯ СЕРВЕРА
+    const groupId = 'ht.' + Math.random().toString(36).substr(2, 6) + Date.now().toString().slice(-4);
     
     localProfiles[groupId] = {
         isGroup: true,
@@ -313,7 +313,16 @@ window.createGroup = function() {
     activeChats.push(groupId);
     saveActiveChats();
     
-    socket.emit('update_profile', { username: groupId, data: localProfiles[groupId] });
+    // ВІДПРАВЛЯЄМО ПРАВИЛЬНУ ПОДІЮ, ЩОБ НЕ ПЕРЕЗАПИСАТИ СВІЙ ПРОФІЛЬ
+    socket.emit('create_group', { 
+        groupId: groupId, 
+        displayName: name,
+        bio: desc,
+        avatar: tempGroupAvatar,
+        banner: tempGroupBanner,
+        glowColor: tempGroupGlow,
+        members: [myNick]
+    });
     
     closeCreateGroupModal();
     renderChatsList();
@@ -367,13 +376,15 @@ function addGroupMember(groupId, userId) {
     if (!pData.members.includes(userId)) {
         pData.members.push(userId);
         localStorage.setItem('burmalda_profiles_data', JSON.stringify(localProfiles));
-        socket.emit('update_profile', { username: groupId, data: pData });
         
-        // Відправляємо системне повідомлення, щоб додати групу в список контактів нового учасника
+        // ВІДПРАВЛЯЄМО ПРАВИЛЬНУ ПОДІЮ ЗАМІСТЬ update_profile
+        socket.emit('add_group_member', { groupId: groupId, username: userId });
+        
         const sysMsgId = 'sys_' + Date.now();
         const sysMsg = { 
             id: sysMsgId, 
-            room: 'room_group_' + groupId, 
+            room: 'room_' + groupId, // Уніфікована кімната
+            to: groupId, 
             from: 'system', 
             text: `${getVisibleName(myNick)} додав(ла) ${getVisibleName(userId)}`, 
             type: 'text', 
@@ -385,7 +396,7 @@ function addGroupMember(groupId, userId) {
         savedMessages[currentRoom].push(sysMsg);
         safeSaveHistory();
         
-        socket.emit('chat_message', sysMsg); // Цей сокет зловить новий юзер і додасть групу
+        socket.emit('chat_message', sysMsg);
         
         renderGroupMembers(groupId);
         loadMessagesHistory();
@@ -477,7 +488,7 @@ function openPartnerProfile() {
     const profileOptions = document.getElementById('my-profile-customizations');
     if(profileOptions) profileOptions.style.display = 'none';
 
-    if (pData.isGroup) {
+    if (pData.isGroup || currentActiveChatPartner.startsWith('ht.')) {
         document.getElementById('group-members-block').style.display = 'block';
         renderGroupMembers(currentActiveChatPartner);
     } else {
@@ -713,7 +724,7 @@ function renderChatDOM(user, targetContainer) {
     const pData = localProfiles[user] || {};
     let statusText = isOnline ? translations[currentLang].chatStatusOnline : translations[currentLang].chatStatusOffline; 
     
-    if (pData.isGroup) {
+    if (pData.isGroup || user.startsWith('ht.')) {
         statusText = `Учасників: ${(pData.members || []).length}`;
     } else if (!isOnline && pData.lastSeen) {
         const diff = Date.now() - pData.lastSeen;
@@ -733,7 +744,7 @@ function renderChatDOM(user, targetContainer) {
     if (prefs.pinned) flagsHtml += '📌'; if (prefs.muted) flagsHtml += '🔇';
     if (prefs.blocked) flagsHtml += '🚫';
     
-    item.innerHTML = `<div class="chat-info-block">${getAvatarHTML(user)}<div><div style="font-weight:600; font-size:14px;">${escapeHTML(getVisibleName(user))}</div><div id="bio-${user}" style="font-size:12px; color:var(--text-muted);">${escapeHTML(pData.bio || '')}</div></div></div><div class="chat-flags">${flagsHtml}</div><div class="status-dot ${isOnline && !pData.isGroup ? 'online' : ''}">${statusText}</div>`;
+    item.innerHTML = `<div class="chat-info-block">${getAvatarHTML(user)}<div><div style="font-weight:600; font-size:14px;">${escapeHTML(getVisibleName(user))}</div><div id="bio-${user}" style="font-size:12px; color:var(--text-muted);">${escapeHTML(pData.bio || '')}</div></div></div><div class="chat-flags">${flagsHtml}</div><div class="status-dot ${isOnline && (!pData.isGroup && !user.startsWith('ht.')) ? 'online' : ''}">${statusText}</div>`;
     
     item.oncontextmenu = (e) => { 
         e.preventDefault();
@@ -805,7 +816,7 @@ function updateChatTitle() {
     const pData = localProfiles[currentActiveChatPartner] || {};
     let statusHtml = '';
     
-    if (pData.isGroup) {
+    if (pData.isGroup || currentActiveChatPartner.startsWith('ht.')) {
         statusHtml = `<small style="color:var(--text-muted); font-size:11px;">Учасників: ${(pData.members || []).length}</small>`;
     } else if (isOnline) {
         statusHtml = '<small style="color:#4cd964; font-size:11px;">● онлайн</small>';
@@ -829,8 +840,9 @@ function openChatWith(username) {
     currentActiveChatPartner = username; 
     const pData = localProfiles[username] || {};
     
-    if (pData.isGroup) {
-        currentRoom = `room_group_${username}`; 
+    // Уніфікована кімната: якщо це група або ht., просто room_ht...
+    if (pData.isGroup || username.startsWith('ht.')) {
+        currentRoom = `room_${username}`; 
     } else {
         const roomSorted = [myNick, username].sort(); 
         currentRoom = `room_${roomSorted[0]}_${roomSorted[1]}`; 
@@ -1102,7 +1114,7 @@ function executeForward(targetUser) {
     if (!messageToForward) return;
     const isAnon = document.getElementById('forward-anonymous-check').checked;
     const targetData = localProfiles[targetUser] || {};
-    let targetRoom = targetData.isGroup ? `room_group_${targetUser}` : `room_${[myNick, targetUser].sort().join('_')}`;
+    let targetRoom = (targetData.isGroup || targetUser.startsWith('ht.')) ? `room_${targetUser}` : `room_${[myNick, targetUser].sort().join('_')}`;
     
     const newMsgId = messageToForward.type + '_fwd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const msgPayload = { id: newMsgId, room: targetRoom, from: myNick, to: targetUser, text: messageToForward.text, type: messageToForward.type, replyTo: null, timestamp: Date.now(), reactions: {}, status: 'sent', edited: false };
@@ -1142,7 +1154,7 @@ function appendSingleMessage(msg, isHistoryBuild = false) {
 
     // --- ЛОГІКА ІМЕН ТА АВАТАРОК У ГРУПІ ---
     const chatPartnerData = localProfiles[currentActiveChatPartner];
-    if (chatPartnerData && chatPartnerData.isGroup && msg.from !== myNick && msg.from !== 'system') {
+    if (chatPartnerData && (chatPartnerData.isGroup || currentActiveChatPartner.startsWith('ht.')) && msg.from !== myNick && msg.from !== 'system') {
         const groupHeader = document.createElement('div');
         groupHeader.className = 'group-msg-header';
         groupHeader.innerHTML = `${getTinyAvatarHTML(msg.from)} <span>${escapeHTML(getVisibleName(msg.from))}</span>`;
@@ -1490,12 +1502,12 @@ socket.on('chat_message', (msg) => {
     let targetId = msg.from; 
     let isGroupMsg = false;
     
-    if (msg.room && msg.room.startsWith('room_group_')) {
+    if (msg.room && msg.room.startsWith('room_ht.')) {
         isGroupMsg = true;
-        targetId = msg.room.replace('room_group_', ''); 
+        targetId = msg.room.replace('room_', ''); 
     }
     
-    if (!localProfiles[targetId]) { socket.emit('request_profile', { username: targetId }); }
+    if (!localProfiles[targetId] && !isGroupMsg) { socket.emit('request_profile', { username: targetId }); }
 
     if (msg.room !== currentRoom) {
         if (!activeChats.includes(targetId)) { activeChats.push(targetId); saveActiveChats(); }
