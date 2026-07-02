@@ -8,7 +8,8 @@
     <style>
         /* === ТЕМИ ОФОРМЛЕННЯ (CSS Variables) === */
         :root {
-            --bg-main: #0c0c0e; --bg-panel: #131316; --bg-header: #1a1a1e; --bg-input: #1c1c21;
+            --bg-main: #0c0c0e;
+            --bg-panel: #131316; --bg-header: #1a1a1e; --bg-input: #1c1c21;
             --border-color: #222227; --text-main: #f5f5f7; --text-muted: #aaa;
             --msg-my-bg: #0088cc; --msg-my-text: #fff; --msg-their-bg: #1a1a1f; --msg-their-text: #f5f5f7;
             --accent: #0088cc; --accent-hover: #2da5ff; --danger: #ff3b30;
@@ -16,7 +17,8 @@
         }
 
         body.theme-black {
-            --bg-main: #000000; --bg-panel: #050505; --bg-header: #0a0a0a; --bg-input: #111111;
+            --bg-main: #000000;
+            --bg-panel: #050505; --bg-header: #0a0a0a; --bg-input: #111111;
             --border-color: #1a1a1a; --msg-their-bg: #111111; --msg-my-bg: #005580;
         }
 
@@ -36,92 +38,149 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.5);
             color: #fff; border-bottom: 1px solid #283e59;
         }
-        body.theme-vintage .my-profile, body.theme-vintage #chat-title-text { color: #fff; text-shadow: 0 -1px 0 rgba(0,0,0,0.6); }
-        body.theme-vintage #input-panel-container { background: linear-gradient(180deg, #f0f0f0 0%, #cccccc 100%); border-top: 1px solid #888; }
-        body.theme-vintage #input { border: 1px solid #999; box-shadow: inset 0 2px 3px rgba(0,0,0,0.1); border-radius: 20px; }
-        body.theme-vintage .media-btn-label, body.theme-vintage .tool-btn { background: linear-gradient(180deg, #fff 0%, #e0e0e0 100%); border: 1px solid #999; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        body.theme-vintage #button { background: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%); border: 1px solid #0d5c9e; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.3); }
+        body.theme-vintage .my-profile, body.theme-vintage #chat-title-text { color: #fff;
+            text-shadow: 0 -1px 0 rgba(0,0,0,0.6); }
+        body.theme-vintage #input-panel-container { background: linear-gradient(180deg, #f0f0f0 0%, #cccccc 100%);
+            border-top: 1px solid #888; }
+        body.theme-vintage #input { border: 1px solid #999;
+            box-shadow: inset 0 2px 3px rgba(0,0,0,0.1); border-radius: 20px; }
+        body.theme-vintage .media-btn-label, body.theme-vintage .tool-btn { background: linear-gradient(180deg, #fff 0%, #e0e0e0 100%);
+            border: 1px solid #999; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        body.theme-vintage #button { background: linear-gradient(180deg, #5fc9f8 0%, #1583d9 100%);
+            border: 1px solid #0d5c9e; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 2px rgba(0,0,0,0.3);
+        }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg-main); background-image: var(--chat-bg-img); color: var(--text-main); display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; max-width: 100%; transition: background 0.3s, color 0.3s; }
+            background: var(--bg-main); background-image: var(--chat-bg-img); color: var(--text-main); display: flex; height: 100vh; width: 100vw; overflow: hidden; position: relative; max-width: 100%;
+            transition: background 0.3s, color 0.3s; }
 
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
         ::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, 0.5); }
 
-        #sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; }
-        .sidebar-header { padding: 16px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .my-profile { font-weight: 600; color: var(--accent); font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none; }
+        #sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex;
+            flex-direction: column; flex-shrink: 0; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10;
+        }
+        .sidebar-header { padding: 16px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color); }
+        .my-profile { font-weight: 600; color: var(--accent); font-size: 15px;
+            cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none;
+        }
         .my-profile:hover { color: var(--accent-hover); }
-        
-        .header-controls { display: flex; gap: 10px; align-items: center; }
-        .search-trigger-btn, .settings-btn { background: rgba(128, 128, 128, 0.1); border: none; font-size: 16px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; padding: 8px; border-radius: 50%; outline: none; display: flex; align-items: center; justify-content: center; }
+        .header-controls { display: flex; gap: 10px; align-items: center; position: relative; }
+        .search-trigger-btn, .settings-btn { background: rgba(128, 128, 128, 0.1); border: none; font-size: 16px;
+            cursor: pointer; color: var(--text-muted); transition: all 0.2s; padding: 8px; border-radius: 50%; outline: none; display: flex; align-items: center; justify-content: center;
+        }
         .search-trigger-btn:hover, .settings-btn:hover { color: var(--text-main); background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
 
-        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color); display: none; }
+        .search-container { padding: 12px 16px; background: var(--bg-header); border-bottom: 1px solid var(--border-color);
+            display: none; }
         .search-container.active { display: block; }
-        .search-container input { width: 100%; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s; }
+        .search-container input { width: 100%; padding: 10px 14px; background: var(--bg-input);
+            border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; outline: none; font-size: 14px; transition: border-color 0.2s;
+        }
         .search-container input:focus { border-color: var(--accent); }
 
-        .search-results-dropdown { position: absolute; top: calc(100% + 5px); left: 0; width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; z-index: 200; max-height: 250px; overflow-y: auto; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .search-result-item { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
+        .search-results-dropdown { position: absolute; top: calc(100% + 5px); left: 0; width: 100%;
+            background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; z-index: 200; max-height: 250px; overflow-y: auto; display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .search-result-item { padding: 10px; display: flex;
+            align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;
+        }
         .search-result-item:hover { background: var(--bg-header); }
         .search-result-item:last-child { border-bottom: none; }
-        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--accent); background: rgba(128,128,128,0.1); }
+        .search-section-title { padding: 6px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+            color: var(--accent); background: rgba(128,128,128,0.1); }
 
-        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { padding: 12px 16px; font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1.5px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
         #chats-list { flex-grow: 1; overflow-y: auto; }
-        .chat-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative; }
+        .chat-item { padding: 14px 16px; border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; user-select: none; position: relative;
+        }
         .chat-item:hover { background: var(--bg-header); }
         .chat-item.active { background: var(--bg-input); border-left: 4px solid var(--accent); }
         .chat-item.blocked { opacity: 0.5; filter: grayscale(100%); }
-        .chat-flags { display: flex; gap: 6px; position: absolute; right: 16px; top: 14px; font-size: 12px; }
+        .chat-flags { display: flex; gap: 6px; position: absolute; right: 16px; top: 14px;
+            font-size: 12px; }
 
-        @keyframes glowPulse { 0% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } 50% { background-color: var(--bg-header); box-shadow: inset 0 0 15px rgba(0, 136, 255, 0.4); } 100% { background-color: var(--bg-panel); box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } }
-        .chat-item.glow-active { animation: glowPulse 2s infinite ease-in-out; border-left: 4px solid #00e5ff; }
+        @keyframes glowPulse { 0% { background-color: var(--bg-panel);
+            box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } 50% { background-color: var(--bg-header);
+            box-shadow: inset 0 0 15px rgba(0, 136, 255, 0.4); } 100% { background-color: var(--bg-panel);
+            box-shadow: inset 0 0 0px rgba(0, 136, 255, 0); } }
+        .chat-item.glow-active { animation: glowPulse 2s infinite ease-in-out;
+            border-left: 4px solid #00e5ff; }
         
-        .chat-info-block { display: flex; align-items: center; gap: 12px; max-width: 80%; }
-        .status-dot { font-size: 11px; color: var(--text-muted); margin-top: 18px; }
+        .chat-info-block { display: flex;
+            align-items: center; gap: 12px; max-width: 80%; }
+        .status-dot { font-size: 11px; color: var(--text-muted);
+            margin-top: 18px; }
         .status-dot.online { color: #4cd964; font-weight: bold; }
 
-        .avatar, .avatar-placeholder, .modal-avatar, .modal-avatar-placeholder, .circle-video { border-radius: 50% !important; aspect-ratio: 1 / 1; object-fit: cover; }
-        .avatar { width: 40px; height: 40px; flex-shrink: 0; display: block; border: 1px solid rgba(128,128,128,0.2); }
-        .avatar-placeholder { width: 40px; height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0; }
+        .avatar, .avatar-placeholder, .modal-avatar, .modal-avatar-placeholder, .circle-video { border-radius: 50% !important;
+            aspect-ratio: 1 / 1; object-fit: cover; }
+        .avatar { width: 40px; height: 40px;
+            flex-shrink: 0; display: block; border: 1px solid rgba(128,128,128,0.2); }
+        .avatar-placeholder { width: 40px;
+            height: 40px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; text-transform: uppercase; flex-shrink: 0;
+        }
 
-        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative; height: 100%; min-width: 0; }
+        #chat-main { flex-grow: 1; display: flex; flex-direction: column; background: transparent; position: relative;
+            height: 100%; min-width: 0; }
         
-        #archive-reveal-zone { text-align: center; padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
+        #archive-reveal-zone { text-align: center;
+            padding: 15px; font-size: 13px; color: var(--text-muted); cursor: pointer; display: none; background: rgba(128,128,128,0.05); border-bottom: 1px solid var(--border-color); transition: background 0.2s;
+        }
         #archive-reveal-zone:hover { background: rgba(128,128,128,0.1); }
-        #archive-container { border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto; background: var(--bg-input); display: none; }
+        #archive-container { border-bottom: 1px solid var(--border-color); max-height: 300px; overflow-y: auto;
+            background: var(--bg-input); display: none; }
 
-        .multi-select-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0; left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+        /* === МУЛЬТИ-ВИДІЛЕННЯ === */
+        .multi-select-bar { display: flex;
+            justify-content: space-between; align-items: center; padding: 10px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); z-index: 20; position: absolute; top: 0;
+            left: 0; width: 100%; box-sizing: border-box; font-weight: 600; color: var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .msg-checkbox { display: none; margin-right: 12px; width: 18px; height: 18px; cursor: pointer;
+            accent-color: var(--accent); }
         body.multi-select-mode .msg-checkbox { display: inline-block; }
         body.multi-select-mode .msg-container { flex-direction: row; align-items: center; justify-content: flex-start; }
         body.multi-select-mode .msg-container.my-wrapper { flex-direction: row-reverse; align-self: flex-end; }
         body.multi-select-mode .my-wrapper .msg-checkbox { margin-right: 0; margin-left: 12px; }
 
-        #chat-header { padding: 14px 20px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15; }
+        #chat-header { padding: 14px 20px; background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 15;
+        }
         .header-meta { display: flex; align-items: center; gap: 12px; overflow: hidden; }
-        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #chat-title-text { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; }
         #chat-title-text:hover { color: var(--accent); }
         .typing-indicator { font-size: 13px; color: #4cd964; font-style: italic; display: none; }
         
         .header-actions { display: flex; gap: 10px; align-items: center; position: relative; }
-        .call-btn { background: rgba(128, 128, 128, 0.1); color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .call-btn { background: rgba(128, 128, 128, 0.1);
+            color: var(--text-main); border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; }
         .call-btn:hover { background: rgba(128, 128, 128, 0.25); transform: scale(1.05); }
 
-        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 190px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
-        #chat-options-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer; }
+        #chat-options-menu { position: absolute; top: 100%; right: 0px; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: 8px; padding: 5px 0; min-width: 190px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 5000; margin-top: 10px; }
+        #chat-options-menu button { display: block; width: 100%; text-align: left;
+            background: none; border: none; padding: 10px 15px; color: var(--text-main); font-size: 13px; cursor: pointer;
+        }
         #chat-options-menu button:hover { background: var(--bg-header); }
         #chat-options-menu button.danger { color: var(--danger); }
 
-        .back-btn { display: none; background: rgba(128,128,128,0.2); border: none; color: var(--text-main); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .back-btn { display: none; background: rgba(128,128,128,0.2); border: none; color: var(--text-main);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+        }
         .back-btn:hover { background: rgba(128,128,128,0.3); }
 
-        #pinned-message-bar { background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 20px; display: none; align-items: center; justify-content: space-between; font-size: 13px; color: #00e5ff; cursor: pointer; z-index: 12; user-select: none; transition: background 0.2s; }
+        #pinned-message-bar { background: var(--bg-header); border-bottom: 1px solid var(--border-color); padding: 8px 20px;
+            display: none; align-items: center; justify-content: space-between; font-size: 13px; color: #00e5ff; cursor: pointer; z-index: 12; user-select: none; transition: background 0.2s;
+        }
         #pinned-message-bar:hover { background: var(--bg-input); }
         .pinned-bar-content { display: flex; flex-direction: column; overflow: hidden; max-width: 85%; }
         .pinned-bar-title { font-weight: 700; font-size: 11px; text-transform: uppercase; display: flex; gap: 8px; align-items: center; color: var(--accent); }
@@ -131,11 +190,19 @@
         .unpin-btn-x:hover { color: var(--danger); }
         
         #messages { list-style-type: none; padding: 20px; margin: 0; flex-grow: 1; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
-        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 85%; width: fit-content; z-index: 1; transition: background-color 0.5s ease; border-radius: var(--radius-bubble); }
+        .msg-container { position: relative; margin-bottom: 12px; display: flex; flex-direction: column; max-width: 85%;
+            width: fit-content; z-index: 1; transition: background-color 0.5s ease; border-radius: var(--radius-bubble);
+        }
         .msg-container:hover { z-index: 100; }
         .msg-container.my-wrapper { align-self: flex-end; }
 
-        #messages li { padding: 10px 14px; background: var(--msg-their-bg); border-radius: var(--radius-bubble); word-break: break-word; user-select: none; color: var(--msg-their-text); position: relative; cursor: pointer; transition: background 0.15s; width: 100%; box-shadow: var(--bubble-shadow); display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(128,128,128,0.05); }
+        /* Стиль для шапки сообщения в группе */
+        .group-msg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--accent); }
+        .group-msg-avatar { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+
+        #messages li { padding: 10px 14px; background: var(--msg-their-bg); border-radius: var(--radius-bubble); word-break: break-word;
+            user-select: none; color: var(--msg-their-text); position: relative; cursor: pointer; transition: background 0.15s; width: 100%; box-shadow: var(--bubble-shadow); display: flex; flex-direction: column;
+            gap: 4px; border: 1px solid rgba(128,128,128,0.05); }
         #messages li.my-msg { background: var(--msg-my-bg); color: var(--msg-my-text); border-bottom-right-radius: 4px; }
         
         #messages li.msg-transparent { background: transparent !important; box-shadow: none !important; padding: 0 !important; border: none !important; color: var(--text-main); }
@@ -298,7 +365,11 @@
     <div class="sidebar-header">
         <div class="my-profile" id="my-profile-name" onclick="openMyProfile()">...</div>
         <div class="header-controls">
-            <button class="search-trigger-btn" onclick="openCreateGroupModal()" title="Створити групу">➕</button>
+            <!-- Кнопка плюсика -->
+            <button class="settings-btn" id="add-menu-btn" onclick="document.getElementById('add-menu-dropdown').classList.toggle('active')">➕</button>
+            <div id="add-menu-dropdown" class="popup-menu" style="bottom: auto; top: 60px; left: auto; right: 10px; z-index: 200; width: 200px;">
+                <button class="attachment-item-btn" onclick="openCreateGroupModal(); document.getElementById('add-menu-dropdown').classList.remove('active');"><i>👥</i> Створити групу</button>
+            </div>
             <button class="search-trigger-btn" id="search-toggle-btn">🔍</button>
             <button class="settings-btn" id="settings-toggle-btn">⚙️</button>
         </div>
@@ -417,6 +488,52 @@
     <img id="image-viewer-img" src="">
 </div>
 
+<!-- Модалка створення групи -->
+<div class="modal-overlay" id="create-group-modal">
+    <div class="modal-content">
+        <div class="modal-title"><span>👥 Створити групу</span><button class="modal-close" onclick="closeCreateGroupModal()">&times;</button></div>
+        
+        <input type="text" id="group-name-input" class="profile-name-input" placeholder="Назва групи..." style="margin-bottom:10px; font-weight: bold;">
+        <textarea id="group-desc-input" class="profile-desc-input" placeholder="Опис групи..."></textarea>
+        
+        <div style="margin-top: 15px;">
+            <input type="file" id="group-avatar-input" accept="image/*" style="display: none;" onchange="previewGroupAvatar(this)">
+            <button class="upload-btn" style="width: 100%; margin-bottom: 5px;" onclick="document.getElementById('group-avatar-input').click()">🖼️ Завантажити аватарку</button>
+            <div id="group-avatar-preview" style="display:none; text-align:center; margin-bottom:10px;">
+                <img id="g-avatar-img" src="" style="width:60px; height:60px; border-radius:50%; object-fit:cover;">
+            </div>
+            
+            <input type="file" id="group-banner-input" accept="image/*" style="display: none;" onchange="previewGroupBanner(this)">
+            <button class="upload-btn" style="width: 100%; margin-bottom: 10px;" onclick="document.getElementById('group-banner-input').click()">🌄 Завантажити банер</button>
+            <div id="group-banner-preview" style="display:none; text-align:center; margin-bottom:10px;">
+                <img id="g-banner-img" src="" style="width:100%; height:60px; border-radius:8px; object-fit:cover;">
+            </div>
+        </div>
+
+        <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:8px;">Сяйво навколо ави (колір):</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button onclick="setTempGroupGlow('green')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #4cd964; cursor: pointer;"></button>
+            <button onclick="setTempGroupGlow('red')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #ff3b30; cursor: pointer;"></button>
+            <button onclick="setTempGroupGlow('blue')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #0088cc; cursor: pointer;"></button>
+            <button onclick="setTempGroupGlow('dark')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #333333; cursor: pointer; border: 1px solid #666;"></button>
+            <button onclick="setTempGroupGlow('white')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #ffffff; cursor: pointer; border: 1px solid #ccc;"></button>
+            <button onclick="setTempGroupGlow('yellow')" style="width: 30px; height: 30px; border-radius: 50%; border:none; background: #ffcc00; cursor: pointer;"></button>
+        </div>
+
+        <button class="settings-logout-btn" style="background:var(--accent); margin-top:15px;" onclick="createGroup()">Створити групу</button>
+    </div>
+</div>
+
+<!-- Модалка додавання учасника в групу -->
+<div class="modal-overlay" id="add-member-modal">
+    <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-title"><span>👥 Додати учасника</span><button class="modal-close" onclick="closeAddMemberModal()">&times;</button></div>
+        <div style="margin-bottom: 12px; font-size: 14px; color: var(--text-muted);">Виберіть з ким поділитися:</div>
+        <div id="add-member-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);">
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="timer-modal">
     <div class="modal-content">
         <div class="modal-title"><span>⏱️ Налаштування таймера</span><button class="modal-close" onclick="closeTimerModal()">&times;</button></div>
@@ -466,6 +583,12 @@
             <div class="account-property"><span id="lbl-status">Статус:</span> <strong id="lbl-online-status">В мережі</strong></div>
             <div class="account-property"><label id="lbl-bio-title">Про себе / Опис:</label><textarea id="profile-desc" class="profile-desc-input" oninput="saveMyBio(this.value)"></textarea></div>
             <div class="account-property" id="login-time-block"><label id="lbl-time">Час входу:</label> <span id="info-login-time" style="font-weight: bold; color: var(--accent);"></span></div>
+        </div>
+
+        <!-- Секція учасників (видно тільки для груп) -->
+        <div id="group-members-block" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <div class="modal-title" style="font-size: 15px; margin-bottom: 10px; border-bottom: none;">Учасники <button class="upload-btn" style="float: right; padding: 4px 8px;" onclick="openAddMemberModal()">➕ Додати</button></div>
+            <div id="group-members-list" style="max-height: 150px; overflow-y: auto;"></div>
         </div>
         
         <div id="my-profile-customizations" style="display: none; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
@@ -548,64 +671,14 @@
         <label style="display:flex; align-items:center; gap: 8px; cursor: pointer; margin-bottom: 15px; font-size: 13px; color: var(--text-main);">
             <input type="checkbox" id="forward-anonymous-check"> Анонімно (приховати справжнього автора)
         </label>
-        <div id="forward-chat-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);"></div>
+        <div id="forward-chat-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; background: var(--bg-input);">
+        </div>
     </div>
 </div>
 
-<div class="modal-overlay" id="create-group-modal">
-    <div class="modal-content">
-        <div class="modal-title"><span>👥 Створити групу</span><button class="modal-close" onclick="closeCreateGroupModal()">&times;</button></div>
-        
-        <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:20px; position:relative;">
-            <label style="cursor:pointer; display:flex; flex-direction:column; align-items:center;">
-                <input type="file" id="group-avatar-input" accept="image/*" onchange="handleGroupAvatarUpload(this)" style="display:none;">
-                <div id="new-group-avatar-preview">
-                    <div class="modal-avatar-placeholder" style="border-radius:12px; background:var(--bg-input); width:85px; height:85px; font-size:30px;">📷</div>
-                </div>
-                <span style="font-size:12px; color:var(--text-muted); margin-top:8px;">Завантажити аватарку</span>
-            </label>
-        </div>
-        
-        <input type="text" id="new-group-name" placeholder="Назва групи" class="profile-name-input" style="margin-bottom:15px; font-weight:bold;">
-        
-        <button class="settings-logout-btn" style="background:var(--accent); margin-top:5px;" onclick="submitCreateGroup()">Створити групу</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="group-settings-modal">
-    <div class="modal-content">
-        <div class="modal-title">
-            <span id="group-settings-name">Назва групи</span>
-            <button class="modal-close" onclick="closeGroupSettings()">&times;</button>
-        </div>
-        
-        <div id="group-settings-avatar" style="text-align:center; margin:10px 0; display:flex; justify-content:center;"></div>
-        
-        <div style="margin-bottom: 10px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Учасники:</div>
-        <div id="group-members-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
-        
-        <button id="btn-add-group-member" class="upload-btn" style="width:100%; margin-bottom:10px;" onclick="openAddMemberModal()">➕ Додати учасника</button>
-        <button id="btn-leave-group" class="settings-logout-btn" style="background:var(--bg-input); color:var(--text-main); border:1px solid var(--border-color); margin-bottom:10px;" onclick="leaveGroup()">🚪 Покинути групу</button>
-        <button id="btn-delete-group" class="settings-logout-btn" onclick="deleteGroup()">🗑️ Видалити групу</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="add-member-modal">
-    <div class="modal-content">
-        <div class="modal-title">
-            <span>Виберіть контакт</span>
-            <button class="modal-close" onclick="closeAddMemberModal()">&times;</button>
-        </div>
-        <div id="add-member-list" style="max-height: 250px; overflow-y: auto; background:var(--bg-input); border:1px solid var(--border-color); border-radius:8px; padding:8px;"></div>
-    </div>
-</div>
 <div class="context-menu" id="global-context-menu"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="script.js"></script>
-<script src="groups.js"></script>
-
 </body>
-<script src="style.js"></script>
-<script src="script.js"></script>
 </html>
